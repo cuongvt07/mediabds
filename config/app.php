@@ -95,6 +95,17 @@ return [
     |
     */
 
+    /*
+    |--------------------------------------------------------------------------
+    | License Master Key
+    |--------------------------------------------------------------------------
+    |
+    | The master key for verifying the application license.
+    |
+    */
+
+    'license_master_key' => env('LICENSE_MASTER_KEY', 'ZrFKwixJgykc'),
+
     'cipher' => 'AES-256-CBC',
 
     'key' => env('APP_KEY'),

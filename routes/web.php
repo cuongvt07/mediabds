@@ -4,7 +4,11 @@
 use App\Livewire\FileManager;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', FileManager::class);
+use App\Livewire\Auth\Login;
+
+Route::get('/login', Login::class)->name('login');
+
+Route::get('/', FileManager::class)->middleware('auth');
 
 Route::get('/test-s3', function () {
     try {
