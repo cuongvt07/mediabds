@@ -19,15 +19,6 @@
             class="bg-slate-800/40 backdrop-blur-xl p-8 sm:p-10 rounded-3xl border border-slate-700/50 shadow-2xl ring-1 ring-white/10 animate-in fade-in slide-in-from-bottom-8 duration-700">
 
             <div class="text-center mb-10">
-                <div
-                    class="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 shadow-lg shadow-blue-500/30 mb-6 group transition-transform hover:scale-110 duration-300">
-                    <svg class="w-10 h-10 text-white drop-shadow-md" fill="none" stroke="currentColor"
-                        viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z">
-                        </path>
-                    </svg>
-                </div>
                 <h2 class="text-4xl font-black text-white tracking-widest uppercase font-mono">
                     OpenFiles
                 </h2>
