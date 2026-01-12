@@ -25,7 +25,7 @@ class FileManager extends Component
     public $expandedFolders = []; // IDs of folders expanded in sidebar
     public $selectedFileForDetails = null;
 
-    public $perPage = 40;
+    public $perPage = 24;
     public $loadingMore = false;
     public $hasMore = false;
 
@@ -41,17 +41,21 @@ class FileManager extends Component
     public $licenseKeyInput = '';
     public $licenseError = '';
 
-    public function mount($folderId = null)
+    public $isModeSelect = false; // "Select from Media" mode
+
+    
+    public function mount($folderId = null, $isModeSelect = false)
     {
         $this->checkLicense();
         $this->currentFolderId = $folderId;
+        $this->isModeSelect = $isModeSelect;
         $this->loadItems();
     }
 
     public function checkLicense()
     {
         $user = auth()->user();
-        $masterKey = config('app.license_master_key');
+        $masterKey = strtoupper(preg_replace('/[^a-zA-Z0-9]/', '', config('app.license_master_key')));
         
         $hasLicense = $user->license_key && $user->license_key === $masterKey;
         // Check if trial active: trial_ends_at is set AND is in the future
@@ -73,12 +77,21 @@ class FileManager extends Component
     {
         // Sanitize input: remove spaces and dashes
         $input = preg_replace('/[^a-zA-Z0-9]/', '', $this->licenseKeyInput);
-        $masterKey = config('app.license_master_key');
+        $masterKey = preg_replace('/[^a-zA-Z0-9]/', '', config('app.license_master_key'));
+        
+        // Normalize to uppercase for comparison
+        $input = strtoupper($input);
+        $masterKey = strtoupper($masterKey);
+
+        \Log::info('License Activation Attempt', [
+            'input_sanitized' => $input, 
+            'master_key_sanitized' => $masterKey
+        ]);
 
         if ($input === $masterKey) {
             auth()->user()->update([
                 'license_key' => $masterKey,
-                'license_expires_at' => now()->addYears(100) // Lifetime
+                'license_expires_at' => now()->addYears(10) // Lifetime (limited by MySQL Timestamp 2038)
             ]);
             $this->showLicenseModal = false;
             $this->licenseError = '';
@@ -131,6 +144,19 @@ class FileManager extends Component
 
         $this->files = $fileQuery->paginate($this->perPage)->items();
         $this->hasMore = count($this->files) >= $this->perPage;
+    }
+
+    public function confirmSelection($items = [])
+    {
+        // $items can be passed from Alpine
+        $ids = is_array($items) ? $items : $this->selectedItems;
+        
+        $selectedFiles = File::whereIn('id', $ids)->get();
+        // Return array of URLs
+        $urls = $selectedFiles->map(fn($f) => $f->metadata['public_url'] ?? '')->filter()->toArray();
+        
+        $this->dispatch('media-selected', ['images' => $urls]);
+        $this->selectedItems = []; // Reset
     }
 
     public function toggleFlatView($state)

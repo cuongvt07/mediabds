@@ -22,6 +22,9 @@ class User extends Authenticatable
         'email',
         'phone',
         'password',
+        'license_key',
+        'license_expires_at',
+        'trial_ends_at',
     ];
 
     /**

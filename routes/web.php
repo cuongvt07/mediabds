@@ -6,9 +6,16 @@ use Illuminate\Support\Facades\Route;
 
 use App\Livewire\Auth\Login;
 
+use App\Livewire\RealEstateListing;
+
 Route::get('/login', Login::class)->name('login');
 
-Route::get('/', FileManager::class)->middleware('auth');
+Route::get('/', function() {
+    return redirect()->route('listings');
+});
+
+Route::get('/media', FileManager::class)->middleware('auth')->name('media');
+Route::get('/listings', RealEstateListing::class)->middleware('auth')->name('listings');
 
 Route::get('/test-s3', function () {
     try {
