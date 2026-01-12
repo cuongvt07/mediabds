@@ -332,6 +332,12 @@ class RealEstateListing extends Component
         $this->showCreatePopup = true;
     }
 
+    public function openCreatePopup()
+    {
+        $this->resetForm();
+        $this->showCreatePopup = true;
+    }
+
     public function closeCreatePopup()
     {
         $this->showCreatePopup = false;
