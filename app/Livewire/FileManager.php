@@ -317,14 +317,9 @@ class FileManager extends Component
     public function downloadFile($fileId)
     {
         $file = File::find($fileId);
-        if ($file && isset($file->metadata['public_url'])) {
-             // For public S3 urls, we can usually just forward the user
-             // But to trigger download we might need a response or js trigger
-             // Best way for "Download" button is usually an anchor with 'download' attr or new tab
-             // But since we are in Livewire...
-             // Let's use dispatch to trigger JS download helper
-             $this->dispatch('download-started', ['url' => $file->metadata['public_url']]);
-             return redirect()->to($file->metadata['public_url']);
+        // Use Storage::download to force a download response
+        if ($file && $file->path) {
+            return Storage::disk('s3')->download($file->path, $file->name);
         }
     }
 
