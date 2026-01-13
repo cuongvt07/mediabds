@@ -28,7 +28,7 @@
 
     <!-- Header / Navigation -->
     <header class="bg-white border-b border-gray-100 sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="max-w-[95%] mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-16">
                 <!-- Branding -->
                 <div class="flex items-center gap-3">
@@ -68,13 +68,13 @@
     </header>
 
     <!-- Main Content -->
-    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <main class="flex-1 max-w-[95%] w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {{ $slot }}
     </main>
 
     <!-- Footer -->
     <footer class="bg-white border-t border-gray-100 mt-auto py-8">
-        <div class="max-w-7xl mx-auto px-4 text-center text-gray-400 text-sm">
+        <div class="max-w-[95%] mx-auto px-4 text-center text-gray-400 text-sm">
             &copy; {{ date('Y') }} Real Estate Manager. All rights reserved.
         </div>
     </footer>
