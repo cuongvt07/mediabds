@@ -31,7 +31,7 @@
     </div>
 
     <!-- Main Content: Scrollable Grid -->
-    <div class="flex-1 overflow-y-auto p-6">
+    <div class="flex-1 overflow-y-auto p-3">
         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-6">
             <!-- Note: User asked for "1 dòng 1 item" but in a grid context.
                  If 3/7 split is item internal, maybe they want a list of items stacked?

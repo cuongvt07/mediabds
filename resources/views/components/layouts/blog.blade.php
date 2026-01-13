@@ -68,7 +68,7 @@
     </header>
 
     <!-- Main Content -->
-    <main class="flex-1 max-w-[95%] w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <main class="flex-1 max-w-[95%] w-full mx-auto px-4 sm:px-6 lg:px-8 py-2">
         {{ $slot }}
     </main>
 
