@@ -317,8 +317,11 @@ class FileManager extends Component
     public function downloadFile($fileId)
     {
         $file = File::find($fileId);
-        // Use Storage::download to force a download response
         if ($file && $file->path) {
+            if (!Storage::disk('s3')->exists($file->path)) {
+                $this->dispatch('toast', ['message' => 'Lỗi: File không tồn tại trên hệ thống lưu trữ.', 'type' => 'error']);
+                return;
+            }
             return Storage::disk('s3')->download($file->path, $file->name);
         }
     }
