@@ -72,10 +72,9 @@
         {{ $slot }}
     </main>
 
-    <!-- Footer -->
-    <footer class="bg-white border-t border-gray-100 mt-auto py-8">
-        <div class="max-w-[95%] mx-auto px-4 text-center text-gray-400 text-sm">
-            &copy; {{ date('Y') }} Real Estate Manager. All rights reserved.
+    <footer class="bg-orange-500 border-t border-orange-600 mt-auto py-2">
+        <div class="max-w-[95%] mx-auto px-4 text-center text-white text-xs font-medium">
+            Phần mềm quản lý dữ liệu openfiles đã active thành công. Cảm ơn quý khách đã sử dụng dịch vụ chúng tôi!
         </div>
     </footer>
 

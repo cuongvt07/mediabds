@@ -8,30 +8,33 @@ use Illuminate\Support\Facades\Auth;
 class Login extends Component
 {
     public $phone = '';
-    public $password = '';
-    public $remember = true; // User said 'store for long time', effectively remember me with long duration
+    public $remember = true; 
 
     protected $rules = [
         'phone' => 'required',
-        'password' => 'required',
     ];
 
     public function login()
     {
-        $this->validate();
+        $this->validate([
+            'phone' => 'required|exists:users,phone',
+        ], [
+            'phone.exists' => 'Số điện thoại này chưa được đăng ký.',
+        ]);
 
-        if (Auth::attempt(['phone' => $this->phone, 'password' => $this->password], $this->remember)) {
+        $user = \App\Models\User::where('phone', $this->phone)->first();
+
+        if ($user) {
+            Auth::login($user, $this->remember);
             session()->regenerate();
-            return redirect()->intended('/');
+            return redirect()->intended(route('listings'));
         }
 
-        $this->addError('phone', 'The provided credentials do not match our records.');
+        $this->addError('phone', 'Có lỗi xảy ra khi đăng nhập.');
     }
 
     public function render()
     {
-        return view('livewire.auth.login')->layout('components.layouts.app'); 
-        // Assuming default layout, will check if layout needs to be blank style or standard. 
-        // Usually login has its own layout or a simple wrapper. I'll stick to a simple clean view in the blade.
+        return view('livewire.auth.login')->layout('components.layouts.guest');
     }
 }
