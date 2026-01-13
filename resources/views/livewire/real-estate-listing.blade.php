@@ -41,7 +41,8 @@
                  Given "grid... 12 items/page", let's assume they want a list of these horizontal cards. -->
 
             @foreach ($listings as $listing)
-                <div wire:click="editListing({{ $listing['id'] }})"
+                <div wire:key="{{ $listing['id'] }}-{{ $listing['updated_at'] }}"
+                    wire:click="editListing({{ $listing['id'] }})"
                     class="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow border border-gray-100 overflow-hidden flex flex-col md:flex-row h-auto md:h-48 group cursor-pointer relative">
                     <!-- Image Slider -->
                     <div class="w-full h-48 md:w-[30%] md:h-full bg-gray-200 relative overflow-hidden group/slider shrink-0"
