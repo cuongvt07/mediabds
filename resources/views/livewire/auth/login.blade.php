@@ -49,10 +49,5 @@
         </div>
     </form>
 
-    <!-- Footer -->
-    <div class="mt-8 pt-6 border-t border-slate-700/50 text-center">
-        <p class="text-xs text-slate-500">
-            Default Access: <span class="font-mono text-slate-400">0999999999</span>
-        </p>
-    </div>
+
 </div>
