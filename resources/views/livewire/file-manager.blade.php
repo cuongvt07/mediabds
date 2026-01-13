@@ -432,6 +432,9 @@
                                             @click.stop="open = false; $wire.showFileDetails('{{ $file->id }}')"
                                             class="w-full text-left px-4 py-2.5 text-[13px] text-gray-700 hover:bg-gray-50 flex items-center gap-2"><span>ℹ️</span>
                                             View Details</button>
+                                        <button @click.stop="open = false; $wire.downloadFile('{{ $file->id }}')"
+                                            class="w-full text-left px-4 py-2.5 text-[13px] text-gray-700 hover:bg-gray-50 flex items-center gap-2"><span>⬇️</span>
+                                            Download</button>
                                         <button
                                             @click.stop="open = false; $wire.requestDelete('file', '{{ $file->id }}')"
                                             class="w-full text-left px-4 py-2.5 text-[13px] text-red-600 hover:bg-red-50 flex items-center gap-2 font-bold mt-1"><span>🗑️</span>
