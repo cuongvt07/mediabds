@@ -17,7 +17,8 @@
     </style>
 </head>
 
-<body class="bg-slate-50 flex items-center justify-center h-screen">
+<body
+    class="bg-slate-950 flex items-center justify-center h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-black">
 
     <div class="w-full max-w-md p-6">
         {{ $slot }}
