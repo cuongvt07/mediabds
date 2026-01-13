@@ -3,13 +3,8 @@
     <div
         class="bg-white border-b border-gray-200 px-4 md:px-6 py-4 flex flex-wrap md:flex-nowrap items-center justify-between gap-4 shrink-0">
         <!-- Title -->
-        <h1 class="text-xl md:text-2xl font-bold text-slate-800 flex items-center gap-2 shrink-0 order-1">
-            <span class="text-blue-600">🏠</span> <span class="hidden md:inline">Quản lý Tin Đăng BĐS</span><span
-                class="md:hidden">Tin Đăng BĐS</span>
-        </h1>
-
         <!-- Centered Search -->
-        <div class="order-3 md:order-2 w-full md:flex-1 md:max-w-2xl md:px-4">
+        <div class="order-3 md:order-2 w-full md:flex-1 md:max-w-xl">
             <div class="relative w-full">
                 <input type="text" placeholder="Tìm kiếm tin đăng..." wire:model.live.debounce.300ms="search"
                     class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm shadow-sm transition-shadow focus:shadow-md">
@@ -22,7 +17,11 @@
         </div>
 
         <!-- Action Button -->
-        <div class="flex items-center gap-4 shrink-0 order-2 md:order-3">
+        <div class="flex items-center gap-3 shrink-0 order-2 md:order-3">
+            <a href="{{ route('media') }}"
+                class="bg-white border border-gray-200 hover:bg-gray-50 text-slate-600 px-3 py-2 md:px-4 md:py-2 rounded-lg font-bold text-sm flex items-center gap-2 shadow-sm transition-all whitespace-nowrap">
+                <i class="fa-solid fa-photo-film"></i> <span class="hidden md:inline">Media Manager</span>
+            </a>
             <button wire:click="openCreatePopup"
                 class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 md:px-4 md:py-2 rounded-lg font-bold text-sm flex items-center gap-2 shadow-lg hover:shadow-xl transition-all whitespace-nowrap">
                 <i class="fa-solid fa-plus"></i> <span class="hidden md:inline">Đăng Tin Mới</span><span

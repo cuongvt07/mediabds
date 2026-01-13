@@ -402,6 +402,6 @@ class RealEstateListing extends Component
 
         return view('livewire.real-estate-listing', [
             'listings' => $listings
-        ]);
+        ])->layout('components.layouts.blog');
     }
 }
