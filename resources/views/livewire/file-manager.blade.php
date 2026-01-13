@@ -506,11 +506,11 @@
                 <div
                     class="flex-1 bg-slate-100 flex items-center justify-center overflow-hidden min-h-[300px] relative">
                     @if (str_starts_with($selectedFileForDetails->mime_type, 'image/'))
-                        <img src="{{ $selectedFileForDetails->metadata['public_url'] }}"
+                        <img src="{{ $selectedFileForDetails->metadata['public_url'] ?? '#' }}"
                             alt="{{ $selectedFileForDetails->name }}" class="w-full h-full object-contain">
                     @elseif(str_starts_with($selectedFileForDetails->mime_type, 'video/'))
                         <video controls class="w-full h-full">
-                            <source src="{{ $selectedFileForDetails->metadata['public_url'] }}"
+                            <source src="{{ $selectedFileForDetails->metadata['public_url'] ?? '#' }}"
                                 type="{{ $selectedFileForDetails->mime_type }}">
                             Your browser does not support the video tag.
                         </video>
