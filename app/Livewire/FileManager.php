@@ -318,11 +318,23 @@ class FileManager extends Component
     {
         $file = File::find($fileId);
         if ($file && $file->path) {
-            if (!Storage::disk('s3')->exists($file->path)) {
-                $this->dispatch('toast', ['message' => 'Lỗi: File không tồn tại trên hệ thống lưu trữ.', 'type' => 'error']);
-                return;
+            try {
+                if (!Storage::disk('s3')->exists($file->path)) {
+                    $this->dispatch('toast', ['message' => 'Lỗi: File không tồn tại trên hệ thống lưu trữ.', 'type' => 'error']);
+                    return;
+                }
+
+                $url = Storage::disk('s3')->temporaryUrl(
+                    $file->path,
+                    now()->addMinutes(5),
+                    ['ResponseContentDisposition' => 'attachment; filename="' . $file->name . '"']
+                );
+                
+                return redirect()->to($url);
+            } catch (\Exception $e) {
+                \Log::error('Download error: ' . $e->getMessage());
+                $this->dispatch('toast', ['message' => 'Lỗi tải xuống: ' . $e->getMessage(), 'type' => 'error']);
             }
-            return Storage::disk('s3')->download($file->path, $file->name);
         }
     }
 
