@@ -237,150 +237,154 @@
                             </select>
                         </div>
 
-                        <div class="md:col-span-12 mt-2">
-                            <p
-                                class="text-sm text-blue-600 font-bold uppercase border-b-2 border-blue-100 pb-2 flex items-center gap-2">
-                                <i class="fa-solid fa-map-location-dot"></i> Thông tin vị trí
-                            </p>
-                        </div>
-
-                        <div class="md:col-span-3">
-                            <label
-                                class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Tỉnh/Thành</label>
-                            <select wire:model.live="province_id"
-                                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
-                                <option value="">Chọn tỉnh/thành</option>
-                                @foreach (\App\Livewire\RealEstateListing::PROVINCES as $id => $name)
-                                    <option value="{{ $id }}">{{ $name }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="md:col-span-3">
-                            <label
-                                class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Quận/Huyện</label>
-                            <select wire:model.live="district_id"
-                                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
-                                <option value="">-- Chọn --</option>
-                                @foreach ($districts as $id => $name)
-                                    <option value="{{ $id }}">{{ $name }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="md:col-span-3">
-                            <label
-                                class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Phường/Xã</label>
-                            <select wire:model.live="ward_id"
-                                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
-                                <option value="">-- Chọn --</option>
-                                @foreach ($wards as $id => $name)
-                                    <option value="{{ $id }}">{{ $name }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-
-                        <div class="md:col-span-3">
-                            <label class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Loại
-                                BĐS</label>
-                            <select wire:model="property_type"
-                                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
-                                <option value="0">Chọn loại nhà đất</option>
-                                <option value="110">Bất động sản khác</option>
-                                <option value="102">Biệt thự</option>
-                                <option value="103">Căn hộ – chung cư</option>
-                                <option value="104">Đất</option>
-                                <option value="105">Đất nền dự án</option>
-                                <option value="106">Mặt tiền</option>
-                                <option value="107">Nhà mặt phố</option>
-                                <option value="108">Nhà riêng</option>
-                                <option value="109">Trang trại</option>
-                            </select>
-                        </div>
-
-                        <div class="md:col-span-12">
-                            <label class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Địa
-                                chỉ chính xác</label>
-                            <div class="relative">
-                                <i
-                                    class="fa-solid fa-location-dot absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                                <input wire:model="address" type="text" placeholder="Số nhà, tên đường..."
-                                    class="w-full border border-gray-300 rounded-lg pl-9 pr-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none shadow-sm">
+                        @if ($type !== 'Cần mua')
+                            <div class="md:col-span-12 mt-2">
+                                <p
+                                    class="text-sm text-blue-600 font-bold uppercase border-b-2 border-blue-100 pb-2 flex items-center gap-2">
+                                    <i class="fa-solid fa-map-location-dot"></i> Thông tin vị trí
+                                </p>
                             </div>
-                        </div>
 
-                        <div class="md:col-span-12 mt-2">
-                            <p
-                                class="text-sm text-blue-600 font-bold uppercase border-b-2 border-blue-100 pb-2 flex items-center gap-2">
-                                <i class="fa-solid fa-house-chimney"></i> Đặc điểm bất động sản
-                            </p>
-                        </div>
+                            <div class="md:col-span-3">
+                                <label
+                                    class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Tỉnh/Thành</label>
+                                <select wire:model.live="province_id"
+                                    class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                                    <option value="">Chọn tỉnh/thành</option>
+                                    @foreach (\App\Livewire\RealEstateListing::PROVINCES as $id => $name)
+                                        <option value="{{ $id }}">{{ $name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="md:col-span-3">
+                                <label
+                                    class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Quận/Huyện</label>
+                                <select wire:model.live="district_id"
+                                    class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                                    <option value="">-- Chọn --</option>
+                                    @foreach ($districts as $id => $name)
+                                        <option value="{{ $id }}">{{ $name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="md:col-span-3">
+                                <label
+                                    class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Phường/Xã</label>
+                                <select wire:model.live="ward_id"
+                                    class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                                    <option value="">-- Chọn --</option>
+                                    @foreach ($wards as $id => $name)
+                                        <option value="{{ $id }}">{{ $name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
 
-                        <div class="md:col-span-4">
-                            <label class="block text-sm font-bold text-gray-700 mb-1">Diện tích (m²)</label>
-                            <input wire:model="area" type="number"
-                                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none font-bold text-gray-800">
-                        </div>
+                            <div class="md:col-span-3">
+                                <label
+                                    class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Loại
+                                    BĐS</label>
+                                <select wire:model="property_type"
+                                    class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                                    <option value="0">Chọn loại nhà đất</option>
+                                    <option value="110">Bất động sản khác</option>
+                                    <option value="102">Biệt thự</option>
+                                    <option value="103">Căn hộ – chung cư</option>
+                                    <option value="104">Đất</option>
+                                    <option value="105">Đất nền dự án</option>
+                                    <option value="106">Mặt tiền</option>
+                                    <option value="107">Nhà mặt phố</option>
+                                    <option value="108">Nhà riêng</option>
+                                    <option value="109">Trang trại</option>
+                                </select>
+                            </div>
 
-                        <div class="md:col-span-8 flex space-x-2">
-                            <div class="flex-1" x-data>
-                                <label class="block text-sm font-bold text-gray-700 mb-1">Mức giá</label>
-                                <input wire:model="price" type="text"
-                                    x-on:input="$el.value = $el.value.replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.')"
+                            <div class="md:col-span-12">
+                                <label
+                                    class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Địa
+                                    chỉ chính xác</label>
+                                <div class="relative">
+                                    <i
+                                        class="fa-solid fa-location-dot absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                                    <input wire:model="address" type="text" placeholder="Số nhà, tên đường..."
+                                        class="w-full border border-gray-300 rounded-lg pl-9 pr-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none shadow-sm">
+                                </div>
+                            </div>
+
+                            <div class="md:col-span-12 mt-2">
+                                <p
+                                    class="text-sm text-blue-600 font-bold uppercase border-b-2 border-blue-100 pb-2 flex items-center gap-2">
+                                    <i class="fa-solid fa-house-chimney"></i> Đặc điểm bất động sản
+                                </p>
+                            </div>
+
+                            <div class="md:col-span-4">
+                                <label class="block text-sm font-bold text-gray-700 mb-1">Diện tích (m²)</label>
+                                <input wire:model="area" type="number"
                                     class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none font-bold text-gray-800">
                             </div>
-                            <div class="w-1/3">
-                                <label class="block text-sm font-bold text-gray-700 mb-1">Đơn vị</label>
-                                <select wire:model="price_unit"
-                                    class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
-                                    <option value="0">Chọn đơn giá</option>
-                                    <option value="1">VNĐ</option>
-                                    <option value="2">VNĐ/tháng</option>
-                                    <option value="3">VNĐ/m2</option>
-                                </select>
-                            </div>
-                        </div>
 
-                        <div class="grid grid-cols-2 md:grid-cols-6 gap-4 md:col-span-12">
-                            <div>
-                                <label class="text-xs text-gray-500 uppercase font-semibold">Số tầng</label>
-                                <input wire:model="floors" type="number"
-                                    class="w-full border border-gray-300 rounded-lg px-2 py-2 text-center focus:ring-2 focus:ring-blue-500 outline-none mt-1">
+                            <div class="md:col-span-8 flex space-x-2">
+                                <div class="flex-1" x-data>
+                                    <label class="block text-sm font-bold text-gray-700 mb-1">Mức giá</label>
+                                    <input wire:model="price" type="text"
+                                        x-on:input="$el.value = $el.value.replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.')"
+                                        class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none font-bold text-gray-800">
+                                </div>
+                                <div class="w-1/3">
+                                    <label class="block text-sm font-bold text-gray-700 mb-1">Đơn vị</label>
+                                    <select wire:model="price_unit"
+                                        class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                                        <option value="0">Chọn đơn giá</option>
+                                        <option value="1">VNĐ</option>
+                                        <option value="2">VNĐ/tháng</option>
+                                        <option value="3">VNĐ/m2</option>
+                                    </select>
+                                </div>
                             </div>
-                            <div>
-                                <label class="text-xs text-gray-500 uppercase font-semibold">P.Ngủ</label>
-                                <input wire:model="bedrooms" type="number"
-                                    class="w-full border border-gray-300 rounded-lg px-2 py-2 text-center focus:ring-2 focus:ring-blue-500 outline-none mt-1">
+
+                            <div class="grid grid-cols-2 md:grid-cols-6 gap-4 md:col-span-12">
+                                <div>
+                                    <label class="text-xs text-gray-500 uppercase font-semibold">Số tầng</label>
+                                    <input wire:model="floors" type="number"
+                                        class="w-full border border-gray-300 rounded-lg px-2 py-2 text-center focus:ring-2 focus:ring-blue-500 outline-none mt-1">
+                                </div>
+                                <div>
+                                    <label class="text-xs text-gray-500 uppercase font-semibold">P.Ngủ</label>
+                                    <input wire:model="bedrooms" type="number"
+                                        class="w-full border border-gray-300 rounded-lg px-2 py-2 text-center focus:ring-2 focus:ring-blue-500 outline-none mt-1">
+                                </div>
+                                <div>
+                                    <label class="text-xs text-gray-500 uppercase font-semibold">Toilet</label>
+                                    <input wire:model="toilets" type="number"
+                                        class="w-full border border-gray-300 rounded-lg px-2 py-2 text-center focus:ring-2 focus:ring-blue-500 outline-none mt-1">
+                                </div>
+                                <div>
+                                    <label class="text-xs text-gray-500 uppercase font-semibold">Hướng</label>
+                                    <select wire:model="direction"
+                                        class="w-full border border-gray-300 rounded-lg px-1 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none mt-1">
+                                        <option value="0">Chọn hướng nhà</option>
+                                        <option value="1">Đông</option>
+                                        <option value="2">Tây</option>
+                                        <option value="3">Nam</option>
+                                        <option value="4">Bắc</option>
+                                        <option value="5">Đông bắc</option>
+                                        <option value="6">Đông nam</option>
+                                        <option value="7">Tây bắc</option>
+                                        <option value="8">Tây nam</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="text-xs text-gray-500 uppercase font-semibold">Mặt tiền (m)</label>
+                                    <input wire:model="front_width" type="number"
+                                        class="w-full border border-gray-300 rounded-lg px-2 py-2 text-center focus:ring-2 focus:ring-blue-500 outline-none mt-1">
+                                </div>
+                                <div>
+                                    <label class="text-xs text-gray-500 uppercase font-semibold">Lộ giới (m)</label>
+                                    <input wire:model="road_width" type="number"
+                                        class="w-full border border-gray-300 rounded-lg px-2 py-2 text-center focus:ring-2 focus:ring-blue-500 outline-none mt-1">
+                                </div>
                             </div>
-                            <div>
-                                <label class="text-xs text-gray-500 uppercase font-semibold">Toilet</label>
-                                <input wire:model="toilets" type="number"
-                                    class="w-full border border-gray-300 rounded-lg px-2 py-2 text-center focus:ring-2 focus:ring-blue-500 outline-none mt-1">
-                            </div>
-                            <div>
-                                <label class="text-xs text-gray-500 uppercase font-semibold">Hướng</label>
-                                <select wire:model="direction"
-                                    class="w-full border border-gray-300 rounded-lg px-1 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none mt-1">
-                                    <option value="0">Chọn hướng nhà</option>
-                                    <option value="1">Đông</option>
-                                    <option value="2">Tây</option>
-                                    <option value="3">Nam</option>
-                                    <option value="4">Bắc</option>
-                                    <option value="5">Đông bắc</option>
-                                    <option value="6">Đông nam</option>
-                                    <option value="7">Tây bắc</option>
-                                    <option value="8">Tây nam</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="text-xs text-gray-500 uppercase font-semibold">Mặt tiền (m)</label>
-                                <input wire:model="front_width" type="number"
-                                    class="w-full border border-gray-300 rounded-lg px-2 py-2 text-center focus:ring-2 focus:ring-blue-500 outline-none mt-1">
-                            </div>
-                            <div>
-                                <label class="text-xs text-gray-500 uppercase font-semibold">Lộ giới (m)</label>
-                                <input wire:model="road_width" type="number"
-                                    class="w-full border border-gray-300 rounded-lg px-2 py-2 text-center focus:ring-2 focus:ring-blue-500 outline-none mt-1">
-                            </div>
-                        </div>
+                        @endif
 
                         <div class="md:col-span-12">
                             <label class="block text-sm font-bold text-gray-700 mb-1">Mô tả chi tiết</label>

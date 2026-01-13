@@ -6,6 +6,7 @@ use Livewire\Component;
 use Livewire\WithPagination;
 use Livewire\WithFileUploads;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 use App\Models\RealEstateListing as ListingModel;
 
 class RealEstateListing extends Component
@@ -231,17 +232,36 @@ class RealEstateListing extends Component
         // Sanitize Price (remove dots)
         $this->price = str_replace('.', '', $this->price);
 
-        $this->validate([
+        $rules = [
             'title' => 'required',
-            'province_id' => 'required',
-            'price' => 'required|numeric',
-        ]);
+        ];
 
-        // Process images
+        if ($this->type !== 'Cần mua') {
+            $rules['province_id'] = 'required';
+            $rules['price'] = 'required|numeric';
+        }
+
+        $this->validate($rules);
+
+        // Process images with Media Sync
         if (count($this->tempImages) > 0) {
             foreach ($this->tempImages as $temp) {
-                $path = $temp->store('listings/' . date('Y/m'), 'public');
-                $this->images[] = Storage::url($path);
+                // Store on S3 (or configured disk)
+                $path = $temp->store('listings/' . date('Y/m'), 's3');
+                
+                // Create File Record for Media Manager
+                $file = \App\Models\File::create([
+                    'folder_id' => null, // Root folder or specific listing folder
+                    'name' => $temp->getClientOriginalName(),
+                    'path' => $path,
+                    'disk' => 's3',
+                    'mime_type' => $temp->getMimeType(),
+                    'size' => $temp->getSize(),
+                    'metadata' => ['source' => 'real_estate_quick_upload']
+                ]);
+
+                // Use the URL from the File model or generate it
+                $this->images[] = Storage::disk('s3')->url($path);
             }
             $this->tempImages = [];
         }
