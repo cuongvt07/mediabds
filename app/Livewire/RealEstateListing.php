@@ -383,8 +383,9 @@ class RealEstateListing extends Component
     public function editFromDetail()
     {
         if ($this->selectedListing) {
+            $listingId = $this->selectedListing['id'];
             $this->closeDetailPopup();
-            $this->editListing($this->selectedListing['id']);
+            $this->editListing($listingId);
         }
     }
 
