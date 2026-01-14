@@ -39,27 +39,28 @@
                 Bộ lọc
                 <i class="fa-solid fa-chevron-down transition-transform" :class="{ 'rotate-180': showFilters }"></i>
             </button>
-            @if ($filter_price_min || $filter_price_max || $filter_province || $filter_district)
-                <button
-                    wire:click="$set('filter_price_min', null); $set('filter_price_max', null); $set('filter_province', null); $set('filter_district', null);"
+            @if ($filter_price_min || $filter_price_max || $filter_province || $filter_district || $filter_ward)
+                <button wire:click="clearFilters"
                     class="text-xs text-red-500 hover:text-red-700 font-semibold flex items-center gap-1">
                     <i class="fa-solid fa-times-circle"></i> Xóa bộ lọc
                 </button>
             @endif
         </div>
 
-        <div x-show="showFilters" x-collapse class="grid grid-cols-1 md:grid-cols-4 gap-3">
+        <div x-show="showFilters" x-collapse class="grid grid-cols-1 md:grid-cols-5 gap-3">
             {{-- Price Min --}}
-            <div>
+            <div x-data>
                 <label class="text-xs font-semibold text-gray-500 uppercase mb-1 block">Giá từ</label>
-                <input wire:model.live.debounce.500ms="filter_price_min" type="text" placeholder="VD: 1000000"
+                <input wire:model.live.debounce.500ms="filter_price_min" type="text" placeholder="VD: 1.000.000"
+                    x-on:input="$el.value = $el.value.replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.')"
                     class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
             </div>
 
             {{-- Price Max --}}
-            <div>
+            <div x-data>
                 <label class="text-xs font-semibold text-gray-500 uppercase mb-1 block">Giá đến</label>
-                <input wire:model.live.debounce.500ms="filter_price_max" type="text" placeholder="VD: 5000000"
+                <input wire:model.live.debounce.500ms="filter_price_max" type="text" placeholder="VD: 5.000.000"
+                    x-on:input="$el.value = $el.value.replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.')"
                     class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
             </div>
 
@@ -82,7 +83,20 @@
                     class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
                     {{ empty($filter_province) ? 'disabled' : '' }}>
                     <option value="">Tất cả</option>
-                    @foreach ($districts as $id => $name)
+                    @foreach ($filter_districts as $id => $name)
+                        <option value="{{ $id }}">{{ $name }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            {{-- Ward Filter --}}
+            <div>
+                <label class="text-xs font-semibold text-gray-500 uppercase mb-1 block">Phường/Xã</label>
+                <select wire:model.live="filter_ward"
+                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                    {{ empty($filter_district) ? 'disabled' : '' }}>
+                    <option value="">Tất cả</option>
+                    @foreach ($filter_wards as $id => $name)
                         <option value="{{ $id }}">{{ $name }}</option>
                     @endforeach
                 </select>

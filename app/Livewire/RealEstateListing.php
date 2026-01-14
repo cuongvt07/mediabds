@@ -24,6 +24,9 @@ class RealEstateListing extends Component
     public $filter_price_max;
     public $filter_province;
     public $filter_district;
+    public $filter_ward;
+    public $filter_districts = [];
+    public $filter_wards = [];
 
     // Form Fields
     public $title;
@@ -191,6 +194,39 @@ class RealEstateListing extends Component
         }
     }
 
+    public function updatedFilterProvince($value)
+    {
+        $this->filter_districts = [];
+        $this->filter_wards = [];
+        $this->filter_district = null;
+        $this->filter_ward = null;
+
+        if ($value) {
+            $this->fetchFilterDistricts($value);
+        }
+    }
+
+    public function updatedFilterDistrict($value)
+    {
+        $this->filter_wards = [];
+        $this->filter_ward = null;
+
+        if ($value) {
+            $this->fetchFilterWards($value);
+        }
+    }
+
+    public function clearFilters()
+    {
+        $this->filter_price_min = null;
+        $this->filter_price_max = null;
+        $this->filter_province = null;
+        $this->filter_district = null;
+        $this->filter_ward = null;
+        $this->filter_districts = [];
+        $this->filter_wards = [];
+    }
+
     protected function fetchDistricts($provinceId)
     {
         try {
@@ -217,6 +253,38 @@ class RealEstateListing extends Component
 
             if ($response->successful()) {
                 $this->wards = $this->parseOptions($response->body());
+            }
+        } catch (\Exception $e) {
+            // 
+        }
+    }
+    
+    protected function fetchFilterDistricts($provinceId)
+    {
+        try {
+            $response = Http::get('https://phongphatland.com/wp-admin/admin-ajax.php', [
+                'province' => $provinceId,
+                'action' => 'willgroup_get_districts'
+            ]);
+            
+            if ($response->successful()) {
+                $this->filter_districts = $this->parseOptions($response->body());
+            }
+        } catch (\Exception $e) {
+            // Handle error silently or log
+        }
+    }
+
+    protected function fetchFilterWards($districtId)
+    {
+        try {
+            $response = Http::get('https://phongphatland.com/wp-admin/admin-ajax.php', [
+                'district' => $districtId,
+                'action' => 'willgroup_get_wards'
+            ]);
+
+            if ($response->successful()) {
+                $this->filter_wards = $this->parseOptions($response->body());
             }
         } catch (\Exception $e) {
             // 
@@ -461,6 +529,9 @@ class RealEstateListing extends Component
         }
         if (!empty($this->filter_district)) {
             $query->where('district_id', $this->filter_district);
+        }
+        if (!empty($this->filter_ward)) {
+            $query->where('ward_id', $this->filter_ward);
         }
 
         $listings = $query->paginate(12);
