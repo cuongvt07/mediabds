@@ -227,6 +227,26 @@ class RealEstateListing extends Component
         $this->filter_wards = [];
     }
 
+    public function loadFilterDistricts()
+    {
+        if ($this->filter_province) {
+            $this->filter_districts = [];
+            $this->filter_wards = [];
+            $this->filter_district = null;
+            $this->filter_ward = null;
+            $this->fetchFilterDistricts($this->filter_province);
+        }
+    }
+
+    public function loadFilterWards()
+    {
+        if ($this->filter_district) {
+            $this->filter_wards = [];
+            $this->filter_ward = null;
+            $this->fetchFilterWards($this->filter_district);
+        }
+    }
+
     protected function fetchDistricts($provinceId)
     {
         try {
