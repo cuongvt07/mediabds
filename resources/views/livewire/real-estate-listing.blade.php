@@ -67,7 +67,7 @@
             {{-- Province Filter --}}
             <div>
                 <label class="text-xs font-semibold text-gray-500 uppercase mb-1 block">Tỉnh/Thành</label>
-                <select wire:model.live="filter_province"
+                <select wire:model="filter_province" wire:change="updatedFilterProvince($event.target.value)"
                     class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
                     <option value="">Tất cả</option>
                     @foreach (\App\Livewire\RealEstateListing::PROVINCES as $id => $name)
@@ -79,7 +79,7 @@
             {{-- District Filter --}}
             <div>
                 <label class="text-xs font-semibold text-gray-500 uppercase mb-1 block">Quận/Huyện</label>
-                <select wire:model.live="filter_district"
+                <select wire:model="filter_district" wire:change="updatedFilterDistrict($event.target.value)"
                     class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
                     {{ empty($filter_province) ? 'disabled' : '' }}>
                     <option value="">Tất cả</option>
