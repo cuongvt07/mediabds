@@ -30,6 +30,66 @@
         </div>
     </div>
 
+    {{-- Filter Section --}}
+    <div class="bg-white border-b border-gray-200 px-4 md:px-6 py-3 shrink-0" x-data="{ showFilters: false }">
+        <div class="flex items-center justify-between mb-2">
+            <button @click="showFilters = !showFilters"
+                class="text-sm font-bold text-gray-700 flex items-center gap-2 hover:text-blue-600 transition-colors">
+                <i class="fa-solid fa-filter"></i>
+                Bộ lọc
+                <i class="fa-solid fa-chevron-down transition-transform" :class="{ 'rotate-180': showFilters }"></i>
+            </button>
+            @if ($filter_price_min || $filter_price_max || $filter_province || $filter_district)
+                <button
+                    wire:click="$set('filter_price_min', null); $set('filter_price_max', null); $set('filter_province', null); $set('filter_district', null);"
+                    class="text-xs text-red-500 hover:text-red-700 font-semibold flex items-center gap-1">
+                    <i class="fa-solid fa-times-circle"></i> Xóa bộ lọc
+                </button>
+            @endif
+        </div>
+
+        <div x-show="showFilters" x-collapse class="grid grid-cols-1 md:grid-cols-4 gap-3">
+            {{-- Price Min --}}
+            <div>
+                <label class="text-xs font-semibold text-gray-500 uppercase mb-1 block">Giá từ</label>
+                <input wire:model.live.debounce.500ms="filter_price_min" type="text" placeholder="VD: 1000000"
+                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+            </div>
+
+            {{-- Price Max --}}
+            <div>
+                <label class="text-xs font-semibold text-gray-500 uppercase mb-1 block">Giá đến</label>
+                <input wire:model.live.debounce.500ms="filter_price_max" type="text" placeholder="VD: 5000000"
+                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+            </div>
+
+            {{-- Province Filter --}}
+            <div>
+                <label class="text-xs font-semibold text-gray-500 uppercase mb-1 block">Tỉnh/Thành</label>
+                <select wire:model.live="filter_province"
+                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                    <option value="">Tất cả</option>
+                    @foreach (\App\Livewire\RealEstateListing::PROVINCES as $id => $name)
+                        <option value="{{ $id }}">{{ $name }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            {{-- District Filter --}}
+            <div>
+                <label class="text-xs font-semibold text-gray-500 uppercase mb-1 block">Quận/Huyện</label>
+                <select wire:model.live="filter_district"
+                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                    {{ empty($filter_province) ? 'disabled' : '' }}>
+                    <option value="">Tất cả</option>
+                    @foreach ($districts as $id => $name)
+                        <option value="{{ $id }}">{{ $name }}</option>
+                    @endforeach
+                </select>
+            </div>
+        </div>
+    </div>
+
     <!-- Main Content: Scrollable Grid -->
     <div class="flex-1 overflow-y-auto p-3">
         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-6">
@@ -235,6 +295,23 @@
                                 <option>Cho thuê</option>
                                 <option>Cần mua</option>
                             </select>
+                        </div>
+
+                        <div class="md:col-span-6">
+                            <label class="block text-sm font-bold text-gray-700 mb-1">Liên hệ</label>
+                            <select wire:model="contact_type"
+                                class="w-full border border-gray-300 rounded-lg px-4 py-2.5 bg-white focus:ring-2 focus:ring-blue-500 outline-none shadow-sm">
+                                <option value="">Chọn loại liên hệ</option>
+                                <option value="Chủ">Chủ</option>
+                                <option value="Môi giới">Môi giới</option>
+                            </select>
+                        </div>
+
+                        <div class="md:col-span-6">
+                            <label class="block text-sm font-bold text-gray-700 mb-1">Mật khẩu nhà</label>
+                            <input wire:model="house_password" type="text"
+                                placeholder="Nhập mật khẩu nhà (số và chữ)"
+                                class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow shadow-sm">
                         </div>
 
                         @if ($type !== 'Cần mua')
@@ -573,6 +650,12 @@
                                 class="inline-block bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
                                 {{ $selectedListing['type'] }}
                             </span>
+                            @if ($selectedListing['contact_type'])
+                                <span
+                                    class="inline-block {{ $selectedListing['contact_type'] == 'Chủ' ? 'bg-green-600' : 'bg-orange-600' }} text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider ml-2">
+                                    {{ $selectedListing['contact_type'] }}
+                                </span>
+                            @endif
                         </div>
 
                         {{-- Location --}}
@@ -660,6 +743,14 @@
                                             Lộ giới:</span>
                                         <span
                                             class="font-bold text-gray-800">{{ floatval($selectedListing['road_width']) }}m</span>
+                                    </div>
+                                @endif
+                                @if ($selectedListing['house_password'])
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-gray-500 font-semibold"><i class="fa-solid fa-key"></i>
+                                            Mật khẩu nhà:</span>
+                                        <span
+                                            class="font-bold text-gray-800">{{ $selectedListing['house_password'] }}</span>
                                     </div>
                                 @endif
                             </div>
