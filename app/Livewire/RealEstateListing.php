@@ -16,6 +16,8 @@ class RealEstateListing extends Component
     public $search = '';
     public $showCreatePopup = false;
     public $showMediaPopup = false;
+    public $showDetailPopup = false;
+    public $selectedListing = null;
 
     // Form Fields
     public $title;
@@ -361,6 +363,29 @@ class RealEstateListing extends Component
         $this->images = $listing->images ?? [];
 
         $this->showCreatePopup = true;
+    }
+
+    public function viewListingDetail($id)
+    {
+        $listing = ListingModel::find($id);
+        if (!$listing) return;
+
+        $this->selectedListing = $listing->toArray();
+        $this->showDetailPopup = true;
+    }
+
+    public function closeDetailPopup()
+    {
+        $this->showDetailPopup = false;
+        $this->selectedListing = null;
+    }
+
+    public function editFromDetail()
+    {
+        if ($this->selectedListing) {
+            $this->closeDetailPopup();
+            $this->editListing($this->selectedListing['id']);
+        }
     }
 
     public function openCreatePopup()

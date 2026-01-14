@@ -42,7 +42,7 @@
 
             @foreach ($listings as $listing)
                 <div wire:key="{{ $listing['id'] }}-{{ $listing['updated_at'] }}"
-                    wire:click="editListing({{ $listing['id'] }})"
+                    wire:click="viewListingDetail({{ $listing['id'] }})"
                     class="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow border border-gray-100 overflow-hidden flex flex-col md:flex-row h-auto md:h-48 group cursor-pointer relative">
                     <!-- Image Slider -->
                     <div class="w-full h-48 md:w-[30%] md:h-full bg-gray-200 relative overflow-hidden group/slider shrink-0"
@@ -510,6 +510,197 @@
                 <div class="flex-1 overflow-hidden">
                     @livewire('file-manager', ['isModeSelect' => true])
                 </div>
+            </div>
+        </div>
+    @endif
+
+    {{-- Detail View Popup --}}
+    @if ($showDetailPopup && $selectedListing)
+        <div class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-2 md:p-4"
+            x-transition.opacity>
+            <div
+                class="bg-white w-full max-w-4xl rounded-2xl shadow-2xl flex flex-col max-h-[95vh] animate-[scaleIn_0.2s_ease-out] overflow-hidden">
+
+                {{-- Header --}}
+                <div
+                    class="flex justify-between items-center px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50 shrink-0">
+                    <h2 class="text-xl font-black text-gray-800 flex items-center gap-2">
+                        <span class="bg-blue-600 text-white p-2 rounded-lg"><i
+                                class="fa-solid fa-house-circle-check"></i></span>
+                        Chi Tiết Tin Đăng
+                    </h2>
+                    <button wire:click="closeDetailPopup"
+                        class="text-gray-400 hover:text-red-500 transition-colors w-8 h-8 flex items-center justify-center rounded-full hover:bg-red-50">
+                        <i class="fa-solid fa-times fa-lg"></i>
+                    </button>
+                </div>
+
+                {{-- Content --}}
+                <div class="flex-1 overflow-y-auto p-6 custom-scrollbar">
+                    {{-- Image Gallery --}}
+                    <div class="mb-6" x-data="{
+                        mainImage: {{ \Illuminate\Support\Js::from(!empty($selectedListing['images']) && count($selectedListing['images']) > 0 ? $selectedListing['images'][0] : 'https://placehold.co/800x600?text=No+Image') }},
+                        images: {{ \Illuminate\Support\Js::from(!empty($selectedListing['images']) ? $selectedListing['images'] : ['https://placehold.co/800x600?text=No+Image']) }},
+                        swapImage(newImage, index) {
+                            const oldMain = this.mainImage;
+                            this.mainImage = newImage;
+                            this.images[index] = oldMain;
+                        }
+                    }">
+                        {{-- Main Image --}}
+                        <div class="w-full aspect-video bg-gray-200 rounded-xl overflow-hidden mb-4 shadow-lg">
+                            <img :src="mainImage" class="w-full h-full object-cover"
+                                alt="{{ $selectedListing['title'] }}">
+                        </div>
+
+                        {{-- Thumbnails --}}
+                        <div class="flex gap-3 overflow-x-auto pb-2">
+                            <template x-for="(img, index) in images" :key="index">
+                                <div @click="swapImage(img, index)"
+                                    class="w-24 h-24 bg-gray-200 rounded-lg overflow-hidden cursor-pointer hover:ring-4 hover:ring-blue-400 transition-all shrink-0 shadow-md hover:shadow-xl">
+                                    <img :src="img" class="w-full h-full object-cover">
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
+                    {{-- Listing Information --}}
+                    <div class="space-y-4">
+                        {{-- Title --}}
+                        <div>
+                            <h3 class="text-2xl font-black text-gray-800 mb-2">{{ $selectedListing['title'] }}</h3>
+                            <span
+                                class="inline-block bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
+                                {{ $selectedListing['type'] }}
+                            </span>
+                        </div>
+
+                        {{-- Location --}}
+                        <div class="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                            <p class="text-gray-700 font-semibold flex items-center gap-2 mb-1">
+                                <i class="fa-solid fa-location-dot text-red-500"></i>
+                                {{ $selectedListing['address'] }}
+                            </p>
+                            <p class="text-gray-500 text-sm pl-6">
+                                {{ implode(', ', array_filter([$selectedListing['ward_name'], $selectedListing['district_name'], $selectedListing['province_name']])) }}
+                            </p>
+                        </div>
+
+                        {{-- Price & Area --}}
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="bg-gradient-to-br from-red-50 to-pink-50 rounded-xl p-4 border border-red-200">
+                                <p class="text-xs text-gray-500 uppercase font-semibold mb-1">Giá</p>
+                                <p class="text-2xl font-black text-red-600">
+                                    {{ number_format($selectedListing['price'], 0, ',', '.') }}
+                                    {{ $selectedListing['price_unit'] == 1 ? 'VNĐ' : ($selectedListing['price_unit'] == 2 ? 'VNĐ/tháng' : 'VNĐ/m2') }}
+                                </p>
+                            </div>
+                            <div
+                                class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-200">
+                                <p class="text-xs text-gray-500 uppercase font-semibold mb-1">Diện tích</p>
+                                <p class="text-2xl font-black text-blue-600">{{ floatval($selectedListing['area']) }}
+                                    m²</p>
+                            </div>
+                        </div>
+
+                        {{-- Property Details --}}
+                        <div class="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                            <h4 class="text-sm font-bold text-gray-700 uppercase mb-3 flex items-center gap-2">
+                                <i class="fa-solid fa-house-chimney text-blue-600"></i>
+                                Thông tin chi tiết
+                            </h4>
+                            <div class="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-gray-500 font-semibold">Loại BĐS:</span>
+                                    <span
+                                        class="font-bold text-gray-800">{{ \App\Livewire\RealEstateListing::PROPERTY_TYPES[$selectedListing['property_type']] ?? 'Khác' }}</span>
+                                </div>
+                                @if ($selectedListing['floors'])
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-gray-500 font-semibold"><i
+                                                class="fa-solid fa-layer-group"></i> Tầng:</span>
+                                        <span class="font-bold text-gray-800">{{ $selectedListing['floors'] }}</span>
+                                    </div>
+                                @endif
+                                @if ($selectedListing['bedrooms'])
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-gray-500 font-semibold"><i class="fa-solid fa-bed"></i>
+                                            Phòng ngủ:</span>
+                                        <span
+                                            class="font-bold text-gray-800">{{ $selectedListing['bedrooms'] }}</span>
+                                    </div>
+                                @endif
+                                @if ($selectedListing['toilets'])
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-gray-500 font-semibold"><i class="fa-solid fa-bath"></i>
+                                            Toilet:</span>
+                                        <span class="font-bold text-gray-800">{{ $selectedListing['toilets'] }}</span>
+                                    </div>
+                                @endif
+                                @if ($selectedListing['direction'])
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-gray-500 font-semibold"><i
+                                                class="fa-regular fa-compass"></i>
+                                            Hướng:</span>
+                                        <span
+                                            class="font-bold text-gray-800">{{ \App\Livewire\RealEstateListing::DIRECTIONS[$selectedListing['direction']] ?? $selectedListing['direction'] }}</span>
+                                    </div>
+                                @endif
+                                @if ($selectedListing['front_width'])
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-gray-500 font-semibold"><i
+                                                class="fa-solid fa-ruler-horizontal"></i> Mặt tiền:</span>
+                                        <span
+                                            class="font-bold text-gray-800">{{ floatval($selectedListing['front_width']) }}m</span>
+                                    </div>
+                                @endif
+                                @if ($selectedListing['road_width'])
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-gray-500 font-semibold"><i class="fa-solid fa-road"></i>
+                                            Lộ giới:</span>
+                                        <span
+                                            class="font-bold text-gray-800">{{ floatval($selectedListing['road_width']) }}m</span>
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+
+                        {{-- Description --}}
+                        @if ($selectedListing['description'])
+                            <div class="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                                <h4 class="text-sm font-bold text-gray-700 uppercase mb-2 flex items-center gap-2">
+                                    <i class="fa-solid fa-align-left text-blue-600"></i>
+                                    Mô tả
+                                </h4>
+                                <p class="text-gray-700 text-sm leading-relaxed whitespace-pre-line">
+                                    {{ $selectedListing['description'] }}</p>
+                            </div>
+                        @endif
+                    </div>
+                </div>
+
+                {{-- Footer Actions --}}
+                <div class="p-4 border-t border-gray-200 flex justify-end gap-3 bg-gray-50 shrink-0"
+                    x-data="{ copied: false }">
+                    <button
+                        @click="
+                            const text = `🏠 {{ $selectedListing['title'] }} \n📍 Vị trí: {{ implode(', ', array_filter([$selectedListing['address'], $selectedListing['ward_name'], $selectedListing['district_name'], $selectedListing['province_name']])) }} \n💰 Giá: {{ number_format($selectedListing['price'], 0, ',', '.') }} {{ $selectedListing['price_unit'] == 1 ? 'VNĐ' : ($selectedListing['price_unit'] == 2 ? 'VNĐ/tháng' : 'VNĐ/m2') }} \n📐 Diện tích: {{ floatval($selectedListing['area']) }} m² \n------------------ \n📋 Thông tin chi tiết: \n- Tầng: {{ $selectedListing['floors'] ?? 0 }} \n- Phòng ngủ: {{ $selectedListing['bedrooms'] ?? 0 }} \n- Toilet: {{ $selectedListing['toilets'] ?? 0 }} \n- Hướng: {{ \App\Livewire\RealEstateListing::DIRECTIONS[$selectedListing['direction']] ?? 'N/A' }} \n- Mặt tiền: {{ floatval($selectedListing['front_width']) }}m \n- Lộ giới: {{ floatval($selectedListing['road_width']) }}m \n------------------ \n📝 Mô tả: \n{{ $selectedListing['description'] }}`;
+                            navigator.clipboard.writeText(text);
+                            copied = true;
+                            setTimeout(() => copied = false, 2000);
+                        "
+                        class="px-5 py-2.5 rounded-xl bg-green-600 hover:bg-green-700 text-white font-bold transition-all flex items-center gap-2 shadow-lg">
+                        <i class="fa-regular fa-copy" x-show="!copied"></i>
+                        <i class="fa-solid fa-check" x-show="copied" style="display: none;"></i>
+                        <span x-text="copied ? 'Đã Copy!' : 'Copy Thông Tin'"></span>
+                    </button>
+                    <button wire:click="editFromDetail"
+                        class="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold transition-all flex items-center gap-2 shadow-lg">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                        Chỉnh Sửa
+                    </button>
+                </div>
+
             </div>
         </div>
     @endif
