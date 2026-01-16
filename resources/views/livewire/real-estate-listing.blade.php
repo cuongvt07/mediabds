@@ -151,43 +151,11 @@
                 <div wire:key="{{ $listing['id'] }}-{{ $listing['updated_at'] }}"
                     wire:click="viewListingDetail({{ $listing['id'] }})"
                     class="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow border border-gray-100 overflow-hidden flex flex-col md:flex-row h-auto md:h-48 group cursor-pointer relative">
-                    <!-- Image Slider -->
-                    <div class="w-full h-48 md:w-[30%] md:h-full bg-gray-200 relative overflow-hidden group/slider shrink-0"
-                        x-data="{
-                            activeSlide: 0,
-                            images: {{ \Illuminate\Support\Js::from(!empty($listing['images']) ? $listing['images'] : ['https://placehold.co/600x400?text=No+Image']) }},
-                            loaded: [0],
-                            init() {
-                                this.$watch('activeSlide', value => {
-                                    if (!this.loaded.includes(value)) this.loaded.push(value);
-                                    // Preload next image logic if desired
-                                })
-                            }
-                        }">
-                        <!-- Slides -->
-                        <template x-for="(img, index) in images" :key="index">
-                            <img :src="loaded.includes(index) ? img : ''"
-                                class="absolute inset-0 w-full h-full object-cover transition-transform duration-500"
-                                x-show="activeSlide === index" x-transition:enter="transition ease-out duration-300"
-                                x-transition:enter-start="opacity-0 scale-105"
-                                x-transition:enter-end="opacity-100 scale-100"
-                                x-transition:leave="transition ease-in duration-300"
-                                x-transition:leave-start="opacity-100 scale-100"
-                                x-transition:leave-end="opacity-0 scale-95">
-                        </template>
-
-                        <!-- Navigation Buttons (Visible on hover) -->
-                        <div
-                            class="absolute inset-0 flex items-center justify-between px-2 opacity-0 group-hover/slider:opacity-100 transition-opacity z-10">
-                            <button @click.stop="activeSlide = activeSlide === 0 ? images.length - 1 : activeSlide - 1"
-                                class="w-6 h-6 rounded-full bg-black/40 text-white flex items-center justify-center hover:bg-black/60 transition-colors">
-                                <i class="fa-solid fa-chevron-left text-[10px]"></i>
-                            </button>
-                            <button @click.stop="activeSlide = activeSlide === images.length - 1 ? 0 : activeSlide + 1"
-                                class="w-6 h-6 rounded-full bg-black/40 text-white flex items-center justify-center hover:bg-black/60 transition-colors">
-                                <i class="fa-solid fa-chevron-right text-[10px]"></i>
-                            </button>
-                        </div>
+                    <!-- Image (First Only) -->
+                    <div class="w-full h-48 md:w-[30%] md:h-full bg-gray-200 relative overflow-hidden shrink-0 group">
+                        <img src="{{ !empty($listing['images']) && count($listing['images']) > 0 ? $listing['images'][0] : 'https://placehold.co/600x400?text=No+Image' }}"
+                            class="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                            loading="lazy" alt="{{ $listing['title'] }}">
 
                         <!-- Type Badge -->
                         <div
@@ -196,10 +164,12 @@
                         </div>
 
                         <!-- Image Count Badge (Bottom Left) -->
-                        <div
-                            class="absolute bottom-2 left-2 bg-black/60 text-white text-xs px-2 py-1 rounded backdrop-blur-sm z-10 flex items-center gap-1">
-                            <i class="fa-solid fa-camera"></i> <span x-text="images.length"></span>
-                        </div>
+                        @if (!empty($listing['images']) && count($listing['images']) > 1)
+                            <div
+                                class="absolute bottom-2 left-2 bg-black/60 text-white text-xs px-2 py-1 rounded backdrop-blur-sm z-10 flex items-center gap-1">
+                                <i class="fa-solid fa-camera"></i> <span>{{ count($listing['images']) }}</span>
+                            </div>
+                        @endif
                     </div>
 
                     <!-- Info -->
@@ -848,9 +818,9 @@
                                     <i class="fa-solid fa-align-left text-blue-600"></i>
                                     Mô tả
                                 </h4>
-                                <p class="text-gray-700 text-sm leading-relaxed whitespace-pre-line break-words">
-                                    {{ $selectedListing['description'] }}
-                                </p>
+                                <div class="text-gray-700 text-sm leading-relaxed break-words">
+                                    {!! nl2br(e($selectedListing['description'])) !!}
+                                </div>
                             </div>
                         @endif
                     </div>
