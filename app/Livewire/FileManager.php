@@ -382,19 +382,21 @@ class FileManager extends Component
 
             
             $storagePath = '';
+            
+            // ===== UNIQUE FILENAME TO PREVENT OVERWRITES =====
+            $filenameOnly = pathinfo($originalName, PATHINFO_FILENAME);
+            $extension = pathinfo($originalName, PATHINFO_EXTENSION);
+            $safeFilename = preg_replace('/[^a-zA-Z0-9._-]/', '_', $filenameOnly);
+            $uniqueSuffix = time() . '_' . substr(uniqid(), -4);
+            $uniqueFilename = $safeFilename . '_' . $uniqueSuffix . '.' . $extension;
+            
             if ($folderId) {
                 $folder = Folder::find($folderId);
-                // EXACT STRUCTURE: Use the folder's path
-                if ($folder) $storagePath = $folder->path . '/' . $originalName;
+                if ($folder) $storagePath = $folder->path . '/' . $uniqueFilename;
             } else {
-                 // Root upload: Use Date-based structure or just Root?
-                 // User said "Right structure". If root, maybe just root?
-                 // But let's keep date structure for Root to avoid clutter, 
-                 // UNLESS user considers "Root" as a folder itself.
-                 // Let's use date for root to prevent million files in bucket root.
                  $baseYear = date('Y');
                  $currentMonth = date('m');
-                 $storagePath = "{$baseYear}/{$currentMonth}/{$originalName}";
+                 $storagePath = "{$baseYear}/{$currentMonth}/{$uniqueFilename}";
             }
             
             // Note: putFileAs automatically prepends bucket if not careful, but here we provide 'path'

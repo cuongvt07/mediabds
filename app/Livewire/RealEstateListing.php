@@ -350,12 +350,17 @@ class RealEstateListing extends Component
         // Process images with Media Sync
         if (count($this->tempImages) > 0) {
             foreach ($this->tempImages as $temp) {
-                // Store on S3 (or configured disk) with Original Name and Public Visibility
-                $filename = $temp->getClientOriginalName();
-                // Basic sanitization
-                $filename = preg_replace('/[^a-zA-Z0-9._-]/', '_', $filename);
+                // ===== UNIQUE FILENAME TO PREVENT OVERWRITES =====
+                $originalName = $temp->getClientOriginalName();
+                $filenameOnly = pathinfo($originalName, PATHINFO_FILENAME);
+                $extension = $temp->getClientOriginalExtension();
                 
-                // Match Media Manager structure: YYYY/MM/Filename
+                // Sanitize + Add unique suffix (timestamp + random)
+                $safeFilename = preg_replace('/[^a-zA-Z0-9._-]/', '_', $filenameOnly);
+                $uniqueSuffix = time() . '_' . substr(uniqid(), -4);
+                $filename = $safeFilename . '_' . $uniqueSuffix . '.' . $extension;
+                
+                // Match Media Manager structure: YYYY/MM/UniqueFilename
                 $path = $temp->storeAs(date('Y/m'), $filename, ['disk' => 's3', 'visibility' => 'public']);
                 
                 $publicUrl = config('filesystems.disks.s3.endpoint') . '/' . config('filesystems.disks.s3.bucket') . '/' . $path;
