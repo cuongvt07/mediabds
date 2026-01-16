@@ -32,7 +32,7 @@
             <div class="flex justify-between items-center h-16">
                 <!-- Branding -->
                 <div class="flex items-center gap-3">
-                    <img src="https://s3-hcm5-r1.longvan.net/phongland/2025/12/logo.png" alt="Logo"
+                    <img src="https://s3-hcm5-r1.longvan.net/phongland/2026/01/d13bf59afd35726b2b24.jpg" alt="Logo"
                         class="h-10 w-auto object-contain">
                     <div>
                         <h1 class="text-lg font-bold text-slate-800 tracking-tight leading-none">PHONGPHATLAND</h1>

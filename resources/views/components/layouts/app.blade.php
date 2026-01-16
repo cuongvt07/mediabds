@@ -40,7 +40,7 @@
             <!-- Brand -->
             <div
                 class="w-10 h-10 mb-8 cursor-pointer hover:bg-slate-800 rounded-xl flex items-center justify-center transition-colors">
-                <img src="https://s3-hcm5-r1.longvan.net/phongland/2025/12/logo.png" alt="Logo"
+                <img src="https://s3-hcm5-r1.longvan.net/phongland/2026/01/d13bf59afd35726b2b24.jpg" alt="Logo"
                     class="w-full h-full object-contain">
             </div>
 
