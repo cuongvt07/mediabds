@@ -422,12 +422,19 @@ class RealEstateListing extends Component
         }
 
         $this->dispatch('toast', ['message' => $message, 'type' => 'success']);
+        
+        // Refresh Cache
+        $this->refreshCacheVersion();
+        
         $this->closeCreatePopup();
         $this->resetPage(); 
     }
 
     public function editListing($id)
     {
+        // Clear cache to ensure we edit fresh data? No, finding by ID is direct query usually not cached in this component context (we cached the list query).
+        // But if we return to list, list might be stale.
+        // It's fine.
         $listing = ListingModel::find($id);
         if (!$listing) return;
 
@@ -522,53 +529,84 @@ class RealEstateListing extends Component
         $listing = ListingModel::find($id);
         if ($listing) {
             $listing->delete();
+            $this->refreshCacheVersion(); // Refresh cache on delete
             $this->dispatch('toast', ['message' => 'Đã xóa tin đăng!', 'type' => 'success']);
         }
     }
 
 
 
+    protected function getCacheVersion()
+    {
+        return \Illuminate\Support\Facades\Cache::get('listings_version', time());
+    }
+
+    protected function refreshCacheVersion()
+    {
+        \Illuminate\Support\Facades\Cache::put('listings_version', time(), now()->addDays(1));
+    }
+
     public function render()
     {
-        $query = ListingModel::latest();
+        // Generate Cache Key based on filters, page, AND data version
+        $filters = [
+            'search' => $this->search,
+            'price_min' => $this->filter_price_min,
+            'price_max' => $this->filter_price_max,
+            'province' => $this->filter_province,
+            'district' => $this->filter_district,
+            'ward' => $this->filter_ward,
+            'property_type' => $this->filter_property_type,
+            'type' => $this->filter_type,
+            'page' => $this->getPage(),
+            'version' => $this->getCacheVersion(), // Include version in key
+        ];
 
-        if (!empty($this->search)) {
-            $query->where(function($q) {
-                $q->where('title', 'like', '%' . $this->search . '%')
-                  ->orWhere('address', 'like', '%' . $this->search . '%')
-                  ->orWhere('province_name', 'like', '%' . $this->search . '%')
-                  ->orWhere('district_name', 'like', '%' . $this->search . '%')
-                  ->orWhere('ward_name', 'like', '%' . $this->search . '%')
-                  ->orWhere('description', 'like', '%' . $this->search . '%');
-            });
-        }
+        // Serialize filters to create a unique key
+        $cacheKey = 'listings_' . md5(json_encode($filters));
 
-        // Price Filters
-        if (!empty($this->filter_price_min)) {
-            $query->where('price', '>=', str_replace('.', '', $this->filter_price_min));
-        }
-        if (!empty($this->filter_price_max)) {
-            $query->where('price', '<=', str_replace('.', '', $this->filter_price_max));
-        }
+        // Cache for 60 seconds (so even if version doesn't change, we still refresh occasionally)
+        $listings = \Illuminate\Support\Facades\Cache::remember($cacheKey, 60, function () {
+            $query = ListingModel::latest();
 
-        // Location Filters
-        if (!empty($this->filter_province)) {
-            $query->where('province_id', $this->filter_province);
-        }
-        if (!empty($this->filter_district)) {
-            $query->where('district_id', $this->filter_district);
-        }
-        if (!empty($this->filter_ward)) {
-            $query->where('ward_id', $this->filter_ward);
-        }
-        if (!empty($this->filter_property_type)) {
-            $query->where('property_type', $this->filter_property_type);
-        }
-        if (!empty($this->filter_type)) {
-            $query->where('type', $this->filter_type);
-        }
+            if (!empty($this->search)) {
+                $query->where(function($q) {
+                    $q->where('title', 'like', '%' . $this->search . '%')
+                      ->orWhere('address', 'like', '%' . $this->search . '%')
+                      ->orWhere('province_name', 'like', '%' . $this->search . '%')
+                      ->orWhere('district_name', 'like', '%' . $this->search . '%')
+                      ->orWhere('ward_name', 'like', '%' . $this->search . '%')
+                      ->orWhere('description', 'like', '%' . $this->search . '%');
+                });
+            }
 
-        $listings = $query->paginate(12);
+            // Price Filters
+            if (!empty($this->filter_price_min)) {
+                $query->where('price', '>=', str_replace('.', '', $this->filter_price_min));
+            }
+            if (!empty($this->filter_price_max)) {
+                $query->where('price', '<=', str_replace('.', '', $this->filter_price_max));
+            }
+
+            // Location Filters
+            if (!empty($this->filter_province)) {
+                $query->where('province_id', $this->filter_province);
+            }
+            if (!empty($this->filter_district)) {
+                $query->where('district_id', $this->filter_district);
+            }
+            if (!empty($this->filter_ward)) {
+                $query->where('ward_id', $this->filter_ward);
+            }
+            if (!empty($this->filter_property_type)) {
+                $query->where('property_type', $this->filter_property_type);
+            }
+            if (!empty($this->filter_type)) {
+                $query->where('type', $this->filter_type);
+            }
+
+            return $query->paginate(12);
+        });
 
         return view('livewire.real-estate-listing', [
             'listings' => $listings
