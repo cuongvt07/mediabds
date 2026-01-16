@@ -368,7 +368,7 @@ class RealEstateListing extends Component
                 // Create File Record for Media Manager
                 $file = \App\Models\File::create([
                     'folder_id' => null, // Root folder or specific listing folder
-                    'name' => $temp->getClientOriginalName(),
+                    'name' => $filename, // Store UNIQUE filename (not original)
                     'path' => $path,
                     'disk' => 's3',
                     'mime_type' => $temp->getMimeType(),
