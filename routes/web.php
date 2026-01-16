@@ -15,7 +15,9 @@ Route::get('/', function() {
 });
 
 Route::get('/media', FileManager::class)->middleware('auth')->name('media');
+Route::get('/media', FileManager::class)->middleware('auth')->name('media');
 Route::get('/listings', RealEstateListing::class)->middleware('auth')->name('listings');
+Route::get('/accounts', \App\Livewire\AccountManagement::class)->middleware('auth')->name('accounts');
 
 Route::get('/test-s3', function () {
     try {

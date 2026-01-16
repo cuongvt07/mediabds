@@ -25,6 +25,7 @@ class RealEstateListing extends Component
     public $filter_province;
     public $filter_district;
     public $filter_ward;
+    public $filter_property_type;
     public $filter_districts = [];
     public $filter_wards = [];
 
@@ -32,6 +33,7 @@ class RealEstateListing extends Component
     public $title;
     public $type = 'Cần bán';
     public $contact_type; // Chủ or Môi giới
+    public $contact_phone;
     public $house_password; // Alphanumeric password
     public $province_id;
     public $district_id;
@@ -103,7 +105,8 @@ class RealEstateListing extends Component
 
     public function mount()
     {
-        // 
+        $this->filter_province = 52; // Default to Binh Dinh
+        $this->loadFilterDistricts();
     }
 
     const PROVINCES = [
@@ -223,6 +226,7 @@ class RealEstateListing extends Component
         $this->filter_province = null;
         $this->filter_district = null;
         $this->filter_ward = null;
+        $this->filter_property_type = null;
         $this->filter_districts = [];
         $this->filter_wards = [];
     }
@@ -379,6 +383,7 @@ class RealEstateListing extends Component
             'title' => $this->title,
             'type' => $this->type,
             'contact_type' => $this->contact_type,
+            'contact_phone' => $this->contact_phone,
             'house_password' => $this->house_password,
             'property_type' => $this->property_type,
             'province_id' => $this->province_id,
@@ -429,6 +434,7 @@ class RealEstateListing extends Component
         $this->title = $listing->title;
         $this->type = $listing->type;
         $this->contact_type = $listing->contact_type;
+        $this->contact_phone = $listing->contact_phone;
         $this->house_password = $listing->house_password;
         $this->property_type = $listing->property_type;
         $this->province_id = $listing->province_id;
@@ -504,7 +510,7 @@ class RealEstateListing extends Component
     public function resetForm()
     {
         $this->selectedListingId = null;
-        $this->reset(['title', 'type', 'contact_type', 'house_password', 'address', 'area', 'price', 'description', 'floors', 'bedrooms', 'toilets', 'direction', 'front_width', 'road_width', 'youtube_link', 'images', 'province_id', 'district_id', 'ward_id', 'tempImages']);
+        $this->reset(['title', 'type', 'contact_type', 'contact_phone', 'house_password', 'address', 'area', 'price', 'description', 'floors', 'bedrooms', 'toilets', 'direction', 'front_width', 'road_width', 'youtube_link', 'images', 'province_id', 'district_id', 'ward_id', 'tempImages']);
         $this->districts = [];
         $this->wards = [];
     }
@@ -552,6 +558,9 @@ class RealEstateListing extends Component
         }
         if (!empty($this->filter_ward)) {
             $query->where('ward_id', $this->filter_ward);
+        }
+        if (!empty($this->filter_property_type)) {
+            $query->where('property_type', $this->filter_property_type);
         }
 
         $listings = $query->paginate(12);

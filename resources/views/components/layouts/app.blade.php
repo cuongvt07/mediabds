@@ -37,14 +37,16 @@
         <!-- Global Sidebar (Level 1) -->
         <aside class="bg-slate-900 w-20 flex flex-col items-center py-6 shrink-0 z-50">
             <!-- Brand -->
+            <!-- Brand -->
             <div
-                class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-blue-900/50 mb-8 cursor-pointer hover:bg-blue-500 transition-colors">
-                <span class="transform -rotate-12">🏠</span>
+                class="w-10 h-10 mb-8 cursor-pointer hover:bg-slate-800 rounded-xl flex items-center justify-center transition-colors">
+                <img src="https://s3-hcm5-r1.longvan.net/phongland/2025/12/logo.png" alt="Logo"
+                    class="w-full h-full object-contain">
             </div>
 
             <!-- Navigation Modules -->
             <div class="flex flex-col gap-4 w-full px-2">
-                <a href="{{ route('listings') }}"
+                <a href="{{ route('listings') }}" wire:navigate
                     class="flex flex-col items-center justify-center p-3 rounded-2xl transition-all group {{ request()->routeIs('listings') ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-white hover:bg-slate-800' }}"
                     title="Tin đăng BĐS">
                     <div
@@ -54,7 +56,7 @@
                     <span class="text-[10px] font-bold text-center leading-none">Tin Đăng</span>
                 </a>
 
-                <a href="{{ route('media') }}"
+                <a href="{{ route('media') }}" wire:navigate
                     class="flex flex-col items-center justify-center p-3 rounded-2xl transition-all group {{ request()->routeIs('media') ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-white hover:bg-slate-800' }}"
                     title="Media Manager">
                     <div
@@ -62,6 +64,16 @@
                         <i class="fa-solid fa-photo-film text-sm"></i>
                     </div>
                     <span class="text-[10px] font-bold text-center leading-none">Media</span>
+                </a>
+
+                <a href="{{ route('accounts') }}" wire:navigate
+                    class="flex flex-col items-center justify-center p-3 rounded-2xl transition-all group {{ request()->routeIs('accounts') ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-white hover:bg-slate-800' }}"
+                    title="Quản lý tài khoản">
+                    <div
+                        class="w-8 h-8 flex items-center justify-center rounded-lg mb-1 {{ request()->routeIs('accounts') ? 'bg-white/20' : 'bg-slate-800 group-hover:bg-slate-700' }}">
+                        <i class="fa-solid fa-users text-sm"></i>
+                    </div>
+                    <span class="text-[10px] font-bold text-center leading-none">Account</span>
                 </a>
             </div>
 

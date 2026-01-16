@@ -32,10 +32,8 @@
             <div class="flex justify-between items-center h-16">
                 <!-- Branding -->
                 <div class="flex items-center gap-3">
-                    <div
-                        class="w-9 h-9 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-lg shadow-md shadow-blue-200">
-                        <i class="fa-solid fa-house"></i>
-                    </div>
+                    <img src="https://s3-hcm5-r1.longvan.net/phongland/2025/12/logo.png" alt="Logo"
+                        class="h-10 w-auto object-contain">
                     <div>
                         <h1 class="text-lg font-bold text-slate-800 tracking-tight leading-none">BatDongSan</h1>
                         <p class="text-[11px] text-gray-500 font-medium">News & Listings Management</p>
