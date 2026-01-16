@@ -35,8 +35,8 @@
                     <img src="https://s3-hcm5-r1.longvan.net/phongland/2025/12/logo.png" alt="Logo"
                         class="h-10 w-auto object-contain">
                     <div>
-                        <h1 class="text-lg font-bold text-slate-800 tracking-tight leading-none">BatDongSan</h1>
-                        <p class="text-[11px] text-gray-500 font-medium">News & Listings Management</p>
+                        <h1 class="text-lg font-bold text-slate-800 tracking-tight leading-none">PHONGPHATLAND</h1>
+                        <p class="text-[11px] text-gray-500 font-medium">Quản lý tin đăng & dữ liệu</p>
                     </div>
                 </div>
 

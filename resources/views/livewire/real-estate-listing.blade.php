@@ -33,22 +33,12 @@
     {{-- Filter Section --}}
     <div class="bg-white border-b border-gray-200 px-4 md:px-6 py-3 shrink-0" x-data="{ showFilters: false }">
         <div class="flex items-center justify-between mb-2">
-            <div class="flex items-center gap-4">
-                <button @click="showFilters = !showFilters"
-                    class="text-sm font-bold text-gray-700 flex items-center gap-2 hover:text-blue-600 transition-colors">
-                    <i class="fa-solid fa-filter"></i>
-                    Bộ lọc
-                    <i class="fa-solid fa-chevron-down transition-transform" :class="{ 'rotate-180': showFilters }"></i>
-                </button>
-
-                <select wire:model.live="filter_property_type"
-                    class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
-                    <option value="">-- Tất cả loại nhà --</option>
-                    @foreach (\App\Livewire\RealEstateListing::PROPERTY_TYPES as $id => $name)
-                        <option value="{{ $id }}">{{ $name }}</option>
-                    @endforeach
-                </select>
-            </div>
+            <button @click="showFilters = !showFilters"
+                class="text-sm font-bold text-gray-700 flex items-center gap-2 hover:text-blue-600 transition-colors">
+                <i class="fa-solid fa-filter"></i>
+                Bộ lọc
+                <i class="fa-solid fa-chevron-down transition-transform" :class="{ 'rotate-180': showFilters }"></i>
+            </button>
 
             @if (
                 $filter_price_min ||
@@ -56,7 +46,8 @@
                     $filter_province ||
                     $filter_district ||
                     $filter_ward ||
-                    $filter_property_type)
+                    $filter_property_type ||
+                    $filter_type)
                 <button wire:click="clearFilters"
                     class="text-xs text-red-500 hover:text-red-700 font-semibold flex items-center gap-1">
                     <i class="fa-solid fa-times-circle"></i> Xóa bộ lọc
@@ -65,6 +56,17 @@
         </div>
 
         <div x-show="showFilters" x-collapse class="grid grid-cols-1 md:grid-cols-5 gap-3">
+            {{-- Sale/Rent Filter --}}
+            <div>
+                <label class="text-xs font-semibold text-gray-500 uppercase mb-1 block">Nhu cầu</label>
+                <select wire:model.live="filter_type"
+                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                    <option value="">Tất cả</option>
+                    <option>Cần bán</option>
+                    <option>Cho thuê</option>
+                    <option>Cần mua</option>
+                </select>
+            </div>
             {{-- Price Min --}}
             <div x-data>
                 <label class="text-xs font-semibold text-gray-500 uppercase mb-1 block">Giá từ</label>
@@ -79,6 +81,18 @@
                 <input wire:model.live.debounce.500ms="filter_price_max" type="text" placeholder="VD: 5.000.000"
                     x-on:input="$el.value = $el.value.replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.')"
                     class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+            </div>
+
+            {{-- Property Type Filter --}}
+            <div>
+                <label class="text-xs font-semibold text-gray-500 uppercase mb-1 block">Loại nhà</label>
+                <select wire:model.live="filter_property_type"
+                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                    <option value="">Tất cả</option>
+                    @foreach (\App\Livewire\RealEstateListing::PROPERTY_TYPES as $id => $name)
+                        <option value="{{ $id }}">{{ $name }}</option>
+                    @endforeach
+                </select>
             </div>
 
 
@@ -211,6 +225,12 @@
                                         <i class="fa-regular fa-copy" x-show="!copied"></i>
                                         <i class="fa-solid fa-check text-green-600" x-show="copied"
                                             style="display: none;"></i>
+                                    </button>
+
+                                    <button wire:click.stop="editListing({{ $listing['id'] }})"
+                                        class="w-7 h-7 flex items-center justify-center rounded-full text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                                        title="Sửa tin">
+                                        <i class="fa-regular fa-pen-to-square"></i>
                                     </button>
 
                                     <button wire:click.stop="deleteListing({{ $listing['id'] }})"

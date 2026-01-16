@@ -26,6 +26,7 @@ class RealEstateListing extends Component
     public $filter_district;
     public $filter_ward;
     public $filter_property_type;
+    public $filter_type; // New filter for Sale/Rent
     public $filter_districts = [];
     public $filter_wards = [];
 
@@ -227,6 +228,7 @@ class RealEstateListing extends Component
         $this->filter_district = null;
         $this->filter_ward = null;
         $this->filter_property_type = null;
+        $this->filter_type = null;
         $this->filter_districts = [];
         $this->filter_wards = [];
     }
@@ -561,6 +563,9 @@ class RealEstateListing extends Component
         }
         if (!empty($this->filter_property_type)) {
             $query->where('property_type', $this->filter_property_type);
+        }
+        if (!empty($this->filter_type)) {
+            $query->where('type', $this->filter_type);
         }
 
         $listings = $query->paginate(12);

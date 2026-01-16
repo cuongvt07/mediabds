@@ -26,7 +26,6 @@ class AccountManagement extends Component
         return [
             'name' => 'required|min:3',
             'phone' => ['required', 'regex:/^([0-9\s\-\+\(\)]*)$/', Rule::unique('users', 'phone')->ignore($this->selectedUserId)],
-            'password' => $this->selectedUserId ? 'nullable|min:6' : 'required|min:6',
         ];
     }
 
@@ -63,7 +62,7 @@ class AccountManagement extends Component
         $this->selectedUserId = $id;
         $this->name = $user->name;
         $this->phone = $user->phone;
-        $this->password = ''; // Don't show password
+        // Password field removed
         $this->showCreatePopup = true;
     }
 
@@ -76,8 +75,11 @@ class AccountManagement extends Component
             'phone' => $this->phone,
         ];
 
-        if (!empty($this->password)) {
-            $data['password'] = bcrypt($this->password);
+        // Password not handled here as it's not in the form.
+        // If DB requires password, we might need a default for creation.
+        // Assuming standard Laravel user table...
+        if (!$this->selectedUserId) {
+             $data['password'] = bcrypt(\Illuminate\Support\Str::random(16));
         }
 
         if ($this->selectedUserId) {
