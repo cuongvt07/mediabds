@@ -346,6 +346,7 @@
                                 <option value="">Chọn loại liên hệ</option>
                                 <option value="Chủ">Chủ</option>
                                 <option value="Môi giới">Môi giới</option>
+                                <option value="Công ty">Công ty</option>
                             </select>
                         </div>
                         <div class="md:col-span-3">
@@ -699,7 +700,7 @@
                             </span>
                             @if ($selectedListing['contact_type'])
                                 <span
-                                    class="inline-block {{ $selectedListing['contact_type'] == 'Chủ' ? 'bg-green-600' : 'bg-orange-600' }} text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider ml-2">
+                                    class="inline-block {{ $selectedListing['contact_type'] == 'Chủ' ? 'bg-green-600' : ($selectedListing['contact_type'] == 'Công ty' ? 'bg-indigo-600' : 'bg-orange-600') }} text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider ml-2">
                                     {{ $selectedListing['contact_type'] }}
                                 </span>
                             @endif
