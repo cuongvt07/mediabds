@@ -567,7 +567,8 @@ class RealEstateListing extends Component
 
         // Cache for 60 seconds (so even if version doesn't change, we still refresh occasionally)
         $listings = \Illuminate\Support\Facades\Cache::remember($cacheKey, 60, function () {
-            $query = ListingModel::latest();
+            // Use deterministic sorting: Created At DESC, then ID DESC
+            $query = ListingModel::orderBy('created_at', 'desc')->orderBy('id', 'desc');
 
             if (!empty($this->search)) {
                 $query->where(function($q) {
