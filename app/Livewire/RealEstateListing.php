@@ -333,8 +333,38 @@ class RealEstateListing extends Component
 
     public function saveListing()
     {
-        // Sanitize Price (remove dots)
-        $this->price = str_replace('.', '', $this->price);
+        // Robust Sanitization for Price
+        if ($this->price === '' || $this->price === null) {
+            $this->price = null;
+        } else {
+            // Remove non-numeric chars except dot and comma
+            $cleanPrice = preg_replace('/[^0-9,.]/', '', $this->price);
+            // Vietnamese format: 1.000.000 or 1,5
+            // Remove thousand separator (.)
+            $cleanPrice = str_replace('.', '', $cleanPrice);
+            // Replace decimal separator (,) with (.)
+            $this->price = str_replace(',', '.', $cleanPrice);
+        }
+
+        // Robust Sanitization for other numeric fields
+        $numericFields = ['area', 'front_width', 'road_width'];
+        foreach ($numericFields as $field) {
+            if ($this->$field === '' || $this->$field === null) {
+                $this->$field = null;
+            } else {
+                $cleanVal = preg_replace('/[^0-9,.]/', '', $this->$field);
+                $cleanVal = str_replace('.', '', $cleanVal);
+                $this->$field = str_replace(',', '.', $cleanVal);
+            }
+        }
+
+        // Handle integers
+        $intFields = ['floors', 'bedrooms', 'toilets'];
+        foreach ($intFields as $field) {
+             if ($this->$field === '') {
+                $this->$field = null;
+            }
+        }
 
         $rules = [
             'title' => 'required',
@@ -418,21 +448,26 @@ class RealEstateListing extends Component
             'user_id' => auth()->id(),
         ];
 
-        if ($this->selectedListingId) {
-            ListingModel::where('id', $this->selectedListingId)->update(array_filter($data, fn($v) => !is_null($v)));
-            $message = 'Đã cập nhật tin đăng thành công!';
-        } else {
-            ListingModel::create($data);
-            $message = 'Đã đăng tin thành công!';
-        }
+        try {
+            if ($this->selectedListingId) {
+                ListingModel::where('id', $this->selectedListingId)->update(array_filter($data, fn($v) => !is_null($v)));
+                $message = 'Đã cập nhật tin đăng thành công!';
+            } else {
+                ListingModel::create($data);
+                $message = 'Đã đăng tin thành công!';
+            }
 
-        $this->dispatch('toast', ['message' => $message, 'type' => 'success']);
-        
-        // Refresh Cache
-        $this->refreshCacheVersion();
-        
-        $this->closeCreatePopup();
-        $this->resetPage(); 
+            $this->dispatch('toast', ['message' => $message, 'type' => 'success']);
+            
+            // Refresh Cache
+            $this->refreshCacheVersion();
+            
+            $this->closeCreatePopup();
+            $this->resetPage(); 
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error("Save Listing Error: " . $e->getMessage());
+            $this->dispatch('toast', ['message' => 'Có lỗi xảy ra: ' . $e->getMessage(), 'type' => 'error']);
+        } 
     }
 
     public function editListing($id)
