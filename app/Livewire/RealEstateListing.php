@@ -106,7 +106,7 @@ class RealEstateListing extends Component
 
     public function mount()
     {
-        $this->filter_province = 52; // Default to Binh Dinh
+        $this->filter_province = null;
         $this->loadFilterDistricts();
     }
 
