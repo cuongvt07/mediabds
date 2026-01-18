@@ -463,6 +463,10 @@ class RealEstateListing extends Component
             $this->refreshCacheVersion();
             
             $this->closeCreatePopup();
+            
+            // Clear filters to ensure the new listing is seen (if it doesn't match current filters)
+            $this->clearFilters();
+            
             $this->resetPage(); 
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error("Save Listing Error: " . $e->getMessage());
