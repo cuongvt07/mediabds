@@ -55,6 +55,7 @@ class RealEstateListing extends Component
         109 => 'Trang trại',
         112 => 'Khách sạn',
         113 => 'Nhà nghỉ',
+        114 => 'Homestay',
     ];
     
     const DIRECTIONS = [
