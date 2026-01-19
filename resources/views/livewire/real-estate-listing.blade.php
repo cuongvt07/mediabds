@@ -411,15 +411,9 @@
                                 <select wire:model="property_type"
                                     class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
                                     <option value="0">Chọn loại nhà đất</option>
-                                    <option value="110">Bất động sản khác</option>
-                                    <option value="102">Biệt thự</option>
-                                    <option value="103">Căn hộ – chung cư</option>
-                                    <option value="104">Đất</option>
-                                    <option value="105">Đất nền dự án</option>
-                                    <option value="106">Mặt tiền</option>
-                                    <option value="107">Nhà mặt phố</option>
-                                    <option value="108">Nhà riêng</option>
-                                    <option value="109">Trang trại</option>
+                                    @foreach (\App\Livewire\RealEstateListing::PROPERTY_TYPES as $id => $name)
+                                        <option value="{{ $id }}">{{ $name }}</option>
+                                    @endforeach
                                 </select>
                             </div>
 
