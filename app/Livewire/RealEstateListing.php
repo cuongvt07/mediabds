@@ -50,8 +50,11 @@ class RealEstateListing extends Component
         105 => 'Đất nền dự án',
         106 => 'Mặt tiền',
         107 => 'Nhà mặt phố',
+        111 => 'Nhà mặt phố (LG 4M-5M)',
         108 => 'Nhà riêng',
         109 => 'Trang trại',
+        112 => 'Khách sạn',
+        113 => 'Nhà nghỉ',
     ];
     
     const DIRECTIONS = [
