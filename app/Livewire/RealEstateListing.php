@@ -27,6 +27,7 @@ class RealEstateListing extends Component
     public $filter_ward;
     public $filter_property_type;
     public $filter_type; // New filter for Sale/Rent
+    public $filter_is_sold; // Filter for sold status
     public $filter_districts = [];
     public $filter_wards = [];
 
@@ -36,6 +37,8 @@ class RealEstateListing extends Component
     public $contact_type; // Chủ or Môi giới
     public $contact_phone;
     public $house_password; // Alphanumeric password
+    public $code; // Auto-generated listing code
+    public $is_sold = false; // Sold status
     public $province_id;
     public $district_id;
     public $ward_id;
@@ -233,6 +236,7 @@ class RealEstateListing extends Component
         $this->filter_ward = null;
         $this->filter_property_type = null;
         $this->filter_type = null;
+        $this->filter_is_sold = null;
         $this->filter_districts = [];
         $this->filter_wards = [];
     }
@@ -381,6 +385,11 @@ class RealEstateListing extends Component
 
         $this->validate($rules);
 
+        // Auto-generate code if creating new listing and code is empty
+        if (!$this->selectedListingId && empty($this->code)) {
+            $this->code = 'RE-' . time() . '-' . strtoupper(substr(uniqid(), -6));
+        }
+
         // Process images with Media Sync
         if (count($this->tempImages) > 0) {
             foreach ($this->tempImages as $temp) {
@@ -426,6 +435,8 @@ class RealEstateListing extends Component
             'contact_type' => $this->contact_type,
             'contact_phone' => $this->contact_phone,
             'house_password' => $this->house_password,
+            'code' => $this->code,
+            'is_sold' => $this->is_sold,
             'property_type' => $this->property_type,
             'province_id' => $this->province_id,
             'district_id' => $this->district_id,
@@ -493,6 +504,8 @@ class RealEstateListing extends Component
         $this->contact_type = $listing->contact_type;
         $this->contact_phone = $listing->contact_phone;
         $this->house_password = $listing->house_password;
+        $this->code = $listing->code;
+        $this->is_sold = $listing->is_sold ?? false;
         $this->property_type = $listing->property_type;
         $this->province_id = $listing->province_id;
         
@@ -567,7 +580,8 @@ class RealEstateListing extends Component
     public function resetForm()
     {
         $this->selectedListingId = null;
-        $this->reset(['title', 'type', 'contact_type', 'contact_phone', 'house_password', 'address', 'area', 'price', 'description', 'floors', 'bedrooms', 'toilets', 'direction', 'front_width', 'road_width', 'youtube_link', 'images', 'province_id', 'district_id', 'ward_id', 'tempImages']);
+        $this->reset(['title', 'type', 'contact_type', 'contact_phone', 'house_password', 'code', 'is_sold', 'address', 'area', 'price', 'description', 'floors', 'bedrooms', 'toilets', 'direction', 'front_width', 'road_width', 'youtube_link', 'images', 'province_id', 'district_id', 'ward_id', 'tempImages']);
+        $this->is_sold = false;
         $this->districts = [];
         $this->wards = [];
     }
@@ -579,6 +593,24 @@ class RealEstateListing extends Component
             $listing->delete();
             $this->refreshCacheVersion(); // Refresh cache on delete
             $this->dispatch('toast', ['message' => 'Đã xóa tin đăng!', 'type' => 'success']);
+        }
+    }
+
+    public function toggleSold($id)
+    {
+        $listing = ListingModel::find($id);
+        if ($listing) {
+            $listing->is_sold = !$listing->is_sold;
+            $listing->save();
+            $this->refreshCacheVersion(); // Refresh cache
+            
+            $status = $listing->is_sold ? 'đã bán' : 'chưa bán';
+            $this->dispatch('toast', ['message' => "Đã đánh dấu tin {$status}!", 'type' => 'success']);
+            
+            // Refresh the detail popup if it's open
+            if ($this->selectedListing && $this->selectedListing['id'] == $id) {
+                $this->selectedListing = $listing->toArray();
+            }
         }
     }
 
@@ -606,6 +638,7 @@ class RealEstateListing extends Component
             'ward' => $this->filter_ward,
             'property_type' => $this->filter_property_type,
             'type' => $this->filter_type,
+            'is_sold' => $this->filter_is_sold,
             'page' => $this->getPage(),
             'version' => $this->getCacheVersion(), // Include version in key
         ];
@@ -621,11 +654,7 @@ class RealEstateListing extends Component
             if (!empty($this->search)) {
                 $query->where(function($q) {
                     $q->where('title', 'like', '%' . $this->search . '%')
-                      ->orWhere('address', 'like', '%' . $this->search . '%')
-                      ->orWhere('province_name', 'like', '%' . $this->search . '%')
-                      ->orWhere('district_name', 'like', '%' . $this->search . '%')
-                      ->orWhere('ward_name', 'like', '%' . $this->search . '%')
-                      ->orWhere('description', 'like', '%' . $this->search . '%');
+                      ->orWhere('address', 'like', '%' . $this->search . '%');
                 });
             }
 
@@ -652,6 +681,9 @@ class RealEstateListing extends Component
             }
             if (!empty($this->filter_type)) {
                 $query->where('type', $this->filter_type);
+            }
+            if ($this->filter_is_sold !== null && $this->filter_is_sold !== '') {
+                $query->where('is_sold', $this->filter_is_sold);
             }
 
             return $query->paginate(12);

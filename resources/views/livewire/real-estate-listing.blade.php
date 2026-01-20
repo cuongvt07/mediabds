@@ -47,7 +47,8 @@
                     $filter_district ||
                     $filter_ward ||
                     $filter_property_type ||
-                    $filter_type)
+                    $filter_type ||
+                    $filter_is_sold !== null)
                 <button wire:click="clearFilters"
                     class="text-xs text-red-500 hover:text-red-700 font-semibold flex items-center gap-1">
                     <i class="fa-solid fa-times-circle"></i> Xóa bộ lọc
@@ -92,6 +93,17 @@
                     @foreach (\App\Livewire\RealEstateListing::PROPERTY_TYPES as $id => $name)
                         <option value="{{ $id }}">{{ $name }}</option>
                     @endforeach
+                </select>
+            </div>
+
+            {{-- Sold Status Filter --}}
+            <div>
+                <label class="text-xs font-semibold text-gray-500 uppercase mb-1 block">Trạng thái</label>
+                <select wire:model.live="filter_is_sold"
+                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                    <option value="">Tất cả</option>
+                    <option value="0">Chưa bán</option>
+                    <option value="1">Đã bán</option>
                 </select>
             </div>
 
@@ -162,6 +174,14 @@
                             class="absolute top-2 left-2 bg-blue-600 text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider z-10">
                             {{ $listing['type'] }}
                         </div>
+
+                        <!-- Code Badge -->
+                        @if (!empty($listing['code']))
+                            <div
+                                class="absolute top-9 left-2 bg-red-600 text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider z-10">
+                                {{ $listing['code'] }}
+                            </div>
+                        @endif
 
                         <!-- Image Count Badge (Bottom Left) -->
                         @if (!empty($listing['images']) && count($listing['images']) > 1)
@@ -360,6 +380,22 @@
                             <input wire:model="house_password" type="text"
                                 placeholder="Nhập mật khẩu nhà (số và chữ)"
                                 class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow shadow-sm">
+                        </div>
+
+                        <div class="md:col-span-6">
+                            <label class="block text-sm font-bold text-gray-700 mb-1">
+                                Mã tin đăng
+                                <span class="text-xs text-gray-500 font-normal">(Để trống để tự động sinh)</span>
+                            </label>
+                            <input wire:model="code" type="text"
+                                placeholder="VD: RE-1234567890-ABC123 (hoặc để trống)"
+                                class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow shadow-sm">
+                            @if ($selectedListingId && !empty($code))
+                                <p class="text-xs text-blue-600 mt-1">
+                                    <i class="fa-solid fa-info-circle"></i> Mã hiện tại: <span
+                                        class="font-bold">{{ $code }}</span>
+                                </p>
+                            @endif
                         </div>
 
                         @if ($type !== 'Cần mua')
@@ -824,6 +860,12 @@
                 {{-- Footer Actions --}}
                 <div class="p-4 border-t border-gray-200 flex justify-end gap-3 bg-gray-50 shrink-0"
                     x-data="{ copied: false }">
+                    <button wire:click.stop="toggleSold({{ $selectedListing['id'] }})"
+                        class="px-5 py-2.5 rounded-xl {{ $selectedListing['is_sold'] ? 'bg-gray-600 hover:bg-gray-700' : 'bg-green-600 hover:bg-green-700' }} text-white font-bold transition-all flex items-center gap-2 shadow-lg">
+                        <i
+                            class="fa-solid {{ $selectedListing['is_sold'] ? 'fa-rotate-left' : 'fa-check-circle' }}"></i>
+                        <span>{{ $selectedListing['is_sold'] ? 'Đánh dấu chưa bán' : 'Đánh dấu đã bán' }}</span>
+                    </button>
                     <button
                         @click="
                             const text = `🏠 {{ $selectedListing['title'] }} \n📍 Vị trí: {{ implode(', ', array_filter([$selectedListing['address'], $selectedListing['ward_name'], $selectedListing['district_name'], $selectedListing['province_name']])) }} \n💰 Giá: {{ number_format($selectedListing['price'], 0, ',', '.') }} {{ $selectedListing['price_unit'] == 1 ? 'VNĐ' : ($selectedListing['price_unit'] == 2 ? 'VNĐ/tháng' : 'VNĐ/m2') }} \n📐 Diện tích: {{ floatval($selectedListing['area']) }} m² \n------------------ \n📋 Thông tin chi tiết: \n- Tầng: {{ $selectedListing['floors'] ?? 0 }} \n- Phòng ngủ: {{ $selectedListing['bedrooms'] ?? 0 }} \n- Toilet: {{ $selectedListing['toilets'] ?? 0 }} \n- Hướng: {{ \App\Livewire\RealEstateListing::DIRECTIONS[$selectedListing['direction']] ?? 'N/A' }} \n- Mặt tiền: {{ floatval($selectedListing['front_width']) }}m \n- Lộ giới: {{ floatval($selectedListing['road_width']) }}m \n------------------ \n📝 Mô tả: \n{{ $selectedListing['description'] }}`;
@@ -831,13 +873,13 @@
                             copied = true;
                             setTimeout(() => copied = false, 2000);
                         "
-                        class="px-5 py-2.5 rounded-xl bg-green-600 hover:bg-green-700 text-white font-bold transition-all flex items-center gap-2 shadow-lg">
+                        class="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold transition-all flex items-center gap-2 shadow-lg">
                         <i class="fa-regular fa-copy" x-show="!copied"></i>
                         <i class="fa-solid fa-check" x-show="copied" style="display: none;"></i>
                         <span x-text="copied ? 'Đã Copy!' : 'Copy Thông Tin'"></span>
                     </button>
                     <button wire:click="editFromDetail"
-                        class="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold transition-all flex items-center gap-2 shadow-lg">
+                        class="px-5 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-bold transition-all flex items-center gap-2 shadow-lg">
                         <i class="fa-solid fa-pen-to-square"></i>
                         Chỉnh Sửa
                     </button>
