@@ -910,20 +910,20 @@
                 </div>
 
                 {{-- Footer Actions --}}
-                <div class="p-4 border-t border-gray-200 flex justify-end gap-3 bg-gray-50 shrink-0"
+                <div class="p-3 md:p-4 border-t border-gray-200 grid grid-cols-2 md:flex md:justify-end gap-2 md:gap-3 bg-gray-50 shrink-0"
                     x-data="{ copied: false }">
                     @if ($selectedListing['contact_phone'])
                         <a href="tel:{{ $selectedListing['contact_phone'] }}"
-                            class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold transition-all flex items-center gap-2 shadow-lg animate-shake focus:outline-none ring-4 ring-green-200">
+                            class="px-3 py-2 md:px-5 md:py-2.5 rounded-lg md:rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white text-sm md:text-base font-bold transition-all flex items-center justify-center gap-2 shadow-sm md:shadow-lg animate-shake focus:outline-none ring-2 md:ring-4 ring-green-200">
                             <i class="fa-solid fa-phone-volume fa-shake"></i>
                             <span>Gọi Ngay</span>
                         </a>
                     @endif
                     <button wire:click.stop="toggleSold({{ $selectedListing['id'] }})"
-                        class="px-5 py-2.5 rounded-xl {{ $selectedListing['is_sold'] ? 'bg-gray-600 hover:bg-gray-700' : 'bg-green-600 hover:bg-green-700' }} text-white font-bold transition-all flex items-center gap-2 shadow-lg">
+                        class="px-3 py-2 md:px-5 md:py-2.5 rounded-lg md:rounded-xl {{ $selectedListing['is_sold'] ? 'bg-gray-600 hover:bg-gray-700' : 'bg-green-600 hover:bg-green-700' }} text-white text-xs md:text-base font-bold transition-all flex items-center justify-center gap-1 md:gap-2 shadow-sm md:shadow-lg">
                         <i
                             class="fa-solid {{ $selectedListing['is_sold'] ? 'fa-rotate-left' : 'fa-check-circle' }}"></i>
-                        <span>{{ $selectedListing['is_sold'] ? 'Đánh dấu chưa bán' : 'Đánh dấu đã bán' }}</span>
+                        <span>{{ $selectedListing['is_sold'] ? 'Chưa bán' : 'Đã bán' }}</span>
                     </button>
                     <button
                         @click="
@@ -932,13 +932,13 @@
                             copied = true;
                             setTimeout(() => copied = false, 2000);
                         "
-                        class="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold transition-all flex items-center gap-2 shadow-lg">
+                        class="px-3 py-2 md:px-5 md:py-2.5 rounded-lg md:rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs md:text-base font-bold transition-all flex items-center justify-center gap-1 md:gap-2 shadow-sm md:shadow-lg">
                         <i class="fa-regular fa-copy" x-show="!copied"></i>
                         <i class="fa-solid fa-check" x-show="copied" style="display: none;"></i>
-                        <span x-text="copied ? 'Đã Copy!' : 'Copy Thông Tin'"></span>
+                        <span x-text="copied ? 'Đã Copy' : 'Copy QC'"></span>
                     </button>
                     <button wire:click="editFromDetail"
-                        class="px-5 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-bold transition-all flex items-center gap-2 shadow-lg">
+                        class="px-3 py-2 md:px-5 md:py-2.5 rounded-lg md:rounded-xl bg-orange-600 hover:bg-orange-700 text-white text-xs md:text-base font-bold transition-all flex items-center justify-center gap-1 md:gap-2 shadow-sm md:shadow-lg">
                         <i class="fa-solid fa-pen-to-square"></i>
                         Chỉnh Sửa
                     </button>
