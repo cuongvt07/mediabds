@@ -1,56 +1,5 @@
 <div class="h-full flex flex-col bg-slate-50 relative">
-    <style>
-        @keyframes shake {
-            0% {
-                transform: translate(1px, 1px) rotate(0deg);
-            }
 
-            10% {
-                transform: translate(-1px, -2px) rotate(-1deg);
-            }
-
-            20% {
-                transform: translate(-3px, 0px) rotate(1deg);
-            }
-
-            30% {
-                transform: translate(3px, 2px) rotate(0deg);
-            }
-
-            40% {
-                transform: translate(1px, -1px) rotate(1deg);
-            }
-
-            50% {
-                transform: translate(-1px, 2px) rotate(-1deg);
-            }
-
-            60% {
-                transform: translate(-3px, 1px) rotate(0deg);
-            }
-
-            70% {
-                transform: translate(3px, 1px) rotate(-1deg);
-            }
-
-            80% {
-                transform: translate(-1px, -1px) rotate(1deg);
-            }
-
-            90% {
-                transform: translate(1px, 2px) rotate(0deg);
-            }
-
-            100% {
-                transform: translate(1px, -2px) rotate(-1deg);
-            }
-        }
-
-        .animate-shake {
-            animation: shake 0.5s;
-            animation-iteration-count: infinite;
-        }
-    </style>
     <!-- Header/Topbar for Real Estate Module -->
     <div
         class="bg-white border-b border-gray-200 px-4 md:px-6 py-4 flex flex-wrap md:flex-nowrap items-center justify-between gap-4 shrink-0">
@@ -914,8 +863,8 @@
                     x-data="{ copied: false }">
                     @if ($selectedListing['contact_phone'])
                         <a href="tel:{{ $selectedListing['contact_phone'] }}"
-                            class="px-3 py-2 md:px-5 md:py-2.5 rounded-lg md:rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white text-sm md:text-base font-bold transition-all flex items-center justify-center gap-2 shadow-sm md:shadow-lg animate-shake focus:outline-none ring-2 md:ring-4 ring-green-200">
-                            <i class="fa-solid fa-phone-volume fa-shake"></i>
+                            class="px-3 py-2 md:px-5 md:py-2.5 rounded-lg md:rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white text-sm md:text-base font-bold transition-all flex items-center justify-center gap-2 shadow-sm md:shadow-lg focus:outline-none ring-2 md:ring-4 ring-green-200">
+                            <i class="fa-solid fa-phone-volume"></i>
                             <span>Gọi Ngay</span>
                         </a>
                     @endif
