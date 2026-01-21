@@ -654,7 +654,8 @@ class RealEstateListing extends Component
             if (!empty($this->search)) {
                 $query->where(function($q) {
                     $q->where('title', 'like', '%' . $this->search . '%')
-                      ->orWhere('address', 'like', '%' . $this->search . '%');
+                      ->orWhere('address', 'like', '%' . $this->search . '%')
+                      ->orWhere('code', 'like', '%' . $this->search . '%');
                 });
             }
 
