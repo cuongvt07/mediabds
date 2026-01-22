@@ -368,7 +368,6 @@ class RealEstateListing extends Component
             }
         }
 
-        // Handle integers
         $intFields = ['floors', 'bedrooms', 'toilets'];
         foreach ($intFields as $field) {
              if ($this->$field === '') {
@@ -376,8 +375,14 @@ class RealEstateListing extends Component
             }
         }
 
+        // Sanitize Social Links
+        if ($this->facebook_link === '') $this->facebook_link = null;
+        if ($this->google_map_link === '') $this->google_map_link = null;
+
         $rules = [
             'title' => 'required',
+            'facebook_link' => 'nullable|url',
+            'google_map_link' => 'nullable|url',
         ];
 
         if ($this->type !== 'Cần mua') {
@@ -469,7 +474,7 @@ class RealEstateListing extends Component
 
         try {
             if ($this->selectedListingId) {
-                ListingModel::where('id', $this->selectedListingId)->update(array_filter($data, fn($v) => !is_null($v)));
+                ListingModel::where('id', $this->selectedListingId)->update($data);
                 $message = 'Đã cập nhật tin đăng thành công!';
             } else {
                 ListingModel::create($data);

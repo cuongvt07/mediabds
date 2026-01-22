@@ -635,17 +635,23 @@
                         <div class="md:col-span-6">
                             <label class="block text-sm font-bold text-gray-700 mb-1"><i
                                     class="fa-brands fa-facebook text-blue-600 mr-1"></i>Link Facebook</label>
-                            <input wire:model="facebook_link" type="url" placeholder="https://facebook.com/..."
+                            <input wire:model="facebook_link" type="text" placeholder="https://facebook.com/..."
                                 class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                            @error('facebook_link')
+                                <span class="text-red-500 text-xs">{{ $message }}</span>
+                            @enderror
                         </div>
 
                         <div class="md:col-span-6">
                             <label class="block text-sm font-bold text-gray-700 mb-1"><i
                                     class="fa-solid fa-map-location-dot text-green-600 mr-1"></i>Link Google
                                 Map</label>
-                            <input wire:model="google_map_link" type="url"
+                            <input wire:model="google_map_link" type="text"
                                 placeholder="https://maps.google.com/..."
                                 class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                            @error('google_map_link')
+                                <span class="text-red-500 text-xs">{{ $message }}</span>
+                            @enderror
                         </div>
 
                     </form>
@@ -655,9 +661,10 @@
                     <button wire:click="closeCreatePopup"
                         class="px-5 py-2.5 rounded-xl text-gray-600 hover:bg-gray-200 font-bold transition-colors">Hủy
                         bỏ</button>
-                    <button wire:click="saveListing"
-                        class="px-6 py-2.5 rounded-xl bg-blue-600 text-white hover:bg-blue-700 font-bold shadow-lg hover:shadow-blue-500/30 transform active:scale-95 transition-all flex items-center gap-2">
-                        <i class="fa-solid fa-paper-plane"></i>
+                    <button type="button" wire:click="saveListing" wire:loading.attr="disabled"
+                        class="px-6 py-2.5 rounded-xl bg-blue-600 text-white hover:bg-blue-700 font-bold shadow-lg hover:shadow-blue-500/30 transform active:scale-95 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <i class="fa-solid fa-paper-plane" wire:loading.remove wire:target="saveListing"></i>
+                        <i class="fa-solid fa-spinner fa-spin" wire:loading wire:target="saveListing"></i>
                         {{ $selectedListingId ? 'Lưu Thay Đổi' : 'Đăng Tin Nhà Đất' }}
                     </button>
                 </div>
