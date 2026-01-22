@@ -19,6 +19,10 @@
 
         <!-- Action Button -->
         <div class="flex items-center gap-3 shrink-0 order-2 md:order-3">
+            <a href="https://phongphatland.com/"
+                class="bg-white border border-gray-200 hover:bg-gray-50 text-slate-600 px-3 py-2 md:px-4 md:py-2 rounded-lg font-bold text-sm flex items-center gap-2 shadow-sm transition-all whitespace-nowrap">
+                <i class="fa-solid fa-arrow-left"></i> <span class="hidden md:inline">Về PhongPhatLand</span>
+            </a>
             <a href="{{ route('media') }}"
                 class="bg-white border border-gray-200 hover:bg-gray-50 text-slate-600 px-3 py-2 md:px-4 md:py-2 rounded-lg font-bold text-sm flex items-center gap-2 shadow-sm transition-all whitespace-nowrap">
                 <i class="fa-solid fa-photo-film"></i> <span class="hidden md:inline">Media Manager</span>
