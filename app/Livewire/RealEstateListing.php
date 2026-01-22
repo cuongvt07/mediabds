@@ -381,8 +381,8 @@ class RealEstateListing extends Component
 
         $rules = [
             'title' => 'required',
-            'facebook_link' => 'nullable|url',
-            'google_map_link' => 'nullable|url',
+            'facebook_link' => 'nullable|url|max:2000',
+            'google_map_link' => 'nullable|url|max:2000',
         ];
 
         if ($this->type !== 'Cần mua') {
