@@ -81,6 +81,8 @@ class RealEstateListing extends Component
     public $front_width;
     public $road_width;
     public $youtube_link;
+    public $facebook_link;
+    public $google_map_link;
     public $description;
     public $images = []; // Array of URLs
     public $tempImages = []; // For new uploads
@@ -458,6 +460,8 @@ class RealEstateListing extends Component
             'front_width' => $this->front_width,
             'road_width' => $this->road_width,
             'youtube_link' => $this->youtube_link,
+            'facebook_link' => $this->facebook_link,
+            'google_map_link' => $this->google_map_link,
             'description' => $this->description,
             'images' => $this->images,
             'user_id' => auth()->id(),
@@ -535,6 +539,8 @@ class RealEstateListing extends Component
         $this->road_width = floatval($listing->road_width);
         
         $this->youtube_link = $listing->youtube_link;
+        $this->facebook_link = $listing->facebook_link;
+        $this->google_map_link = $listing->google_map_link;
         $this->description = $listing->description;
         $this->images = $listing->images ?? [];
 
@@ -580,7 +586,7 @@ class RealEstateListing extends Component
     public function resetForm()
     {
         $this->selectedListingId = null;
-        $this->reset(['title', 'type', 'contact_type', 'contact_phone', 'house_password', 'code', 'is_sold', 'address', 'area', 'price', 'description', 'floors', 'bedrooms', 'toilets', 'direction', 'front_width', 'road_width', 'youtube_link', 'images', 'province_id', 'district_id', 'ward_id', 'tempImages']);
+        $this->reset(['title', 'type', 'contact_type', 'contact_phone', 'house_password', 'code', 'is_sold', 'address', 'area', 'price', 'description', 'floors', 'bedrooms', 'toilets', 'direction', 'front_width', 'road_width', 'youtube_link', 'facebook_link', 'google_map_link', 'images', 'province_id', 'district_id', 'ward_id', 'tempImages']);
         $this->is_sold = false;
         $this->districts = [];
         $this->wards = [];

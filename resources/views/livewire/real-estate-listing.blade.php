@@ -628,6 +628,22 @@
                                 class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
                         </div>
 
+                        <div class="md:col-span-6">
+                            <label class="block text-sm font-bold text-gray-700 mb-1"><i
+                                    class="fa-brands fa-facebook text-blue-600 mr-1"></i>Link Facebook</label>
+                            <input wire:model="facebook_link" type="url" placeholder="https://facebook.com/..."
+                                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                        </div>
+
+                        <div class="md:col-span-6">
+                            <label class="block text-sm font-bold text-gray-700 mb-1"><i
+                                    class="fa-solid fa-map-location-dot text-green-600 mr-1"></i>Link Google
+                                Map</label>
+                            <input wire:model="google_map_link" type="url"
+                                placeholder="https://maps.google.com/..."
+                                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                        </div>
+
                     </form>
                 </div>
 
@@ -764,6 +780,28 @@
                                     m²</p>
                             </div>
                         </div>
+
+                        {{-- External Links (Facebook & Google Map) --}}
+                        @if (!empty($selectedListing['facebook_link']) || !empty($selectedListing['google_map_link']))
+                            <div class="flex flex-wrap gap-3">
+                                @if (!empty($selectedListing['facebook_link']))
+                                    <a href="{{ $selectedListing['facebook_link'] }}" target="_blank"
+                                        rel="noopener noreferrer"
+                                        class="flex-1 min-w-[140px] bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-4 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition-all">
+                                        <i class="fa-brands fa-facebook text-lg"></i>
+                                        Xem Bài viết
+                                    </a>
+                                @endif
+                                @if (!empty($selectedListing['google_map_link']))
+                                    <a href="{{ $selectedListing['google_map_link'] }}" target="_blank"
+                                        rel="noopener noreferrer"
+                                        class="flex-1 min-w-[140px] bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-4 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition-all">
+                                        <i class="fa-solid fa-map-location-dot text-lg"></i>
+                                        Xem Google Map
+                                    </a>
+                                @endif
+                            </div>
+                        @endif
 
                         {{-- Property Details --}}
                         <div class="bg-gray-50 rounded-xl p-4 border border-gray-200">
