@@ -102,6 +102,8 @@ class RealEstateListing extends Component
     public $description;
     public $images = []; // Array of URLs
     public $tempImages = []; // For new uploads
+    public $avatar;
+    public $tempAvatar; // For avatar upload
 
     public $selectedListingId = null;
 
@@ -513,6 +515,7 @@ class RealEstateListing extends Component
             'google_map_link' => $this->google_map_link,
             'description' => $this->description,
             'images' => $this->images,
+            'avatar' => $this->avatar,
             'user_id' => auth()->id(),
         ];
 
@@ -595,6 +598,7 @@ class RealEstateListing extends Component
         $this->google_map_link = $listing->google_map_link;
         $this->description = $listing->description;
         $this->images = $listing->images ?? [];
+        $this->avatar = $listing->avatar;
 
         $this->showCreatePopup = true;
     }
@@ -606,6 +610,15 @@ class RealEstateListing extends Component
             return;
 
         $this->selectedListing = $listing->toArray();
+        // Prepare slider images for detail view: Avatar first, then others
+        if (!empty($this->selectedListing['avatar'])) {
+            $images = $this->selectedListing['images'] ?? [];
+            if (!is_array($images))
+                $images = [];
+            array_unshift($images, $this->selectedListing['avatar']);
+            $this->selectedListing['images'] = $images;
+        }
+
         $this->showDetailPopup = true;
     }
 
@@ -639,7 +652,7 @@ class RealEstateListing extends Component
     public function resetForm()
     {
         $this->selectedListingId = null;
-        $this->reset(['title', 'type', 'contact_type', 'contact_phone', 'house_password', 'code', 'is_sold', 'address', 'area', 'price', 'description', 'floors', 'bedrooms', 'toilets', 'direction', 'front_width', 'road_width', 'youtube_link', 'facebook_link', 'google_map_link', 'images', 'province_id', 'district_id', 'ward_id', 'tempImages']);
+        $this->reset(['title', 'type', 'contact_type', 'contact_phone', 'house_password', 'code', 'is_sold', 'address', 'area', 'price', 'description', 'floors', 'bedrooms', 'toilets', 'direction', 'front_width', 'road_width', 'youtube_link', 'facebook_link', 'google_map_link', 'images', 'province_id', 'district_id', 'ward_id', 'tempImages', 'avatar', 'tempAvatar']);
         $this->is_sold = false;
         $this->districts = [];
         $this->wards = [];
@@ -674,6 +687,48 @@ class RealEstateListing extends Component
     }
 
 
+
+    protected function uploadFile($file)
+    {
+        // ===== UNIQUE FILENAME TO PREVENT OVERWRITES =====
+        $originalName = $file->getClientOriginalName();
+        $filenameOnly = pathinfo($originalName, PATHINFO_FILENAME);
+        $extension = $file->getClientOriginalExtension();
+
+        // Sanitize + Add unique suffix (timestamp + random)
+        $safeFilename = preg_replace('/[^a-zA-Z0-9._-]/', '_', $filenameOnly);
+        $uniqueSuffix = time() . '_' . substr(uniqid(), -4);
+        $filename = $safeFilename . '_' . $uniqueSuffix . '.' . $extension;
+
+        // Match Media Manager structure: YYYY/MM/UniqueFilename
+        $path = $file->storeAs(date('Y/m'), $filename, ['disk' => 's3', 'visibility' => 'public']);
+
+        $publicUrl = config('filesystems.disks.s3.endpoint') . '/' . config('filesystems.disks.s3.bucket') . '/' . $path;
+
+        // Create File Record for Media Manager
+        \App\Models\File::create([
+            'folder_id' => null,
+            'name' => $filename,
+            'path' => $path,
+            'disk' => 's3',
+            'mime_type' => $file->getMimeType(),
+            'size' => $file->getSize(),
+            'metadata' => [
+                'source' => 'real_estate_quick_upload',
+                'public_url' => $publicUrl
+            ]
+        ]);
+
+        return $publicUrl;
+    }
+
+    public function setAvatarFromImage($index)
+    {
+        if (isset($this->images[$index])) {
+            $this->avatar = $this->images[$index];
+            $this->dispatch('toast', ['message' => 'Đã chọn ảnh làm đại diện!', 'type' => 'success']);
+        }
+    }
 
     protected function getCacheVersion()
     {

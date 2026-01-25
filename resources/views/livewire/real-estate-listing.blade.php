@@ -170,7 +170,7 @@
                     class="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow border border-gray-100 overflow-hidden flex flex-col md:flex-row h-auto md:h-48 group cursor-pointer relative">
                     <!-- Image (First Only) -->
                     <div class="w-full h-48 md:w-[30%] md:h-full bg-gray-200 relative overflow-hidden shrink-0 group">
-                        <img src="{{ !empty($listing['images']) && count($listing['images']) > 0 ? $listing['images'][0] : 'https://placehold.co/600x400?text=No+Image' }}"
+                        <img src="{{ !empty($listing['avatar']) ? $listing['avatar'] : (!empty($listing['images']) && count($listing['images']) > 0 ? $listing['images'][0] : 'https://placehold.co/600x400?text=No+Image') }}"
                             class="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                             loading="lazy" alt="{{ $listing['title'] }}">
 
@@ -569,7 +569,46 @@
                                 <i class="fa-solid fa-images"></i> Hình ảnh & Video
                             </p>
 
+                            <!-- Representative Image (Avatar) -->
+                            <div class="space-y-2 mb-4">
+                                <label class="block text-sm font-bold text-gray-700">Ảnh đại diện (Avatar)</label>
+                                <div class="flex gap-4 items-start">
+                                    <div class="w-32 h-32 bg-gray-100 rounded-lg border border-gray-300 flex-shrink-0 relative overflow-hidden group">
+                                        @if ($tempAvatar)
+                                            <img src="{{ $tempAvatar->temporaryUrl() }}" class="w-full h-full object-cover">
+                                            <button type="button" wire:click="$set('tempAvatar', null)"
+                                                class="absolute top-1 right-1 bg-red-500 text-white w-5 h-5 rounded-full text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <i class="fa-solid fa-times"></i>
+                                            </button>
+                                        @elseif ($avatar)
+                                            <img src="{{ $avatar }}" class="w-full h-full object-cover">
+                                            <button type="button" wire:click="removeAvatar"
+                                                class="absolute top-1 right-1 bg-red-500 text-white w-5 h-5 rounded-full text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <i class="fa-solid fa-times"></i>
+                                            </button>
+                                        @else
+                                            <div class="w-full h-full flex flex-col items-center justify-center text-gray-400">
+                                                <i class="fa-solid fa-image fa-2x mb-1"></i>
+                                                <span class="text-[10px]">Chưa có ảnh</span>
+                                            </div>
+                                        @endif
+                                    </div>
+                                    
+                                    <div class="flex-1 relative group h-32">
+                                        <input type="file" wire:model="tempAvatar"
+                                            class="absolute inset-0 opacity-0 cursor-pointer z-10">
+                                        <div
+                                            class="bg-gray-50 hover:bg-gray-100 text-gray-500 px-6 py-4 rounded-xl border border-gray-200 border-dashed flex flex-col items-center justify-center gap-2 font-bold transition-all w-full h-full group-hover:border-blue-300 group-hover:text-blue-500">
+                                            <i class="fa-solid fa-cloud-arrow-up fa-lg"></i>
+                                            Tải ảnh đại diện
+                                            <span class="text-xs font-normal text-gray-400">Chọn 1 ảnh làm ảnh bìa listing</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div class="space-y-4">
+                                <label class="block text-sm font-bold text-gray-700">Ảnh Slider (Chi tiết)</label>
                                 <!-- Actions -->
                                 <div class="flex gap-4">
                                     <!-- Select from Media -->
@@ -586,7 +625,7 @@
                                         <div
                                             class="bg-gray-50 hover:bg-gray-100 text-gray-500 px-6 py-4 rounded-xl border border-gray-200 border-dashed flex items-center justify-center gap-2 font-bold transition-all w-full h-full group-hover:border-blue-300 group-hover:text-blue-500">
                                             <i class="fa-solid fa-cloud-arrow-up"></i>
-                                            Tải ảnh từ máy tính
+                                            Tải ảnh slider từ máy tính
                                         </div>
                                     </div>
                                 </div>
@@ -599,10 +638,17 @@
                                             <div
                                                 class="relative aspect-square rounded-lg overflow-hidden border border-gray-200 group">
                                                 <img src="{{ $img }}" class="w-full h-full object-cover">
-                                                <button type="button" wire:click="removeImage({{ $index }})"
-                                                    class="absolute top-1 right-1 bg-red-500 text-white w-6 h-6 rounded-full text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    <i class="fa-solid fa-times"></i>
-                                                </button>
+                                                
+                                                <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
+                                                    <button type="button" wire:click="setAvatarFromImage({{ $index }})"
+                                                        class="bg-white text-blue-600 text-[10px] font-bold px-2 py-1 rounded shadow-sm hover:bg-blue-50" title="Đặt làm ảnh đại diện">
+                                                        <i class="fa-solid fa-star"></i> Avatar
+                                                    </button>
+                                                    <button type="button" wire:click="removeImage({{ $index }})"
+                                                        class="bg-red-500 text-white w-6 h-6 rounded-full text-xs flex items-center justify-center hover:bg-red-600">
+                                                        <i class="fa-solid fa-times"></i>
+                                                    </button>
+                                                </div>
                                             </div>
                                         @endforeach
 
