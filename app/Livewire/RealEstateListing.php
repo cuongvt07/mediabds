@@ -60,7 +60,23 @@ class RealEstateListing extends Component
         113 => 'Nhà nghỉ',
         114 => 'Homestay',
     ];
-    
+
+    const PREFIX_MAP = [
+        110 => '#K',
+        102 => '#BT',
+        103 => '#CH',
+        104 => '#D',
+        105 => '#DA',
+        106 => '#MT',
+        107 => '#MP',
+        111 => '#MPN',
+        108 => '#NR',
+        109 => '#TT',
+        112 => '#KS',
+        113 => '#NN',
+        114 => '#HS',
+    ];
+
     const DIRECTIONS = [
         1 => 'Đông',
         2 => 'Tây',
@@ -107,7 +123,7 @@ class RealEstateListing extends Component
     {
         array_splice($this->images, $index, 1);
     }
-    
+
     public function removeTempImage($index)
     {
         array_splice($this->tempImages, $index, 1);
@@ -270,7 +286,7 @@ class RealEstateListing extends Component
                 'province' => $provinceId,
                 'action' => 'willgroup_get_districts'
             ]);
-            
+
             if ($response->successful()) {
                 $this->districts = $this->parseOptions($response->body());
             }
@@ -294,7 +310,7 @@ class RealEstateListing extends Component
             // 
         }
     }
-    
+
     protected function fetchFilterDistricts($provinceId)
     {
         try {
@@ -302,7 +318,7 @@ class RealEstateListing extends Component
                 'province' => $provinceId,
                 'action' => 'willgroup_get_districts'
             ]);
-            
+
             if ($response->successful()) {
                 $this->filter_districts = $this->parseOptions($response->body());
             }
@@ -326,13 +342,39 @@ class RealEstateListing extends Component
             // 
         }
     }
-    
+
+    public function updatedPropertyType($value)
+    {
+        if (!$this->selectedListingId && $value) {
+            $this->code = $this->generateListingCode($value);
+        }
+    }
+
+    protected function generateListingCode($propertyType)
+    {
+        $prefix = self::PREFIX_MAP[$propertyType] ?? '#RE';
+
+        // Try up to 5 times to generate a unique code
+        for ($i = 0; $i < 5; $i++) {
+            $random = str_pad(mt_rand(0, 9999), 4, '0', STR_PAD_LEFT);
+            $code = $prefix . $random;
+
+            // Check uniqueness
+            if (!ListingModel::where('code', $code)->exists()) {
+                return $code;
+            }
+        }
+
+        // Fallback if collision
+        return $prefix . str_pad(mt_rand(0, 999999), 6, '0', STR_PAD_LEFT);
+    }
+
     protected function parseOptions($html)
     {
         $options = [];
         // Regex to extract value and text from <option value="val">Text</option>
         preg_match_all('/<option\s+value="([^"]+)">([^<]+)<\/option>/i', $html, $matches, PREG_SET_ORDER);
-        
+
         foreach ($matches as $match) {
             if ($match[1]) {
                 $options[$match[1]] = trim($match[2]);
@@ -370,14 +412,16 @@ class RealEstateListing extends Component
 
         $intFields = ['floors', 'bedrooms', 'toilets'];
         foreach ($intFields as $field) {
-             if ($this->$field === '') {
+            if ($this->$field === '') {
                 $this->$field = null;
             }
         }
 
         // Sanitize Social Links
-        if ($this->facebook_link === '') $this->facebook_link = null;
-        if ($this->google_map_link === '') $this->google_map_link = null;
+        if ($this->facebook_link === '')
+            $this->facebook_link = null;
+        if ($this->google_map_link === '')
+            $this->google_map_link = null;
 
         $rules = [
             'title' => 'required',
@@ -394,7 +438,7 @@ class RealEstateListing extends Component
 
         // Auto-generate code if creating new listing and code is empty
         if (!$this->selectedListingId && empty($this->code)) {
-            $this->code = 'RE-' . time() . '-' . strtoupper(substr(uniqid(), -6));
+            $this->code = $this->generateListingCode($this->property_type ?? 110); // Default to Other if not set
         }
 
         // Process images with Media Sync
@@ -404,15 +448,15 @@ class RealEstateListing extends Component
                 $originalName = $temp->getClientOriginalName();
                 $filenameOnly = pathinfo($originalName, PATHINFO_FILENAME);
                 $extension = $temp->getClientOriginalExtension();
-                
+
                 // Sanitize + Add unique suffix (timestamp + random)
                 $safeFilename = preg_replace('/[^a-zA-Z0-9._-]/', '_', $filenameOnly);
                 $uniqueSuffix = time() . '_' . substr(uniqid(), -4);
                 $filename = $safeFilename . '_' . $uniqueSuffix . '.' . $extension;
-                
+
                 // Match Media Manager structure: YYYY/MM/UniqueFilename
                 $path = $temp->storeAs(date('Y/m'), $filename, ['disk' => 's3', 'visibility' => 'public']);
-                
+
                 $publicUrl = config('filesystems.disks.s3.endpoint') . '/' . config('filesystems.disks.s3.bucket') . '/' . $path;
 
                 // Create File Record for Media Manager
@@ -448,12 +492,12 @@ class RealEstateListing extends Component
             'province_id' => $this->province_id,
             'district_id' => $this->district_id,
             'ward_id' => $this->ward_id,
-            
+
             // Save Names
             'province_name' => self::PROVINCES[$this->province_id] ?? null,
             'district_name' => $this->districts[$this->district_id] ?? null,
             'ward_name' => $this->wards[$this->ward_id] ?? null,
-            
+
             'address' => $this->address,
             'area' => $this->area,
             'price' => $this->price,
@@ -482,20 +526,20 @@ class RealEstateListing extends Component
             }
 
             $this->dispatch('toast', ['message' => $message, 'type' => 'success']);
-            
+
             // Refresh Cache
             $this->refreshCacheVersion();
-            
+
             $this->closeCreatePopup();
-            
+
             // Clear filters to ensure the new listing is seen (if it doesn't match current filters)
             $this->clearFilters();
-            
-            $this->resetPage(); 
+
+            $this->resetPage();
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error("Save Listing Error: " . $e->getMessage());
             $this->dispatch('toast', ['message' => 'Có lỗi xảy ra: ' . $e->getMessage(), 'type' => 'error']);
-        } 
+        }
     }
 
     public function editListing($id)
@@ -504,7 +548,8 @@ class RealEstateListing extends Component
         // But if we return to list, list might be stale.
         // It's fine.
         $listing = ListingModel::find($id);
-        if (!$listing) return;
+        if (!$listing)
+            return;
 
         $this->selectedListingId = $id;
 
@@ -517,32 +562,34 @@ class RealEstateListing extends Component
         $this->is_sold = $listing->is_sold ?? false;
         $this->property_type = $listing->property_type;
         $this->province_id = $listing->province_id;
-        
+
         // Fetch Dependent Options
-        if ($this->province_id) $this->fetchDistricts($this->province_id);
-        
+        if ($this->province_id)
+            $this->fetchDistricts($this->province_id);
+
         $this->district_id = $listing->district_id;
-        
-        if ($this->district_id) $this->fetchWards($this->district_id);
-        
+
+        if ($this->district_id)
+            $this->fetchWards($this->district_id);
+
         $this->ward_id = $listing->ward_id;
         $this->ward_id = $listing->ward_id;
         $this->address = $listing->address;
-        
+
         // Format numbers for display
         $this->area = floatval($listing->area);
         $this->price = number_format($listing->price, 0, ',', '.'); // Format as VN currency
-        $this->price_unit = $listing->price_unit; 
-        
+        $this->price_unit = $listing->price_unit;
+
         $this->floors = $listing->floors;
         $this->bedrooms = $listing->bedrooms;
         $this->toilets = $listing->toilets;
         $this->direction = $listing->direction;
-        
+
         // Format Widths
         $this->front_width = floatval($listing->front_width);
         $this->road_width = floatval($listing->road_width);
-        
+
         $this->youtube_link = $listing->youtube_link;
         $this->facebook_link = $listing->facebook_link;
         $this->google_map_link = $listing->google_map_link;
@@ -555,7 +602,8 @@ class RealEstateListing extends Component
     public function viewListingDetail($id)
     {
         $listing = ListingModel::find($id);
-        if (!$listing) return;
+        if (!$listing)
+            return;
 
         $this->selectedListing = $listing->toArray();
         $this->showDetailPopup = true;
@@ -614,10 +662,10 @@ class RealEstateListing extends Component
             $listing->is_sold = !$listing->is_sold;
             $listing->save();
             $this->refreshCacheVersion(); // Refresh cache
-            
+
             $status = $listing->is_sold ? 'đã bán' : 'chưa bán';
             $this->dispatch('toast', ['message' => "Đã đánh dấu tin {$status}!", 'type' => 'success']);
-            
+
             // Refresh the detail popup if it's open
             if ($this->selectedListing && $this->selectedListing['id'] == $id) {
                 $this->selectedListing = $listing->toArray();
@@ -663,10 +711,10 @@ class RealEstateListing extends Component
             $query = ListingModel::orderBy('created_at', 'desc')->orderBy('id', 'desc');
 
             if (!empty($this->search)) {
-                $query->where(function($q) {
+                $query->where(function ($q) {
                     $q->where('title', 'like', '%' . $this->search . '%')
-                      ->orWhere('address', 'like', '%' . $this->search . '%')
-                      ->orWhere('code', 'like', '%' . $this->search . '%');
+                        ->orWhere('address', 'like', '%' . $this->search . '%')
+                        ->orWhere('code', 'like', '%' . $this->search . '%');
                 });
             }
 
