@@ -180,20 +180,17 @@
                             <div class="bg-blue-600 text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider">
                                 {{ $listing['type'] }}
                             </div>
+                            @if (!empty($listing['code']))
+                                <div class="bg-slate-700 text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider">
+                                    {{ $listing['code'] }}
+                                </div>
+                            @endif
                             @if ($listing['is_sold'])
-                                <div class="bg-red-600 text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider">
-                                    ĐÃ BÁN
+                                <div class="bg-red-600 text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider flex items-center gap-1">
+                                    <i class="fa-solid fa-check-circle"></i> ĐÃ BÁN
                                 </div>
                             @endif
                         </div>
-
-                        <!-- Code Badge -->
-                        @if (!empty($listing['code']))
-                            <div
-                                class="absolute top-9 left-2 bg-red-600 text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider z-10">
-                                {{ $listing['code'] }}
-                            </div>
-                        @endif
 
                         <!-- Image Count Badge (Bottom Left) -->
                         @if (!empty($listing['images']) && count($listing['images']) > 1)
