@@ -77,6 +77,43 @@
     </footer>
 
     @livewireScripts
+
+    <!-- Global Toast Component -->
+    <div x-data="{ 
+        messages: [],
+        remove(id) {
+            this.messages = this.messages.filter(m => m.id !== id)
+        }
+    }" 
+    @toast.window="
+        const id = Date.now();
+        messages.push({ id, message: $event.detail[0].message, type: $event.detail[0].type });
+        setTimeout(() => remove(id), 3000);
+    "
+    class="fixed bottom-5 right-5 z-[9999] flex flex-col gap-2">
+        <template x-for="m in messages" :key="m.id">
+            <div x-show="true" 
+                x-transition:enter="transition ease-out duration-300"
+                x-transition:enter-start="opacity-0 transform translate-x-8"
+                x-transition:enter-end="opacity-100 transform translate-x-0"
+                x-transition:leave="transition ease-in duration-200"
+                x-transition:leave-start="opacity-100 transform translate-x-0"
+                x-transition:leave-end="opacity-0 transform translate-x-8"
+                :class="{
+                    'bg-green-600': m.type === 'success',
+                    'bg-red-600': m.type === 'error',
+                    'bg-blue-600': m.type === 'info'
+                }"
+                class="text-white px-6 py-3 rounded-xl shadow-2xl flex items-center gap-3 min-w-[300px]">
+                <i :class="{
+                    'fa-solid fa-check-circle': m.type === 'success',
+                    'fa-solid fa-circle-exclamation': m.type === 'error',
+                    'fa-solid fa-circle-info': m.type === 'info'
+                }"></i>
+                <span x-text="m.message" class="font-bold text-sm"></span>
+            </div>
+        </template>
+    </div>
 </body>
 
 </html>

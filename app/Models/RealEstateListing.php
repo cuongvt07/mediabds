@@ -10,5 +10,6 @@ class RealEstateListing extends Model
 
     protected $casts = [
         'images' => 'array',
+        'is_sold' => 'boolean',
     ];
 }

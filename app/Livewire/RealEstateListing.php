@@ -609,17 +609,26 @@ class RealEstateListing extends Component
         if (!$listing)
             return;
 
-        $this->selectedListing = $listing->toArray();
+        $this->selectedListing = $this->prepareListingForDetail($listing);
+        $this->showDetailPopup = true;
+    }
+
+    protected function prepareListingForDetail($listing)
+    {
+        $data = $listing->toArray();
         // Prepare slider images for detail view: Avatar first, then others
-        if (!empty($this->selectedListing['avatar'])) {
-            $images = $this->selectedListing['images'] ?? [];
+        if (!empty($data['avatar'])) {
+            $images = $data['images'] ?? [];
             if (!is_array($images))
                 $images = [];
-            array_unshift($images, $this->selectedListing['avatar']);
-            $this->selectedListing['images'] = $images;
-        }
 
-        $this->showDetailPopup = true;
+            // Check if avatar is already in images to avoid duplication
+            if (!in_array($data['avatar'], $images)) {
+                array_unshift($images, $data['avatar']);
+            }
+            $data['images'] = $images;
+        }
+        return $data;
     }
 
     public function closeDetailPopup()
@@ -681,7 +690,7 @@ class RealEstateListing extends Component
 
             // Refresh the detail popup if it's open
             if ($this->selectedListing && $this->selectedListing['id'] == $id) {
-                $this->selectedListing = $listing->toArray();
+                $this->selectedListing = $this->prepareListingForDetail($listing);
             }
         }
     }
