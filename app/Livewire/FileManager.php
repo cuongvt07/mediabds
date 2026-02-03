@@ -20,7 +20,7 @@ class FileManager extends Component
     public $viewMode = 'grid'; // grid or list
     public $uploadFiles = []; // For file uploads
     public $search = '';
-    
+
     public $isFlatView = false; // "All Files" mode
     public $expandedFolders = []; // IDs of folders expanded in sidebar
     public $selectedFileForDetails = null;
@@ -34,7 +34,7 @@ class FileManager extends Component
     public $newGroupName = '';
     public $selectedFolderIdForUpload = null;
     public $targetParentId = null; // For Create Folder Modal
-    
+
     // License State
     public $showLicenseModal = false;
     public $trialDaysLeft = 0;
@@ -43,7 +43,7 @@ class FileManager extends Component
 
     public $isModeSelect = false; // "Select from Media" mode
 
-    
+
     public function mount($folderId = null, $isModeSelect = false)
     {
         $this->checkLicense();
@@ -56,18 +56,29 @@ class FileManager extends Component
     {
         $user = auth()->user();
         $masterKey = strtoupper(preg_replace('/[^a-zA-Z0-9]/', '', config('app.license_master_key')));
-        
-        $hasLicense = $user->license_key && $user->license_key === $masterKey;
-        // Check if trial active: trial_ends_at is set AND is in the future
-        $inTrial = $user->trial_ends_at && now()->lt($user->trial_ends_at);
-        
-        $this->trialDaysLeft = $inTrial ? now()->diffInDays($user->trial_ends_at, false) : 0;
-        // Round up if less than 1 day but active? diffInDays rounds down.
-        // If inTrial is true, at least < 24h. Let's use ceil or diffInHours/24 + 1
-        if ($inTrial && $this->trialDaysLeft < 1) $this->trialDaysLeft = 1;
 
-        // If NO license AND trial expired (or not set?), block.
-        // Logic: Allow if (Has License) OR (In Trial).
+        // Check admin user's license (shared for all users)
+        $adminUser = \App\Models\User::where('phone', \App\Models\User::ADMIN_PHONE)->first();
+
+        $hasLicense = $adminUser && $adminUser->license_key && $adminUser->license_key === $masterKey;
+
+        // Check if trial active for admin or current user
+        $adminInTrial = $adminUser && $adminUser->trial_ends_at && now()->lt($adminUser->trial_ends_at);
+        $userInTrial = $user->trial_ends_at && now()->lt($user->trial_ends_at);
+        $inTrial = $adminInTrial || $userInTrial;
+
+        $this->trialDaysLeft = 0;
+        if ($adminInTrial && $adminUser->trial_ends_at) {
+            $this->trialDaysLeft = now()->diffInDays($adminUser->trial_ends_at, false);
+            if ($this->trialDaysLeft < 1)
+                $this->trialDaysLeft = 1;
+        } elseif ($userInTrial && $user->trial_ends_at) {
+            $this->trialDaysLeft = now()->diffInDays($user->trial_ends_at, false);
+            if ($this->trialDaysLeft < 1)
+                $this->trialDaysLeft = 1;
+        }
+
+        // If NO license AND trial expired, block.
         if (!$hasLicense && !$inTrial) {
             $this->showLicenseModal = true;
         }
@@ -78,13 +89,13 @@ class FileManager extends Component
         // Sanitize input: remove spaces and dashes
         $input = preg_replace('/[^a-zA-Z0-9]/', '', $this->licenseKeyInput);
         $masterKey = preg_replace('/[^a-zA-Z0-9]/', '', config('app.license_master_key'));
-        
+
         // Normalize to uppercase for comparison
         $input = strtoupper($input);
         $masterKey = strtoupper($masterKey);
 
         \Log::info('License Activation Attempt', [
-            'input_sanitized' => $input, 
+            'input_sanitized' => $input,
             'master_key_sanitized' => $masterKey
         ]);
 
@@ -150,11 +161,11 @@ class FileManager extends Component
     {
         // $items can be passed from Alpine
         $ids = is_array($items) ? $items : $this->selectedItems;
-        
+
         $selectedFiles = File::whereIn('id', $ids)->get();
         // Return array of URLs
         $urls = $selectedFiles->map(fn($f) => $f->metadata['public_url'] ?? '')->filter()->toArray();
-        
+
         $this->dispatch('media-selected', ['images' => $urls]);
         $this->selectedItems = []; // Reset
     }
@@ -183,7 +194,7 @@ class FileManager extends Component
         $this->currentFolderId = $folderId;
         $this->isFlatView = false;
         $this->perPage = 40; // Reset pagination on folder change
-        
+
         if ($folderId && !in_array($folderId, $this->expandedFolders)) {
             $this->expandedFolders[] = $folderId;
         }
@@ -217,7 +228,7 @@ class FileManager extends Component
         // Optimization: Fetch all and build tree in memory to avoid N+1 if we used recursive relationships without eager loading
         // But for simplicity and since we have getRootFolders, let's use that but we need ALL folders recursively.
         // Let's simple fetch all and organize.
-        
+
         $allFolders = Folder::orderBy('name')->get();
         return $this->flattenTree($allFolders->whereNull('parent_id'), $allFolders);
     }
@@ -225,17 +236,17 @@ class FileManager extends Component
     private function flattenTree($nodes, $allFolders, $depth = 0)
     {
         $result = collect([]);
-        
+
         foreach ($nodes as $node) {
             $node->depth_name = str_repeat('&nbsp;&nbsp;&nbsp;&nbsp;', $depth) . '📂 ' . $node->name;
             $result->push($node);
-            
+
             $children = $allFolders->where('parent_id', $node->id);
             if ($children->count() > 0) {
                 $result = $result->merge($this->flattenTree($children, $allFolders, $depth + 1));
             }
         }
-        
+
         return $result;
     }
 
@@ -255,13 +266,14 @@ class FileManager extends Component
 
     public function createFolder()
     {
-        if (!$this->newFolderName) return;
+        if (!$this->newFolderName)
+            return;
 
         // Use the selected target parent, or fallback to current
         $parentId = $this->targetParentId;
 
         $this->createFolderAndGetId($this->newFolderName, $parentId);
-        
+
         $this->newFolderName = '';
         $this->targetParentId = null;
         $this->dispatch('close-modal', 'createFolderModal');
@@ -297,14 +309,17 @@ class FileManager extends Component
 
     public function performDelete()
     {
-        if (!$this->itemToDeleteId || !$this->itemToDeleteType) return;
+        if (!$this->itemToDeleteId || !$this->itemToDeleteType)
+            return;
 
         if ($this->itemToDeleteType === 'file') {
             $file = File::find($this->itemToDeleteId);
-            if ($file) $file->delete(); // Soft Delete
+            if ($file)
+                $file->delete(); // Soft Delete
         } elseif ($this->itemToDeleteType === 'folder') {
             $folder = Folder::find($this->itemToDeleteId);
-            if ($folder) $folder->delete(); // Soft Delete
+            if ($folder)
+                $folder->delete(); // Soft Delete
         }
 
         $this->itemToDeleteId = null;
@@ -329,7 +344,7 @@ class FileManager extends Component
                     now()->addMinutes(5),
                     ['ResponseContentDisposition' => 'attachment; filename="' . $file->name . '"']
                 );
-                
+
                 return redirect()->to($url);
             } catch (\Exception $e) {
                 \Log::error('Download error: ' . $e->getMessage());
@@ -373,32 +388,36 @@ class FileManager extends Component
             'uploaded_filename' => $uploadedFilename,
         ]);
 
-        if (!$uploadedFilename) return;
+        if (!$uploadedFilename)
+            return;
 
         try {
             $tempPath = storage_path('app/private/livewire-tmp/' . $uploadedFilename);
-            if (!file_exists($tempPath)) $tempPath = storage_path('app/livewire-tmp/' . $uploadedFilename);
-            if (!file_exists($tempPath)) throw new \Exception('Temp file not found.');
+            if (!file_exists($tempPath))
+                $tempPath = storage_path('app/livewire-tmp/' . $uploadedFilename);
+            if (!file_exists($tempPath))
+                throw new \Exception('Temp file not found.');
 
-            
+
             $storagePath = '';
-            
+
             // ===== UNIQUE FILENAME TO PREVENT OVERWRITES =====
             $filenameOnly = pathinfo($originalName, PATHINFO_FILENAME);
             $extension = pathinfo($originalName, PATHINFO_EXTENSION);
             $safeFilename = preg_replace('/[^a-zA-Z0-9._-]/', '_', $filenameOnly);
             $uniqueSuffix = time() . '_' . substr(uniqid(), -4);
             $uniqueFilename = $safeFilename . '_' . $uniqueSuffix . '.' . $extension;
-            
+
             if ($folderId) {
                 $folder = Folder::find($folderId);
-                if ($folder) $storagePath = $folder->path . '/' . $uniqueFilename;
+                if ($folder)
+                    $storagePath = $folder->path . '/' . $uniqueFilename;
             } else {
-                 $baseYear = date('Y');
-                 $currentMonth = date('m');
-                 $storagePath = "{$baseYear}/{$currentMonth}/{$uniqueFilename}";
+                $baseYear = date('Y');
+                $currentMonth = date('m');
+                $storagePath = "{$baseYear}/{$currentMonth}/{$uniqueFilename}";
             }
-            
+
             // Note: putFileAs automatically prepends bucket if not careful, but here we provide 'path'
             // storagePath already includes filename
             $s3Path = Storage::disk('s3')->putFileAs(
@@ -407,9 +426,9 @@ class FileManager extends Component
                 basename($storagePath), // Filename
                 'public'
             );
-            
+
             $publicUrl = config('filesystems.disks.s3.endpoint') . '/' . config('filesystems.disks.s3.bucket') . '/' . $s3Path;
-            
+
             File::create([
                 'folder_id' => $folderId,
                 'name' => $originalName,
@@ -422,19 +441,19 @@ class FileManager extends Component
             ]);
 
             @unlink($tempPath);
-            
+
         } catch (\Exception $e) {
             \Log::error('❌ S3 Upload failed!', ['error' => $e->getMessage()]);
             throw $e;
         }
-        
+
         // $this->loadItems();
     }
 
     public function createFolderAndGetId($name, $specificParentId = null)
     {
         // Use specific parent if provided, otherwise current
-        $parentId = $specificParentId; 
+        $parentId = $specificParentId;
 
         // Build path based on PARENT
         $parentFolder = $parentId ? Folder::find($parentId) : null;
@@ -456,14 +475,14 @@ class FileManager extends Component
     {
         $this->isSyncing = true;
         $this->syncMessage = 'Connecting to S3...';
-        
+
         // Dispatch event to show popup immediately
         $this->dispatch('sync-started');
 
         try {
             $client = Storage::disk('s3')->getClient();
             $bucket = config('filesystems.disks.s3.bucket');
-            
+
             $results = $client->getPaginator('ListObjectsV2', [
                 'Bucket' => $bucket,
             ]);
@@ -473,11 +492,13 @@ class FileManager extends Component
             $this->syncMessage = 'Scanning files...';
 
             foreach ($results as $result) {
-                if (empty($result['Contents'])) continue;
-                
+                if (empty($result['Contents']))
+                    continue;
+
                 foreach ($result['Contents'] as $object) {
                     $key = $object['Key'];
-                    if (substr($key, -1) === '/') continue; // Skip folders
+                    if (substr($key, -1) === '/')
+                        continue; // Skip folders
 
                     // Check if exists (INCLUDING TRASHED)
                     // If it's in trash, we skip it (user deleted it intentionally)
@@ -496,7 +517,7 @@ class FileManager extends Component
             $this->dispatch('toast', ['message' => "Sync complete. Added $newFiles new files.", 'type' => 'success']);
 
         } catch (\Exception $e) {
-            \Log::error('Sync error: '.$e->getMessage());
+            \Log::error('Sync error: ' . $e->getMessage());
             $this->syncMessage = 'Error: ' . $e->getMessage();
         }
 
@@ -508,7 +529,7 @@ class FileManager extends Component
         $filePath = $object['Key'];
         $size = $object['Size'] ?? 0;
         $name = basename($filePath);
-        
+
         $extension = strtolower(pathinfo($name, PATHINFO_EXTENSION));
         $mimeType = match ($extension) {
             'jpg', 'jpeg' => 'image/jpeg',
@@ -527,7 +548,7 @@ class FileManager extends Component
         $folderId = null;
 
         if ($directory && $directory !== '.') {
-            $folderId = $this->getOrCreateDirectory($directory); 
+            $folderId = $this->getOrCreateDirectory($directory);
         }
 
         $publicUrl = config('filesystems.disks.s3.endpoint') . '/' . config('filesystems.disks.s3.bucket') . '/' . $filePath;
@@ -551,33 +572,34 @@ class FileManager extends Component
         $currentPath = '';
 
         foreach ($parts as $part) {
-            if (!$part) continue;
+            if (!$part)
+                continue;
             $currentPath = $currentPath ? "$currentPath/$part" : $part;
-            
+
             // Check based on Path to ensure uniqueness
             $folder = Folder::withTrashed()->where('path', $currentPath)->first();
-            
+
             if (!$folder) {
                 // Create if not exists (and not deleted)
-                 $folder = Folder::create([
+                $folder = Folder::create([
                     'name' => $part,
                     'parent_id' => $parentId,
                     'path' => $currentPath
                 ]);
             } elseif ($folder->trashed()) {
-                 // If folder is trashed, we might want to restore it or reuse it?
-                 // For now, let's just reuse ID but keep it trashed? 
-                 // Actually, if we are syncing files INTO it, we probably should Restore it?
-                 // User said "deleted file... shouldn't show". Maybe folder too?
-                 // Let's assume if folder is deleted, we shouldn't add files to it visible?
-                 // BUT, if we add a NEW file from S3 that happens to be in a deleted folder...
-                 // Complicated. Let's simple check: if folder exists (trash or not), use its ID.
-                 // If it's trashed, the file will be created pointing to a trashed folder (so it might be hidden effectively).
+                // If folder is trashed, we might want to restore it or reuse it?
+                // For now, let's just reuse ID but keep it trashed? 
+                // Actually, if we are syncing files INTO it, we probably should Restore it?
+                // User said "deleted file... shouldn't show". Maybe folder too?
+                // Let's assume if folder is deleted, we shouldn't add files to it visible?
+                // BUT, if we add a NEW file from S3 that happens to be in a deleted folder...
+                // Complicated. Let's simple check: if folder exists (trash or not), use its ID.
+                // If it's trashed, the file will be created pointing to a trashed folder (so it might be hidden effectively).
             }
 
             $parentId = $folder->id;
         }
-        
+
         return $parentId;
     }
 
