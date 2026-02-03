@@ -111,6 +111,10 @@ class RealEstateListing extends Component
     public $districts = [];
     public $wards = [];
 
+    // Permissions
+    public $isAdmin = false;
+    public $userPropertyTypes = [];
+
     protected $listeners = ['media-selected' => 'handleMediaSelected'];
 
     public function handleMediaSelected($data)
@@ -135,6 +139,11 @@ class RealEstateListing extends Component
     {
         $this->filter_province = null;
         $this->loadFilterDistricts();
+
+        // Set permissions
+        $user = auth()->user();
+        $this->isAdmin = $user?->isAdmin() ?? false;
+        $this->userPropertyTypes = $user?->property_types ?? [];
     }
 
     const PROVINCES = [
@@ -547,12 +556,16 @@ class RealEstateListing extends Component
 
     public function editListing($id)
     {
-        // Clear cache to ensure we edit fresh data? No, finding by ID is direct query usually not cached in this component context (we cached the list query).
-        // But if we return to list, list might be stale.
-        // It's fine.
         $listing = ListingModel::find($id);
         if (!$listing)
             return;
+
+        // Permission check
+        $user = auth()->user();
+        if (!$user || !$user->canEditListing($listing)) {
+            $this->dispatch('toast', ['message' => 'Bạn không có quyền sửa tin này!', 'type' => 'error']);
+            return;
+        }
 
         $this->selectedListingId = $id;
 
@@ -669,10 +682,16 @@ class RealEstateListing extends Component
 
     public function deleteListing($id)
     {
+        $user = auth()->user();
+        if (!$user || !$user->canDeleteListing()) {
+            $this->dispatch('toast', ['message' => 'Chỉ Admin mới có quyền xóa!', 'type' => 'error']);
+            return;
+        }
+
         $listing = ListingModel::find($id);
         if ($listing) {
             $listing->delete();
-            $this->refreshCacheVersion(); // Refresh cache on delete
+            $this->refreshCacheVersion();
             $this->dispatch('toast', ['message' => 'Đã xóa tin đăng!', 'type' => 'success']);
         }
     }
@@ -773,6 +792,12 @@ class RealEstateListing extends Component
         $listings = \Illuminate\Support\Facades\Cache::remember($cacheKey, 60, function () {
             // Use deterministic sorting: Created At DESC, then ID DESC
             $query = ListingModel::orderBy('created_at', 'desc')->orderBy('id', 'desc');
+
+            // Auto-filter by user's property types (if not admin)
+            $user = auth()->user();
+            if ($user && !$user->isAdmin() && !empty($user->property_types)) {
+                $query->whereIn('property_type', $user->property_types);
+            }
 
             if (!empty($this->search)) {
                 $query->where(function ($q) {

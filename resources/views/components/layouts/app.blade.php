@@ -75,6 +75,16 @@
                     </div>
                     <span class="text-[10px] font-bold text-center leading-none">Account</span>
                 </a>
+
+                <a href="{{ route('customers') }}" wire:navigate
+                    class="flex flex-col items-center justify-center p-3 rounded-2xl transition-all group {{ request()->routeIs('customers') ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-white hover:bg-slate-800' }}"
+                    title="Quản lý khách hàng">
+                    <div
+                        class="w-8 h-8 flex items-center justify-center rounded-lg mb-1 {{ request()->routeIs('customers') ? 'bg-white/20' : 'bg-slate-800 group-hover:bg-slate-700' }}">
+                        <i class="fa-solid fa-user-group text-sm"></i>
+                    </div>
+                    <span class="text-[10px] font-bold text-center leading-none">Khách Hàng</span>
+                </a>
             </div>
 
             <!-- Bottom Actions -->

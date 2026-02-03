@@ -122,6 +122,25 @@
                         @enderror
                     </div>
 
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">
+                            <i class="fa-solid fa-house-chimney text-blue-500 mr-1"></i>
+                            Loại BĐS được phân công
+                        </label>
+                        <div class="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-3 bg-gray-50">
+                            @foreach ($propertyTypeOptions as $id => $name)
+                                <label class="flex items-center gap-2 text-sm cursor-pointer hover:bg-white p-2 rounded">
+                                    <input type="checkbox" wire:model="property_types" value="{{ $id }}"
+                                        class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                                    <span class="text-gray-700">{{ $name }}</span>
+                                </label>
+                            @endforeach
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1">
+                            <i class="fa-solid fa-info-circle"></i>
+                            NV chỉ thấy tin đăng thuộc loại BĐS được phân công
+                        </p>
+                    </div>
 
                 </div>
 

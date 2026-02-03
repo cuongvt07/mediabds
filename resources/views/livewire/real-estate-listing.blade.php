@@ -89,7 +89,8 @@
                     class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
             </div>
 
-            {{-- Property Type Filter --}}
+            {{-- Property Type Filter (Admin only) --}}
+            @if ($isAdmin)
             <div>
                 <label class="text-xs font-semibold text-gray-500 uppercase mb-1 block">Loại nhà</label>
                 <select wire:model.live="filter_property_type"
@@ -100,6 +101,7 @@
                     @endforeach
                 </select>
             </div>
+            @endif
 
             {{-- Sold Status Filter --}}
             <div>
@@ -226,18 +228,22 @@
                                             style="display: none;"></i>
                                     </button>
 
-                                    <button wire:click.stop="editListing({{ $listing['id'] }})"
-                                        class="w-7 h-7 flex items-center justify-center rounded-full text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
-                                        title="Sửa tin">
-                                        <i class="fa-regular fa-pen-to-square"></i>
-                                    </button>
+                                    @if ($isAdmin || $listing['user_id'] === auth()->id())
+                                        <button wire:click.stop="editListing({{ $listing['id'] }})"
+                                            class="w-7 h-7 flex items-center justify-center rounded-full text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                                            title="Sửa tin">
+                                            <i class="fa-regular fa-pen-to-square"></i>
+                                        </button>
+                                    @endif
 
-                                    <button wire:click.stop="deleteListing({{ $listing['id'] }})"
-                                        wire:confirm="Bạn có chắc chắn muốn xóa tin này không?"
-                                        class="w-7 h-7 flex items-center justify-center rounded-full text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                                        title="Xóa tin">
-                                        <i class="fa-regular fa-trash-can"></i>
-                                    </button>
+                                    @if ($isAdmin)
+                                        <button wire:click.stop="deleteListing({{ $listing['id'] }})"
+                                            wire:confirm="Bạn có chắc chắn muốn xóa tin này không?"
+                                            class="w-7 h-7 flex items-center justify-center rounded-full text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                                            title="Xóa tin">
+                                            <i class="fa-regular fa-trash-can"></i>
+                                        </button>
+                                    @endif
                                 </div>
                             </div>
 

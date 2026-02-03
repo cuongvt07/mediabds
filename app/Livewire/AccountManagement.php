@@ -20,12 +20,14 @@ class AccountManagement extends Component
     public $name;
     public $phone;
     public $password;
+    public $property_types = [];
 
     protected function rules()
     {
         return [
             'name' => 'required|min:3',
             'phone' => ['required', 'regex:/^([0-9\s\-\+\(\)]*)$/', Rule::unique('users', 'phone')->ignore($this->selectedUserId)],
+            'property_types' => 'nullable|array',
         ];
     }
 
@@ -34,13 +36,14 @@ class AccountManagement extends Component
         $users = User::query()
             ->when($this->search, function ($query) {
                 $query->where('name', 'like', '%' . $this->search . '%')
-                      ->orWhere('phone', 'like', '%' . $this->search . '%');
+                    ->orWhere('phone', 'like', '%' . $this->search . '%');
             })
             ->latest()
             ->paginate(10);
 
         return view('livewire.account-management', [
-            'users' => $users
+            'users' => $users,
+            'propertyTypeOptions' => \App\Livewire\RealEstateListing::PROPERTY_TYPES,
         ])->layout('components.layouts.app', ['title' => 'Account Management']);
     }
 
@@ -62,7 +65,7 @@ class AccountManagement extends Component
         $this->selectedUserId = $id;
         $this->name = $user->name;
         $this->phone = $user->phone;
-        // Password field removed
+        $this->property_types = $user->property_types ?? [];
         $this->showCreatePopup = true;
     }
 
@@ -73,13 +76,11 @@ class AccountManagement extends Component
         $data = [
             'name' => $this->name,
             'phone' => $this->phone,
+            'property_types' => $this->property_types,
         ];
 
-        // Password not handled here as it's not in the form.
-        // If DB requires password, we might need a default for creation.
-        // Assuming standard Laravel user table...
         if (!$this->selectedUserId) {
-             $data['password'] = bcrypt(\Illuminate\Support\Str::random(16));
+            $data['password'] = bcrypt(\Illuminate\Support\Str::random(16));
         }
 
         if ($this->selectedUserId) {
@@ -122,6 +123,7 @@ class AccountManagement extends Component
         $this->name = '';
         $this->phone = '';
         $this->password = '';
+        $this->property_types = [];
         $this->resetValidation();
     }
 }
