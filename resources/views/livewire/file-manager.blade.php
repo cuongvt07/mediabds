@@ -319,11 +319,13 @@
                                     class="w-full text-left px-4 py-2 text-[13px] text-gray-700 hover:bg-gray-50 active:bg-gray-100 active:scale-95 transition-all flex items-center gap-2">
                                     <span>ℹ️</span> Details
                                 </button>
+                                @if ($isAdmin)
                                 <button
                                     @click.stop="open = false; $wire.requestDelete('folder', '{{ $folder->id }}')"
                                     class="w-full text-left px-4 py-2 text-[13px] text-red-600 hover:bg-red-50 active:bg-red-100 active:scale-95 transition-all flex items-center gap-2 font-medium">
                                     <span>🗑️</span> Delete
                                 </button>
+                                @endif
                             </div>
 
                             <div wire:click="selectFolder('{{ $folder->id }}')" class="text-center px-1">
@@ -435,10 +437,12 @@
                                         <button @click.stop="open = false; $wire.downloadFile('{{ $file->id }}')"
                                             class="w-full text-left px-4 py-2.5 text-[13px] text-gray-700 hover:bg-gray-50 flex items-center gap-2"><span>⬇️</span>
                                             Download</button>
+                                        @if ($isAdmin)
                                         <button
                                             @click.stop="open = false; $wire.requestDelete('file', '{{ $file->id }}')"
                                             class="w-full text-left px-4 py-2.5 text-[13px] text-red-600 hover:bg-red-50 flex items-center gap-2 font-bold mt-1"><span>🗑️</span>
                                             Delete</button>
+                                        @endif
                                     </div>
                                 @endif
                             </div>

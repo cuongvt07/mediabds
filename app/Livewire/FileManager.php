@@ -42,13 +42,14 @@ class FileManager extends Component
     public $licenseError = '';
 
     public $isModeSelect = false; // "Select from Media" mode
-
+    public $isAdmin = false; // Permission check
 
     public function mount($folderId = null, $isModeSelect = false)
     {
         $this->checkLicense();
         $this->currentFolderId = $folderId;
         $this->isModeSelect = $isModeSelect;
+        $this->isAdmin = auth()->user()?->isAdmin() ?? false;
         $this->loadItems();
     }
 

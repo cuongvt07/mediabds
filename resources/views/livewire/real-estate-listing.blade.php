@@ -228,7 +228,7 @@
                                             style="display: none;"></i>
                                     </button>
 
-                                    @if ($isAdmin || $listing['user_id'] === auth()->id())
+                                    @if ($isAdmin)
                                         <button wire:click.stop="editListing({{ $listing['id'] }})"
                                             class="w-7 h-7 flex items-center justify-center rounded-full text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
                                             title="Sửa tin">
