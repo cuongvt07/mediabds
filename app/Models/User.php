@@ -41,9 +41,7 @@ class User extends Authenticatable
      */
     public function canEditListing($listing): bool
     {
-        if ($this->isAdmin())
-            return true;
-        return $listing->user_id === $this->id;
+        return $this->isAdmin();
     }
 
     /**

@@ -396,6 +396,13 @@ class RealEstateListing extends Component
 
     public function saveListing()
     {
+        // Permission check - only admin can create/edit listings
+        $user = auth()->user();
+        if (!$user || !$user->isAdmin()) {
+            $this->dispatch('toast', ['message' => 'Chỉ Admin mới có quyền tạo/sửa tin đăng!', 'type' => 'error']);
+            return;
+        }
+
         // Robust Sanitization for Price
         if ($this->price === '' || $this->price === null) {
             $this->price = null;
@@ -698,6 +705,13 @@ class RealEstateListing extends Component
 
     public function toggleSold($id)
     {
+        // Permission check - only admin can toggle sold status
+        $user = auth()->user();
+        if (!$user || !$user->isAdmin()) {
+            $this->dispatch('toast', ['message' => 'Chỉ Admin mới có quyền đánh dấu đã bán!', 'type' => 'error']);
+            return;
+        }
+
         $listing = ListingModel::find($id);
         if ($listing) {
             $listing->is_sold = !$listing->is_sold;

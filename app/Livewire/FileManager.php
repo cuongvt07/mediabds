@@ -267,6 +267,14 @@ class FileManager extends Component
 
     public function createFolder()
     {
+        // Permission check - only admin can create folders
+        $user = auth()->user();
+        if (!$user || !$user->isAdmin()) {
+            $this->dispatch('toast', ['message' => 'Chỉ Admin mới có quyền tạo thư mục!', 'type' => 'error']);
+            $this->dispatch('close-modal', 'createFolderModal');
+            return;
+        }
+
         if (!$this->newFolderName)
             return;
 
@@ -310,6 +318,14 @@ class FileManager extends Component
 
     public function performDelete()
     {
+        // Permission check - only admin can delete
+        $user = auth()->user();
+        if (!$user || !$user->isAdmin()) {
+            $this->dispatch('toast', ['message' => 'Chỉ Admin mới có quyền xóa!', 'type' => 'error']);
+            $this->dispatch('close-modal', 'deleteConfirmationModal');
+            return;
+        }
+
         if (!$this->itemToDeleteId || !$this->itemToDeleteType)
             return;
 
@@ -326,7 +342,7 @@ class FileManager extends Component
         $this->itemToDeleteId = null;
         $this->itemToDeleteType = null;
         $this->dispatch('close-modal', 'deleteConfirmationModal');
-        $this->dispatch('toast', ['message' => 'Item moved to trash', 'type' => 'success']);
+        $this->dispatch('toast', ['message' => 'Đã chuyển vào thùng rác', 'type' => 'success']);
         $this->loadItems();
     }
 
@@ -380,6 +396,13 @@ class FileManager extends Component
 
     public function saveUploadedFile($uploadedFilename, $originalName, $mimeType, $size, $targetFolderId = null)
     {
+        // Permission check - only admin can upload files
+        $user = auth()->user();
+        if (!$user || !$user->isAdmin()) {
+            \Log::warning('Unauthorized file upload attempt', ['user_id' => $user?->id ?? 'guest']);
+            throw new \Exception('Chỉ Admin mới có quyền tải lên file!');
+        }
+
         // Use provided targetFolderId (e.g. from grouping) or current view
         $folderId = $targetFolderId ?? $this->currentFolderId;
 
@@ -474,11 +497,15 @@ class FileManager extends Component
 
     public function syncFromS3()
     {
-        $this->isSyncing = true;
-        $this->syncMessage = 'Connecting to S3...';
+        // Permission check - only admin can sync from S3
+        $user = auth()->user();
+        if (!$user || !$user->isAdmin()) {
+            $this->dispatch('toast', ['message' => 'Chỉ Admin mới có quyền đồng bộ từ S3!', 'type' => 'error']);
+            return;
+        }
 
-        // Dispatch event to show popup immediately
-        $this->dispatch('sync-started');
+        $this->isSyncing = true;
+        $this->dispatch('toast', ['message' => 'Đang bắt đầu đồng bộ S3...', 'type' => 'info']);
 
         try {
             $client = Storage::disk('s3')->getClient();
