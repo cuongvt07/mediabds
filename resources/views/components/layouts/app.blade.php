@@ -56,6 +56,7 @@
                     <span class="text-[10px] font-bold text-center leading-none">Tin Đăng</span>
                 </a>
 
+                @if(auth()->user()->isAdmin())
                 <a href="{{ route('media') }}" wire:navigate
                     class="flex flex-col items-center justify-center p-3 rounded-2xl transition-all group {{ request()->routeIs('media') ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-white hover:bg-slate-800' }}"
                     title="Media Manager">
@@ -75,6 +76,7 @@
                     </div>
                     <span class="text-[10px] font-bold text-center leading-none">Account</span>
                 </a>
+                @endif
 
                 <a href="{{ route('customers') }}" wire:navigate
                     class="flex flex-col items-center justify-center p-3 rounded-2xl transition-all group {{ request()->routeIs('customers') ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-white hover:bg-slate-800' }}"
