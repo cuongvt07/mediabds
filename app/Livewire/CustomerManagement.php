@@ -32,6 +32,8 @@ class CustomerManagement extends Component
     public ?string $budgetFrom = null; // Legacy, kept for logic but not used in UI directly
     public ?string $budgetTo = null;   // Legacy
 
+    public ?string $description = '';
+
     // Budget UI properties
     public $budgetFromValue = null;
     public $budgetFromUnit = 1000000000; // Default Tỷ
@@ -160,7 +162,6 @@ class CustomerManagement extends Component
         $this->phone = $customer->phone;
         $this->phone2 = $customer->phone2 ?? '';
         $this->status = $customer->status;
-        $this->assignedUserId = $customer->assigned_user_id;
         $this->assignedUserId = $customer->assigned_user_id;
 
         // Parse budget from
@@ -362,7 +363,6 @@ class CustomerManagement extends Component
         $this->phone = '';
         $this->phone2 = '';
         $this->status = 'khach_mua_o';
-        $this->assignedUserId = null;
         $this->assignedUserId = null;
         $this->budgetFromValue = null;
         $this->budgetFromUnit = 1000000000;
