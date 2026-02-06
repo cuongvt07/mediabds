@@ -116,15 +116,8 @@ class CustomerManagement extends Component
      */
     public function viewCustomerDetail(int $id): void
     {
-        $customer = Customer::with(['assignedUser', 'works.user'])->find($id);
-        if ($customer) {
-            // Sanitize data before displaying
-            $customer->name = $this->sanitizeUTF8($customer->name);
-            $customer->phone = $this->sanitizeUTF8($customer->phone);
-            $customer->phone2 = $this->sanitizeUTF8($customer->phone2);
-            $customer->description = $this->sanitizeUTF8($customer->description);
-
-            $this->selectedCustomer = $customer;
+        $this->selectedCustomer = Customer::with(['assignedUser', 'works.user'])->find($id);
+        if ($this->selectedCustomer) {
             $this->selectedCustomerId = $id;
             $this->showDetailPopup = true;
         }
@@ -142,29 +135,6 @@ class CustomerManagement extends Component
     }
 
     /**
-     * Sanitize string to ensure valid UTF-8 (always returns string, never null)
-     */
-    protected function sanitizeUTF8($value): string
-    {
-        if ($value === null || $value === '') {
-            return '';
-        }
-
-        // Convert to string if needed
-        $string = (string) $value;
-
-        // Clean invalid UTF-8 bytes
-        $clean = mb_convert_encoding($string, 'UTF-8', 'UTF-8');
-
-        // Double-check with iconv if mb_convert fails
-        if ($clean === false || json_encode($clean) === false) {
-            return iconv('UTF-8', 'UTF-8//IGNORE', $string) ?: '';
-        }
-
-        return $clean;
-    }
-
-    /**
      * Edit customer from list
      */
     public function editCustomer(int $id): void
@@ -175,15 +145,15 @@ class CustomerManagement extends Component
         }
 
         $this->selectedCustomerId = $id;
-        $this->code = $this->sanitizeUTF8($customer->code);
-        $this->name = $this->sanitizeUTF8($customer->name);
-        $this->phone = $this->sanitizeUTF8($customer->phone);
-        $this->phone2 = $this->sanitizeUTF8($customer->phone2 ?? '');
+        $this->code = $customer->code;
+        $this->name = $customer->name;
+        $this->phone = $customer->phone;
+        $this->phone2 = $customer->phone2 ?? '';
         $this->status = $customer->status;
         $this->assignedUserId = $customer->assigned_user_id;
-        $this->budgetFrom = $customer->budget_from; // Numbers are safe
+        $this->budgetFrom = $customer->budget_from;
         $this->budgetTo = $customer->budget_to;
-        $this->description = $this->sanitizeUTF8($customer->description ?? '');
+        $this->description = $customer->description ?? '';
         $this->showCreatePopup = true;
     }
 
@@ -218,12 +188,6 @@ class CustomerManagement extends Component
      */
     public function saveCustomer(): void
     {
-        // Sanitize inputs before validation
-        $this->name = $this->sanitizeUTF8($this->name);
-        $this->phone = $this->sanitizeUTF8($this->phone);
-        $this->phone2 = $this->sanitizeUTF8($this->phone2);
-        $this->description = $this->sanitizeUTF8($this->description);
-
         $this->validate();
 
         $data = [
@@ -358,28 +322,12 @@ class CustomerManagement extends Component
         $this->code = '';
         $this->name = '';
         $this->phone = '';
-        $this->phone2 = '';
         $this->status = 'khach_mua_o';
         $this->assignedUserId = null;
         $this->budgetFrom = null;
         $this->budgetTo = null;
         $this->description = '';
         $this->resetValidation();
-    }
-
-    /**
-     * View customer listings
-     */
-    public function viewCustomerListings()
-    {
-        $customer = Customer::find($this->selectedCustomerId);
-        if (!$customer)
-            return;
-
-        // Navigate to listings with phone filter
-        return redirect()->route('listings', [
-            'filter_phone' => $customer->phone
-        ]);
     }
 
     /**
@@ -412,16 +360,6 @@ class CustomerManagement extends Component
             ->paginate(20);
 
         $employees = User::all();
-
-        // Sanitize all customer string data to prevent UTF-8 errors
-        $customers->getCollection()->transform(function ($customer) {
-            $customer->name = $this->sanitizeUTF8($customer->name);
-            $customer->phone = $this->sanitizeUTF8($customer->phone);
-            $customer->phone2 = $this->sanitizeUTF8($customer->phone2);
-            $customer->code = $this->sanitizeUTF8($customer->code);
-            $customer->description = $this->sanitizeUTF8($customer->description);
-            return $customer;
-        });
 
         return view('livewire.customer-management', [
             'customers' => $customers,
