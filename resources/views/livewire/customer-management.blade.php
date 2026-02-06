@@ -219,17 +219,31 @@
                                 Tài chính mong muốn (VNĐ)
                             </label>
                             <div class="grid grid-cols-2 gap-4">
-                                <div class="relative">
-                                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">Từ</span>
-                                    <input wire:model="budgetFrom" type="text"
-                                        class="w-full border border-gray-300 rounded-lg pl-10 pr-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                                        placeholder="VD: 1000000000">
+                                <div class="flex gap-2 items-center">
+                                    <div class="relative flex-1">
+                                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">Từ</span>
+                                        <input wire:model="budgetFromValue" type="number" step="0.1"
+                                            class="w-full border border-gray-300 rounded-lg pl-10 pr-2 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                                            placeholder="VD: 1">
+                                    </div>
+                                    <select wire:model="budgetFromUnit" class="w-24 border border-gray-300 rounded-lg px-2 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white">
+                                        @foreach (\App\Livewire\CustomerManagement::BUDGET_UNITS as $value => $label)
+                                            <option value="{{ $value }}">{{ $label }}</option>
+                                        @endforeach
+                                    </select>
                                 </div>
-                                <div class="relative">
-                                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">Đến</span>
-                                    <input wire:model="budgetTo" type="text"
-                                        class="w-full border border-gray-300 rounded-lg pl-12 pr-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                                        placeholder="VD: 5000000000">
+                                <div class="flex gap-2 items-center">
+                                    <div class="relative flex-1">
+                                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">Đến</span>
+                                        <input wire:model="budgetToValue" type="number" step="0.1"
+                                            class="w-full border border-gray-300 rounded-lg pl-10 pr-2 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                                            placeholder="VD: 5">
+                                    </div>
+                                    <select wire:model="budgetToUnit" class="w-24 border border-gray-300 rounded-lg px-2 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white">
+                                        @foreach (\App\Livewire\CustomerManagement::BUDGET_UNITS as $value => $label)
+                                            <option value="{{ $value }}">{{ $label }}</option>
+                                        @endforeach
+                                    </select>
                                 </div>
                             </div>
                         </div>

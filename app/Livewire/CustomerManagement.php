@@ -29,9 +29,19 @@ class CustomerManagement extends Component
     public string $phone2 = '';
     public string $status = 'khach_mua_o';
     public ?int $assignedUserId = null;
-    public ?string $budgetFrom = null;
-    public ?string $budgetTo = null;
-    public string $description = '';
+    public ?string $budgetFrom = null; // Legacy, kept for logic but not used in UI directly
+    public ?string $budgetTo = null;   // Legacy
+
+    // Budget UI properties
+    public $budgetFromValue = null;
+    public $budgetFromUnit = 1000000000; // Default Tỷ
+    public $budgetToValue = null;
+    public $budgetToUnit = 1000000000;   // Default Tỷ
+
+    public const BUDGET_UNITS = [
+        1000000 => 'Triệu',
+        1000000000 => 'Tỷ',
+    ];
 
     // Work Timeline Form
     public string $workDate = '';
@@ -55,8 +65,8 @@ class CustomerManagement extends Component
             'phone2' => 'nullable|regex:/^([0-9\s\-\+\(\)]*)$/',
             'status' => 'required|in:khach_mua_o,dau_tu,mua,ban,dich_vu',
             'assignedUserId' => 'nullable|exists:users,id',
-            'budgetFrom' => 'nullable|numeric|min:0',
-            'budgetTo' => 'nullable|numeric|min:0',
+            'budgetFromValue' => 'nullable|numeric|min:0',
+            'budgetToValue' => 'nullable|numeric|min:0',
             'description' => 'nullable|string',
         ];
     }
@@ -151,8 +161,36 @@ class CustomerManagement extends Component
         $this->phone2 = $customer->phone2 ?? '';
         $this->status = $customer->status;
         $this->assignedUserId = $customer->assigned_user_id;
-        $this->budgetFrom = $customer->budget_from;
-        $this->budgetTo = $customer->budget_to;
+        $this->assignedUserId = $customer->assigned_user_id;
+
+        // Parse budget from
+        if ($customer->budget_from) {
+            if ($customer->budget_from >= 1000000000) {
+                $this->budgetFromUnit = 1000000000;
+                $this->budgetFromValue = round($customer->budget_from / 1000000000, 3);
+            } else {
+                $this->budgetFromUnit = 1000000;
+                $this->budgetFromValue = round($customer->budget_from / 1000000, 3);
+            }
+        } else {
+            $this->budgetFromValue = null;
+            $this->budgetFromUnit = 1000000000;
+        }
+
+        // Parse budget to
+        if ($customer->budget_to) {
+            if ($customer->budget_to >= 1000000000) {
+                $this->budgetToUnit = 1000000000;
+                $this->budgetToValue = round($customer->budget_to / 1000000000, 3);
+            } else {
+                $this->budgetToUnit = 1000000;
+                $this->budgetToValue = round($customer->budget_to / 1000000, 3);
+            }
+        } else {
+            $this->budgetToValue = null;
+            $this->budgetToUnit = 1000000000;
+        }
+
         $this->description = $customer->description ?? '';
         $this->showCreatePopup = true;
     }
@@ -196,8 +234,8 @@ class CustomerManagement extends Component
             'phone2' => $this->phone2 ?: null,
             'status' => $this->status,
             'assigned_user_id' => $this->assignedUserId,
-            'budget_from' => $this->budgetFrom ? (float) str_replace(['.', ','], '', $this->budgetFrom) : null,
-            'budget_to' => $this->budgetTo ? (float) str_replace(['.', ','], '', $this->budgetTo) : null,
+            'budget_from' => $this->budgetFromValue ? (float) $this->budgetFromValue * (int) $this->budgetFromUnit : null,
+            'budget_to' => $this->budgetToValue ? (float) $this->budgetToValue * (int) $this->budgetToUnit : null,
             'description' => $this->description ?: null,
         ];
 
@@ -325,8 +363,11 @@ class CustomerManagement extends Component
         $this->phone2 = '';
         $this->status = 'khach_mua_o';
         $this->assignedUserId = null;
-        $this->budgetFrom = null;
-        $this->budgetTo = null;
+        $this->assignedUserId = null;
+        $this->budgetFromValue = null;
+        $this->budgetFromUnit = 1000000000;
+        $this->budgetToValue = null;
+        $this->budgetToUnit = 1000000000;
         $this->description = '';
         $this->resetValidation();
     }
