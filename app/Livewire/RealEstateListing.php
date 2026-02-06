@@ -138,8 +138,7 @@ class RealEstateListing extends Component
 
     public function mount()
     {
-        // Load provinces for filters
-        $this->provinces = Province::orderBy('name')->get();
+        // Load provinces for filters - View uses constant directly
 
         // Capture filter_phone from query parameter (from customer listings link)
         $this->filter_phone = request('filter_phone');
