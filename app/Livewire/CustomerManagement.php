@@ -141,7 +141,16 @@ class CustomerManagement extends Component
     {
         if ($string === null)
             return null;
-        return mb_convert_encoding($string, 'UTF-8', 'UTF-8');
+
+        // First try standard cleaning
+        $clean = mb_convert_encoding($string, 'UTF-8', 'UTF-8');
+
+        // If still invalid for JSON, force strip
+        if (json_encode([$clean]) === false) {
+            return iconv('UTF-8', 'UTF-8//IGNORE', $string);
+        }
+
+        return $clean;
     }
 
     /**
@@ -155,13 +164,13 @@ class CustomerManagement extends Component
         }
 
         $this->selectedCustomerId = $id;
-        $this->code = $customer->code;
+        $this->code = $this->sanitizeUTF8($customer->code);
         $this->name = $this->sanitizeUTF8($customer->name);
         $this->phone = $this->sanitizeUTF8($customer->phone);
         $this->phone2 = $this->sanitizeUTF8($customer->phone2 ?? '');
         $this->status = $customer->status;
         $this->assignedUserId = $customer->assigned_user_id;
-        $this->budgetFrom = $customer->budget_from;
+        $this->budgetFrom = $customer->budget_from; // Numbers are safe
         $this->budgetTo = $customer->budget_to;
         $this->description = $this->sanitizeUTF8($customer->description ?? '');
         $this->showCreatePopup = true;
