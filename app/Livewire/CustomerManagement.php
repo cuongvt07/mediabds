@@ -135,6 +135,16 @@ class CustomerManagement extends Component
     }
 
     /**
+     * Sanitize string to ensure valid UTF-8
+     */
+    protected function sanitizeUTF8(?string $string): ?string
+    {
+        if ($string === null)
+            return null;
+        return mb_convert_encoding($string, 'UTF-8', 'UTF-8');
+    }
+
+    /**
      * Edit customer from list
      */
     public function editCustomer(int $id): void
@@ -146,14 +156,14 @@ class CustomerManagement extends Component
 
         $this->selectedCustomerId = $id;
         $this->code = $customer->code;
-        $this->name = $customer->name;
-        $this->phone = $customer->phone;
-        $this->phone2 = $customer->phone2 ?? '';
+        $this->name = $this->sanitizeUTF8($customer->name);
+        $this->phone = $this->sanitizeUTF8($customer->phone);
+        $this->phone2 = $this->sanitizeUTF8($customer->phone2 ?? '');
         $this->status = $customer->status;
         $this->assignedUserId = $customer->assigned_user_id;
         $this->budgetFrom = $customer->budget_from;
         $this->budgetTo = $customer->budget_to;
-        $this->description = $customer->description ?? '';
+        $this->description = $this->sanitizeUTF8($customer->description ?? '');
         $this->showCreatePopup = true;
     }
 
