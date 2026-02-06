@@ -26,6 +26,14 @@ class Customer extends Model
     ];
 
     /**
+     * Ensure phone2 always returns string (never null)
+     */
+    public function getPhone2Attribute($value): string
+    {
+        return $value ?? '';
+    }
+
+    /**
      * Status labels in Vietnamese
      */
     public const STATUS_LABELS = [

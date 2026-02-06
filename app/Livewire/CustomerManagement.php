@@ -142,19 +142,23 @@ class CustomerManagement extends Component
     }
 
     /**
-     * Sanitize string to ensure valid UTF-8
+     * Sanitize string to ensure valid UTF-8 (always returns string, never null)
      */
-    protected function sanitizeUTF8(?string $string): ?string
+    protected function sanitizeUTF8($value): string
     {
-        if ($string === null)
-            return null;
+        if ($value === null || $value === '') {
+            return '';
+        }
 
-        // First try standard cleaning
+        // Convert to string if needed
+        $string = (string) $value;
+
+        // Clean invalid UTF-8 bytes
         $clean = mb_convert_encoding($string, 'UTF-8', 'UTF-8');
 
-        // If still invalid for JSON, force strip
-        if (json_encode([$clean]) === false) {
-            return iconv('UTF-8', 'UTF-8//IGNORE', $string);
+        // Double-check with iconv if mb_convert fails
+        if ($clean === false || json_encode($clean) === false) {
+            return iconv('UTF-8', 'UTF-8//IGNORE', $string) ?: '';
         }
 
         return $clean;
