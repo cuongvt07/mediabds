@@ -322,12 +322,28 @@ class CustomerManagement extends Component
         $this->code = '';
         $this->name = '';
         $this->phone = '';
+        $this->phone2 = '';
         $this->status = 'khach_mua_o';
         $this->assignedUserId = null;
         $this->budgetFrom = null;
         $this->budgetTo = null;
         $this->description = '';
         $this->resetValidation();
+    }
+
+    /**
+     * View customer listings
+     */
+    public function viewCustomerListings()
+    {
+        $customer = Customer::find($this->selectedCustomerId);
+        if (!$customer)
+            return;
+
+        // Navigate to listings with phone filter
+        return redirect()->route('listings', [
+            'filter_phone' => $customer->phone
+        ]);
     }
 
     /**
