@@ -116,8 +116,15 @@ class CustomerManagement extends Component
      */
     public function viewCustomerDetail(int $id): void
     {
-        $this->selectedCustomer = Customer::with(['assignedUser', 'works.user'])->find($id);
-        if ($this->selectedCustomer) {
+        $customer = Customer::with(['assignedUser', 'works.user'])->find($id);
+        if ($customer) {
+            // Sanitize data before displaying
+            $customer->name = $this->sanitizeUTF8($customer->name);
+            $customer->phone = $this->sanitizeUTF8($customer->phone);
+            $customer->phone2 = $this->sanitizeUTF8($customer->phone2);
+            $customer->description = $this->sanitizeUTF8($customer->description);
+
+            $this->selectedCustomer = $customer;
             $this->selectedCustomerId = $id;
             $this->showDetailPopup = true;
         }
@@ -207,6 +214,12 @@ class CustomerManagement extends Component
      */
     public function saveCustomer(): void
     {
+        // Sanitize inputs before validation
+        $this->name = $this->sanitizeUTF8($this->name);
+        $this->phone = $this->sanitizeUTF8($this->phone);
+        $this->phone2 = $this->sanitizeUTF8($this->phone2);
+        $this->description = $this->sanitizeUTF8($this->description);
+
         $this->validate();
 
         $data = [
