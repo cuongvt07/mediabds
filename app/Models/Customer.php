@@ -12,6 +12,7 @@ class Customer extends Model
         'code',
         'name',
         'phone',
+        'phone2',
         'status',
         'assigned_user_id',
         'budget_from',

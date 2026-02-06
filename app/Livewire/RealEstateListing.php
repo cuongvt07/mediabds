@@ -28,6 +28,7 @@ class RealEstateListing extends Component
     public $filter_property_type;
     public $filter_type; // New filter for Sale/Rent
     public $filter_is_sold; // Filter for sold status
+    public $filter_phone; // Filter by contact phone
     public $filter_districts = [];
     public $filter_wards = [];
 
@@ -137,6 +138,12 @@ class RealEstateListing extends Component
 
     public function mount()
     {
+        // Load provinces for filters
+        $this->provinces = Province::orderBy('name')->get();
+
+        // Capture filter_phone from query parameter (from customer listings link)
+        $this->filter_phone = request('filter_phone');
+
         $this->filter_province = null;
         $this->loadFilterDistricts();
 
@@ -847,6 +854,11 @@ class RealEstateListing extends Component
             }
             if ($this->filter_is_sold !== null && $this->filter_is_sold !== '') {
                 $query->where('is_sold', $this->filter_is_sold);
+            }
+
+            // Phone Filter (for customer listings)
+            if (!empty($this->filter_phone)) {
+                $query->where('contact_phone', 'like', '%' . $this->filter_phone . '%');
             }
 
             return $query->paginate(12);

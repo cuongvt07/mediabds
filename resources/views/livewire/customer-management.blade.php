@@ -166,6 +166,21 @@
                                     placeholder="Nhập số điện thoại">
                                 @error('phone') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
                             </div>
+
+                        <!-- Row 1.5: Phone 2 -->
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                    <i class="fa-solid fa-phone text-gray-400 mr-1"></i>
+                                    S? di?n tho?i 2
+                                </label>
+                                <input wire:model="phone2" type="text"
+                                    class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                                    placeholder="Nh?p S�T ph? (n?u c�)">
+                                @error('phone2') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
+                            </div>
+                            <div></div>
+                        </div>
                         </div>
 
                         <!-- Row 2: Status + Assigned -->
@@ -272,6 +287,10 @@
                         </div>
                     </div>
                     <div class="flex items-center gap-3">
+                        <button wire:click="viewCustomerListings" 
+                            class="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg text-sm font-medium flex items-center gap-2">
+                            <i class="fa-solid fa-building"></i> Xem tin đăng khách
+                        </button>
                         @if ($isAdmin || $selectedCustomer->assigned_user_id === auth()->id())
                             <button wire:click="editFromDetail" class="px-4 py-2 bg-yellow-500 text-gray-900 hover:bg-yellow-600 rounded-lg text-sm font-medium flex items-center gap-2 border border-yellow-600">
                                 <i class="fa-solid fa-pen"></i> Sửa
@@ -423,3 +442,4 @@
         </div>
     @endif
 </div>
+

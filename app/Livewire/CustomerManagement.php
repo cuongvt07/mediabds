@@ -26,6 +26,7 @@ class CustomerManagement extends Component
     public string $code = '';
     public string $name = '';
     public string $phone = '';
+    public string $phone2 = '';
     public string $status = 'khach_mua_o';
     public ?int $assignedUserId = null;
     public ?string $budgetFrom = null;
@@ -51,6 +52,7 @@ class CustomerManagement extends Component
         return [
             'name' => 'required|min:2',
             'phone' => 'required|regex:/^([0-9\s\-\+\(\)]*)$/',
+            'phone2' => 'nullable|regex:/^([0-9\s\-\+\(\)]*)$/',
             'status' => 'required|in:khach_mua_o,dau_tu,mua,ban,dich_vu',
             'assignedUserId' => 'nullable|exists:users,id',
             'budgetFrom' => 'nullable|numeric|min:0',
@@ -146,6 +148,7 @@ class CustomerManagement extends Component
         $this->code = $customer->code;
         $this->name = $customer->name;
         $this->phone = $customer->phone;
+        $this->phone2 = $customer->phone2 ?? '';
         $this->status = $customer->status;
         $this->assignedUserId = $customer->assigned_user_id;
         $this->budgetFrom = $customer->budget_from;
@@ -190,6 +193,7 @@ class CustomerManagement extends Component
         $data = [
             'name' => $this->name,
             'phone' => $this->phone,
+            'phone2' => $this->phone2 ?: null,
             'status' => $this->status,
             'assigned_user_id' => $this->assignedUserId,
             'budget_from' => $this->budgetFrom ? (float) str_replace(['.', ','], '', $this->budgetFrom) : null,
@@ -318,12 +322,28 @@ class CustomerManagement extends Component
         $this->code = '';
         $this->name = '';
         $this->phone = '';
+        $this->phone2 = '';
         $this->status = 'khach_mua_o';
         $this->assignedUserId = null;
         $this->budgetFrom = null;
         $this->budgetTo = null;
         $this->description = '';
         $this->resetValidation();
+    }
+
+    /**
+     * View customer listings
+     */
+    public function viewCustomerListings()
+    {
+        $customer = Customer::find($this->selectedCustomerId);
+        if (!$customer)
+            return;
+
+        // Navigate to listings with phone filter
+        return redirect()->route('listings', [
+            'filter_phone' => $customer->phone
+        ]);
     }
 
     /**
