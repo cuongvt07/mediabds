@@ -855,9 +855,11 @@ class RealEstateListing extends Component
                 $query->where('is_sold', $this->filter_is_sold);
             }
 
-            // Phone Filter (for customer listings)
+            // Phone Filter (for customer listings) - normalize phone number
             if (!empty($this->filter_phone)) {
-                $query->where('contact_phone', 'like', '%' . $this->filter_phone . '%');
+                // Remove non-numeric characters for matching
+                $normalizedPhone = preg_replace('/[^0-9]/', '', $this->filter_phone);
+                $query->whereRaw("REPLACE(REPLACE(REPLACE(contact_phone, '.', ''), '-', ''), ' ', '') LIKE ?", ['%' . $normalizedPhone . '%']);
             }
 
             return $query->paginate(12);
