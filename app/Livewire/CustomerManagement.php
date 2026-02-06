@@ -409,6 +409,16 @@ class CustomerManagement extends Component
 
         $employees = User::all();
 
+        // Sanitize all customer string data to prevent UTF-8 errors
+        $customers->getCollection()->transform(function ($customer) {
+            $customer->name = $this->sanitizeUTF8($customer->name);
+            $customer->phone = $this->sanitizeUTF8($customer->phone);
+            $customer->phone2 = $this->sanitizeUTF8($customer->phone2);
+            $customer->code = $this->sanitizeUTF8($customer->code);
+            $customer->description = $this->sanitizeUTF8($customer->description);
+            return $customer;
+        });
+
         return view('livewire.customer-management', [
             'customers' => $customers,
             'employees' => $employees,
