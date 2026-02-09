@@ -61,6 +61,11 @@
                                         {{ mb_substr($customer->name, 0, 1) }}
                                     </div>
                                     <span class="font-medium text-gray-800">{{ $customer->name }}</span>
+                                    @if ($customer->facebook)
+                                        <a href="{{ $customer->facebook }}" target="_blank" class="text-blue-600 hover:text-blue-800" title="Facebook">
+                                            <i class="fa-brands fa-facebook"></i>
+                                        </a>
+                                    @endif
                                 </div>
                             </td>
                             <td class="px-4 py-3 font-mono text-gray-600">{{ $customer->phone }}</td>
@@ -179,7 +184,16 @@
                                     placeholder="Nhập SĐT phụ (nếu có)">
                                 @error('phone2') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
                             </div>
-                            <div></div>
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                    <i class="fa-brands fa-facebook text-blue-600 mr-1"></i>
+                                    Link Facebook
+                                </label>
+                                <input wire:model="facebook" type="text"
+                                    class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                                    placeholder="https://facebook.com/...">
+                                @error('facebook') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
+                            </div>
                         </div>
                         </div>
 
@@ -345,6 +359,18 @@
                                 <i class="fa-solid fa-calendar text-gray-400 mr-1"></i> Ngày tạo
                             </p>
                             <p class="text-sm font-semibold text-gray-800">{{ $selectedCustomer->created_at->format('d/m/Y') }}</p>
+                        </div>
+                        <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                            <p class="text-xs text-gray-500 font-medium mb-1">
+                                <i class="fa-brands fa-facebook text-blue-600 mr-1"></i> Facebook
+                            </p>
+                            @if ($selectedCustomer->facebook)
+                                <a href="{{ $selectedCustomer->facebook }}" target="_blank" class="text-sm font-semibold text-blue-600 hover:underline truncate block">
+                                    Xem trang cá nhân
+                                </a>
+                            @else
+                                <p class="text-sm text-gray-400 italic">Chưa cập nhật</p>
+                            @endif
                         </div>
                     </div>
 

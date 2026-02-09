@@ -13,6 +13,7 @@ class Customer extends Model
         'name',
         'phone',
         'phone2',
+        'facebook',
         'status',
         'assigned_user_id',
         'budget_from',

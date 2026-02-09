@@ -27,6 +27,7 @@ class CustomerManagement extends Component
     public string $name = '';
     public string $phone = '';
     public string $phone2 = '';
+    public string $facebook = '';
     public string $status = 'khach_mua_o';
     public ?int $assignedUserId = null;
     public ?string $budgetFrom = null; // Legacy, kept for logic but not used in UI directly
@@ -65,6 +66,7 @@ class CustomerManagement extends Component
             'name' => 'required|min:2',
             'phone' => 'required|regex:/^([0-9\s\-\+\(\)]*)$/',
             'phone2' => 'nullable|regex:/^([0-9\s\-\+\(\)]*)$/',
+            'facebook' => 'nullable|url',
             'status' => 'required|in:khach_mua_o,dau_tu,mua,ban,dich_vu',
             'assignedUserId' => 'nullable|exists:users,id',
             'budgetFromValue' => 'nullable|numeric|min:0',
@@ -161,6 +163,7 @@ class CustomerManagement extends Component
         $this->name = $customer->name;
         $this->phone = $customer->phone;
         $this->phone2 = $customer->phone2 ?? '';
+        $this->facebook = $customer->facebook ?? '';
         $this->status = $customer->status;
         $this->assignedUserId = $customer->assigned_user_id;
 
@@ -233,6 +236,7 @@ class CustomerManagement extends Component
             'name' => $this->name,
             'phone' => $this->phone,
             'phone2' => $this->phone2 ?: null,
+            'facebook' => $this->facebook ?: null,
             'status' => $this->status,
             'assigned_user_id' => $this->assignedUserId,
             'budget_from' => $this->budgetFromValue ? (float) $this->budgetFromValue * (int) $this->budgetFromUnit : null,
@@ -362,6 +366,7 @@ class CustomerManagement extends Component
         $this->name = '';
         $this->phone = '';
         $this->phone2 = '';
+        $this->facebook = '';
         $this->status = 'khach_mua_o';
         $this->assignedUserId = null;
         $this->budgetFromValue = null;
