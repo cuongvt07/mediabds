@@ -14,6 +14,7 @@ class Customer extends Model
         'phone',
         'phone2',
         'facebook',
+        'avatar',
         'status',
         'assigned_user_id',
         'budget_from',
@@ -32,6 +33,25 @@ class Customer extends Model
     public function getPhone2Attribute($value): string
     {
         return $value ?? '';
+    }
+
+    /**
+     * Get avatar URL
+     */
+    public function getAvatarUrlAttribute(): string
+    {
+        if ($this->avatar) {
+            // Check if full URL
+            if (filter_var($this->avatar, FILTER_VALIDATE_URL)) {
+                return $this->avatar;
+            }
+
+            // Return S3 URL
+            return \Illuminate\Support\Facades\Storage::disk('s3')->url($this->avatar);
+        }
+
+        // Default avatar
+        return 'https://ui-avatars.com/api/?name=' . urlencode($this->name) . '&color=7F9CF5&background=EBF4FF';
     }
 
     /**

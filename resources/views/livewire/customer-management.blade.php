@@ -57,9 +57,14 @@
                             </td>
                             <td class="px-4 py-3">
                                 <div class="flex items-center gap-2">
-                                    <div class="w-7 h-7 rounded-full bg-blue-500 text-white flex items-center justify-center text-xs font-medium">
-                                        {{ mb_substr($customer->name, 0, 1) }}
-                                    </div>
+
+                                    @if ($customer->avatar)
+                                        <img src="{{ $customer->avatar_url }}" alt="" class="w-8 h-8 rounded-full object-cover border border-gray-200">
+                                    @else
+                                        <div class="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center text-xs font-medium">
+                                            {{ mb_substr($customer->name, 0, 1) }}
+                                        </div>
+                                    @endif
                                     <span class="font-medium text-gray-800">{{ $customer->name }}</span>
                                     @if ($customer->facebook)
                                         <a href="{{ $customer->facebook }}" target="_blank" class="text-blue-600 hover:text-blue-800" title="Facebook">
@@ -136,14 +141,41 @@
 
                 <!-- Body -->
                 <div class="flex-1 overflow-y-auto p-6">
-                    <!-- Customer Code -->
-                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 flex items-center gap-4">
-                        <div class="w-12 h-12 bg-blue-600 text-white rounded-lg flex items-center justify-center">
-                            <i class="fa-solid fa-hashtag text-xl"></i>
+                    <!-- Customer Code + Avatar -->
+                    <div class="flex gap-6 mb-6">
+                        <div class="flex-1 bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-center gap-4">
+                            <div class="w-12 h-12 bg-blue-600 text-white rounded-lg flex items-center justify-center">
+                                <i class="fa-solid fa-hashtag text-xl"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs text-blue-600 font-medium uppercase">Mã khách hàng</p>
+                                <p class="text-2xl font-bold text-blue-700">{{ $code }}</p>
+                            </div>
                         </div>
-                        <div>
-                            <p class="text-xs text-blue-600 font-medium uppercase">Mã khách hàng</p>
-                            <p class="text-2xl font-bold text-blue-700">{{ $code }}</p>
+                        
+                        <!-- Avatar Upload -->
+                        <div class="w-1/3">
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Ảnh đại diện</label>
+                            <div class="flex items-center gap-3">
+                                <div class="w-16 h-16 rounded-full border border-gray-300 overflow-hidden flex-shrink-0 bg-gray-100 flex items-center justify-center relative">
+                                    @if ($avatar)
+                                        <img src="{{ $avatar->temporaryUrl() }}" class="w-full h-full object-cover">
+                                    @elseif ($existingAvatar)
+                                        <img src="{{ $existingAvatar }}" class="w-full h-full object-cover">
+                                    @else
+                                        <i class="fa-solid fa-user text-gray-400 text-2xl"></i>
+                                    @endif
+                                    
+                                    <div wire:loading wire:target="avatar" class="absolute inset-0 bg-black/50 flex items-center justify-center">
+                                        <i class="fa-solid fa-spinner fa-spin text-white"></i>
+                                    </div>
+                                </div>
+                                <div class="flex-1">
+                                    <input type="file" wire:model="avatar" accept="image/*" class="text-xs text-gray-500 file:mr-2 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 w-full">
+                                    <p class="text-[10px] text-gray-400 mt-1">PNG, JPG, GIF tối đa 5MB.</p>
+                                    @error('avatar') <span class="text-red-500 text-xs block">{{ $message }}</span> @enderror
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -304,9 +336,14 @@
                 <!-- Header -->
                 <div class="flex justify-between items-center px-6 py-4 border-b bg-gray-50 rounded-t-xl">
                     <div class="flex items-center gap-4">
-                        <div class="w-12 h-12 bg-blue-600 text-white rounded-lg flex items-center justify-center text-xl font-bold">
-                            {{ mb_substr($selectedCustomer->name, 0, 1) }}
-                        </div>
+
+                        @if ($selectedCustomer->avatar)
+                            <img src="{{ $selectedCustomer->avatar_url }}" class="w-16 h-16 rounded-full object-cover border-2 border-white shadow-md">
+                        @else
+                            <div class="w-16 h-16 bg-blue-600 text-white rounded-lg flex items-center justify-center text-2xl font-bold shadow-md">
+                                {{ mb_substr($selectedCustomer->name, 0, 1) }}
+                            </div>
+                        @endif
                         <div>
                             <h2 class="text-lg font-bold text-gray-800">{{ $selectedCustomer->name }}</h2>
                             <p class="text-sm text-gray-500">

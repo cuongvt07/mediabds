@@ -4,6 +4,8 @@ namespace App\Livewire;
 
 use Livewire\Component;
 use Livewire\WithPagination;
+use Livewire\WithFileUploads;
+use Illuminate\Support\Facades\Storage;
 use App\Models\Customer;
 use App\Models\CustomerWork;
 use App\Models\User;
@@ -11,6 +13,7 @@ use App\Models\User;
 class CustomerManagement extends Component
 {
     use WithPagination;
+    use WithFileUploads;
 
     // Search & Filter
     public string $search = '';
@@ -24,6 +27,8 @@ class CustomerManagement extends Component
 
     // Form Fields
     public string $code = '';
+    public $avatar; // File upload
+    public $existingAvatar; // URL string for display
     public string $name = '';
     public string $phone = '';
     public string $phone2 = '';
@@ -67,6 +72,7 @@ class CustomerManagement extends Component
             'phone' => 'required|regex:/^([0-9\s\-\+\(\)]*)$/',
             'phone2' => 'nullable|regex:/^([0-9\s\-\+\(\)]*)$/',
             'facebook' => 'nullable|url',
+            'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp,heic,heif|max:10240', // Max 10MB, resize later
             'status' => 'required|in:khach_mua_o,dau_tu,mua,ban,dich_vu',
             'assignedUserId' => 'nullable|exists:users,id',
             'budgetFromValue' => 'nullable|numeric|min:0',
@@ -164,6 +170,7 @@ class CustomerManagement extends Component
         $this->phone = $customer->phone;
         $this->phone2 = $customer->phone2 ?? '';
         $this->facebook = $customer->facebook ?? '';
+        $this->existingAvatar = $customer->avatar_url;
         $this->status = $customer->status;
         $this->assignedUserId = $customer->assigned_user_id;
 
@@ -243,6 +250,36 @@ class CustomerManagement extends Component
             'budget_to' => $this->budgetToValue ? (float) $this->budgetToValue * (int) $this->budgetToUnit : null,
             'description' => $this->description ?: null,
         ];
+
+        // Handle Avatar Upload
+        if ($this->avatar) {
+            // 1. Store temporarily to optimize
+            $tempPath = $this->avatar->store('temp-avatars', 'local');
+            $fullTempPath = storage_path('app/private/' . $tempPath);
+
+            // 2. Optimize image size
+            $this->optimizeImage($fullTempPath);
+
+            // 3. Upload to S3 with unique name
+            $filename = 'customers/avatars/' . time() . '_' . $this->avatar->getClientOriginalName();
+            $filename = preg_replace('/[^a-zA-Z0-9._\-\/]/', '', $filename);
+
+            $directory = dirname($filename);
+            $name = basename($filename);
+
+            $s3Path = Storage::disk('s3')->putFileAs(
+                $directory,
+                new \Illuminate\Http\File($fullTempPath),
+                $name,
+                'public'
+            );
+
+            // 4. Update data array
+            $data['avatar'] = $s3Path;
+
+            // 5. Cleanup temp file
+            @unlink($fullTempPath);
+        }
 
         if ($this->selectedCustomerId) {
             $customer = Customer::find($this->selectedCustomerId);
@@ -362,6 +399,8 @@ class CustomerManagement extends Component
     public function resetForm(): void
     {
         $this->selectedCustomerId = null;
+        $this->avatar = null;
+        $this->existingAvatar = null;
         $this->code = '';
         $this->name = '';
         $this->phone = '';
@@ -430,5 +469,93 @@ class CustomerManagement extends Component
             'statusColors' => Customer::STATUS_COLORS,
             'isAdmin' => $user?->isAdmin() ?? false,
         ])->layout('components.layouts.app', ['title' => 'Quản Lý Khách Hàng']);
+    }
+    /**
+     * Optimize image size to be < 1MB
+     */
+    private function optimizeImage(string $path): void
+    {
+        try {
+            $info = getimagesize($path);
+            if (!$info)
+                return;
+
+            $mime = $info['mime'];
+            $quality = 80;
+
+            switch ($mime) {
+                case 'image/jpeg':
+                    $image = imagecreatefromjpeg($path);
+                    // Fix Orientation from EXIF
+                    if (function_exists('exif_read_data')) {
+                        $exif = @exif_read_data($path);
+                        if (!empty($exif['Orientation'])) {
+                            switch ($exif['Orientation']) {
+                                case 3:
+                                    $image = imagerotate($image, 180, 0);
+                                    break;
+                                case 6:
+                                    $image = imagerotate($image, -90, 0);
+                                    break;
+                                case 8:
+                                    $image = imagerotate($image, 90, 0);
+                                    break;
+                            }
+                        }
+                    }
+                    break;
+                case 'image/png':
+                    $image = imagecreatefrompng($path);
+                    break;
+                case 'image/webp':
+                    $image = imagecreatefromwebp($path);
+                    break;
+                default:
+                    // Unsupported format for optimization (e.g. HEIC), skip optimization
+                    return;
+            }
+
+            if (!$image)
+                return;
+
+            // Check if file size > 1MB
+            if (filesize($path) > 1048576) {
+                // Resize logic: scale down to max width 1024px if larger
+                $width = imagesx($image);
+                $height = imagesy($image);
+                $maxWidth = 1024;
+
+                if ($width > $maxWidth) {
+                    $newWidth = $maxWidth;
+                    $newHeight = floor($height * ($maxWidth / $width));
+                    $newImage = imagecreatetruecolor($newWidth, $newHeight);
+
+                    // Maintain transparency for PNG
+                    if ($mime == 'image/png') {
+                        imagealphablending($newImage, false);
+                        imagesavealpha($newImage, true);
+                    }
+
+                    imagecopyresampled($newImage, $image, 0, 0, 0, 0, $newWidth, $newHeight, $width, $height);
+                    $image = $newImage;
+                }
+            }
+
+            // Save back
+            if ($mime == 'image/jpeg') {
+                imagejpeg($image, $path, $quality);
+            } elseif ($mime == 'image/png') {
+                // PNG quality is 0-9 (compression level), not 0-100
+                $pngQuality = round((100 - $quality) / 10);
+                imagepng($image, $path, $pngQuality);
+            } elseif ($mime == 'image/webp') {
+                imagewebp($image, $path, $quality);
+            }
+
+            imagedestroy($image);
+        } catch (\Exception $e) {
+            // Log error but continue
+            \Illuminate\Support\Facades\Log::error('Image optimization failed: ' . $e->getMessage());
+        }
     }
 }
