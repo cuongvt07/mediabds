@@ -868,33 +868,23 @@
                                 return;
                             }
                             this.isDownloading = true;
+
                             for (let i = 0; i < urls.length; i++) {
-                                try {
-                                    const response = await fetch(urls[i]);
-                                    const blob = await response.blob();
-                                    const url = window.URL.createObjectURL(blob);
-                                    const a = document.createElement('a');
-                                    a.style.display = 'none';
-                                    a.href = url;
-                                    const ext = urls[i].split('.').pop().split('?')[0] || 'jpg';
-                                    a.download = `listing_image_${i + 1}.${ext}`;
-                                    document.body.appendChild(a);
-                                    a.click();
-                                    window.URL.revokeObjectURL(url);
-                                    document.body.removeChild(a);
-                                    await new Promise(resolve => setTimeout(resolve, 300));
-                                } catch (err) {
-                                    console.error('Download failed', err);
-                                    // Fallback if CORS fails
-                                    const a = document.createElement('a');
-                                    a.href = urls[i];
-                                    a.download = '';
-                                    a.target = '_blank';
-                                    document.body.appendChild(a);
-                                    a.click();
-                                    document.body.removeChild(a);
-                                }
+                                const proxyUrl = `/download-proxy?url=${encodeURIComponent(urls[i])}`;
+                                
+                                // Tạo the iframe hoặc the a để tải mà không reload trang hiện tại
+                                const a = document.createElement('a');
+                                a.href = proxyUrl;
+                                // Adding a download attribute to hint the browser if needed, though backend sets headers
+                                a.download = `listing_image_${i + 1}.jpg`; 
+                                document.body.appendChild(a);
+                                a.click();
+                                document.body.removeChild(a);
+                                
+                                // Đợi 1 chút giữa mỗi file để trình duyệt kịp xử lý nhiều file
+                                await new Promise(resolve => setTimeout(resolve, 800));
                             }
+                            
                             this.isDownloading = false;
                             this.selectedImages = [];
                         }
