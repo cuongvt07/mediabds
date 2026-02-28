@@ -892,4 +892,58 @@ class RealEstateListing extends Component
             'listings' => $listings
         ])->layout('components.layouts.blog');
     }
+
+    public function downloadBulkImages($urls)
+    {
+        if (!$urls || !is_array($urls)) {
+            $this->dispatch('toast', ['message' => 'Không có ảnh nào được chọn.', 'type' => 'error']);
+            return;
+        }
+
+        // 1 ảnh -> Tải thẳng
+        if (count($urls) === 1) {
+            $url = $urls[0];
+            try {
+                $response = \Illuminate\Support\Facades\Http::get($url);
+                if ($response->successful()) {
+                    $filename = basename(parse_url($url, PHP_URL_PATH));
+                    if (!$filename || $filename == '')
+                        $filename = 'image.jpg';
+                    return response()->streamDownload(function () use ($response) {
+                        echo $response->body();
+                    }, $filename, ['Content-Type' => $response->header('Content-Type') ?? 'image/jpeg']);
+                }
+            } catch (\Exception $e) {
+            }
+            $this->dispatch('toast', ['message' => 'Lỗi kết nối tải ảnh.', 'type' => 'error']);
+            return;
+        }
+
+        // Nhiều ảnh -> Zip
+        $zipFileName = 'listing_images_' . time() . '.zip';
+        $zipPath = sys_get_temp_dir() . '/' . $zipFileName;
+
+        $zip = new \ZipArchive();
+        if ($zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) === TRUE) {
+            foreach ($urls as $index => $url) {
+                try {
+                    $response = \Illuminate\Support\Facades\Http::get($url);
+                    if ($response->successful()) {
+                        $ext = pathinfo(parse_url($url, PHP_URL_PATH), PATHINFO_EXTENSION);
+                        if (!$ext)
+                            $ext = 'jpg';
+                        $zip->addFromString('image_' . ($index + 1) . '.' . $ext, $response->body());
+                    }
+                } catch (\Exception $e) {
+                }
+            }
+            $zip->close();
+        }
+
+        if (file_exists($zipPath)) {
+            return response()->download($zipPath, $zipFileName)->deleteFileAfterSend(true);
+        }
+
+        $this->dispatch('toast', ['message' => 'Trình nén ảnh bị lỗi.', 'type' => 'error']);
+    }
 }

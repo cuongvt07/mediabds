@@ -869,35 +869,14 @@
                             }
                             this.isDownloading = true;
 
-                            const form = document.createElement('form');
-                            form.method = 'POST';
-                            form.action = '/download-bulk-images';
-
-                            const csrfTokenMeta = document.querySelector('meta[name=csrf-token]');
-                            if (csrfTokenMeta) {
-                                const csrfInput = document.createElement('input');
-                                csrfInput.type = 'hidden';
-                                csrfInput.name = '_token';
-                                csrfInput.value = csrfTokenMeta.content;
-                                form.appendChild(csrfInput);
-                            }
-
-                            urls.forEach(url => {
-                                const input = document.createElement('input');
-                                input.type = 'hidden';
-                                input.name = 'urls[]';
-                                input.value = url;
-                                form.appendChild(input);
-                            });
-
-                            document.body.appendChild(form);
-                            form.submit();
-                            
-                            setTimeout(() => {
-                                document.body.removeChild(form);
+                            try {
+                                await this.$wire.downloadBulkImages(urls);
+                            } catch (e) {
+                                console.error('Lỗi tải ảnh', e);
+                            } finally {
                                 this.isDownloading = false;
                                 this.selectedImages = [];
-                            }, 2000);
+                            }
                         }
                     }">
                         {{-- Controls --}}
