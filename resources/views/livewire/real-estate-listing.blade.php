@@ -873,7 +873,7 @@
                             form.method = 'POST';
                             form.action = '/download-bulk-images';
 
-                            const csrfTokenMeta = document.querySelector('meta[name="csrf-token"]');
+                            const csrfTokenMeta = document.querySelector('meta[name=csrf-token]');
                             if (csrfTokenMeta) {
                                 const csrfInput = document.createElement('input');
                                 csrfInput.type = 'hidden';
