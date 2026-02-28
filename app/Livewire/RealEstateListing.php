@@ -29,6 +29,8 @@ class RealEstateListing extends Component
     public $filter_type; // New filter for Sale/Rent
     public $filter_is_sold; // Filter for sold status
     public $filter_phone; // Filter by contact phone
+    public $filter_month; // Filter by month
+    public $filter_year; // Filter by year
     public $filter_districts = [];
     public $filter_wards = [];
 
@@ -272,6 +274,9 @@ class RealEstateListing extends Component
         $this->filter_property_type = null;
         $this->filter_type = null;
         $this->filter_is_sold = null;
+        $this->filter_month = null;
+        $this->filter_year = null;
+        $this->filter_phone = null;
         $this->filter_districts = [];
         $this->filter_wards = [];
     }
@@ -801,6 +806,8 @@ class RealEstateListing extends Component
             'property_type' => $this->filter_property_type,
             'type' => $this->filter_type,
             'is_sold' => $this->filter_is_sold,
+            'month' => $this->filter_month,
+            'year' => $this->filter_year,
             'page' => $this->getPage(),
             'version' => $this->getCacheVersion(), // Include version in key
         ];
@@ -855,11 +862,27 @@ class RealEstateListing extends Component
                 $query->where('is_sold', $this->filter_is_sold);
             }
 
-            // Phone Filter (for customer listings) - normalize phone number
+            // Date Filters
+            if (!empty($this->filter_month)) {
+                $query->whereMonth('created_at', $this->filter_month);
+            }
+            if (!empty($this->filter_year)) {
+                $query->whereYear('created_at', $this->filter_year);
+            }
+
+            // Phone Filter (for customer listings) - support multiple comma-separated phones
             if (!empty($this->filter_phone)) {
-                // Remove non-numeric characters for matching
-                $normalizedPhone = preg_replace('/[^0-9]/', '', $this->filter_phone);
-                $query->whereRaw("REPLACE(REPLACE(REPLACE(contact_phone, '.', ''), '-', ''), ' ', '') LIKE ?", ['%' . $normalizedPhone . '%']);
+                $phones = array_filter(explode(',', $this->filter_phone));
+                if (!empty($phones)) {
+                    $query->where(function ($q) use ($phones) {
+                        foreach ($phones as $p) {
+                            $normalizedPhone = preg_replace('/[^0-9]/', '', $p);
+                            if (!empty($normalizedPhone)) {
+                                $q->orWhereRaw("REPLACE(REPLACE(REPLACE(contact_phone, '.', ''), '-', ''), ' ', '') LIKE ?", ['%' . $normalizedPhone . '%']);
+                            }
+                        }
+                    });
+                }
             }
 
             return $query->paginate(12);

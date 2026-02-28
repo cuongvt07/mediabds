@@ -53,6 +53,9 @@
                     $filter_ward ||
                     $filter_property_type ||
                     $filter_type ||
+                    $filter_month ||
+                    $filter_year ||
+                    $filter_phone ||
                     $filter_is_sold !== null)
                 <button wire:click="clearFilters"
                     class="text-xs text-red-500 hover:text-red-700 font-semibold flex items-center gap-1">
@@ -61,7 +64,18 @@
             @endif
         </div>
 
-        <div x-show="showFilters" x-collapse class="grid grid-cols-1 md:grid-cols-5 gap-3">
+        @if($filter_phone)
+        <div class="mb-3 bg-blue-50 border border-blue-200 text-blue-800 px-4 py-2.5 rounded-lg flex items-center justify-between text-sm shadow-sm animate-[fadeIn_0.3s_ease-out]">
+            <div class="flex items-center gap-2 font-medium">
+                <i class="fa-solid fa-address-book"></i> Đang lọc tin đăng liên quan đến khách hàng (SĐT: <span class="font-bold">{{ str_replace(',', ' hoặc ', $filter_phone) }}</span>)
+            </div>
+            <button wire:click="$set('filter_phone', null)" class="text-blue-600 hover:text-red-600 transition-colors font-bold whitespace-nowrap ml-3" title="Bỏ lọc theo SĐT khách">
+                <i class="fa-solid fa-times"></i> Đóng
+            </button>
+        </div>
+        @endif
+
+        <div x-show="showFilters" x-collapse class="grid grid-cols-1 md:grid-cols-6 gap-3">
             {{-- Sale/Rent Filter --}}
             <div>
                 <label class="text-xs font-semibold text-gray-500 uppercase mb-1 block">Nhu cầu</label>
@@ -111,6 +125,34 @@
                     <option value="">Tất cả</option>
                     <option value="0">Chưa bán</option>
                     <option value="1">Đã bán</option>
+                </select>
+            </div>
+
+            {{-- Month Filter --}}
+            <div>
+                <label class="text-xs font-semibold text-gray-500 uppercase mb-1 block">Tháng đăng</label>
+                <select wire:model.live="filter_month"
+                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                    <option value="">Tất cả</option>
+                    @for($i = 1; $i <= 12; $i++)
+                        <option value="{{ $i }}">Tháng {{ $i }}</option>
+                    @endfor
+                </select>
+            </div>
+
+            {{-- Year Filter --}}
+            <div>
+                <label class="text-xs font-semibold text-gray-500 uppercase mb-1 block">Năm đăng</label>
+                <select wire:model.live="filter_year"
+                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                    <option value="">Tất cả</option>
+                    @php
+                        $currentYear = date('Y');
+                        $oldestYear = 2020; // Assume tracking started no earlier than 2020 realistically
+                    @endphp
+                    @for($year = $currentYear; $year >= $oldestYear; $year--)
+                        <option value="{{ $year }}">{{ $year }}</option>
+                    @endfor
                 </select>
             </div>
 
@@ -791,24 +833,132 @@
                     <div class="mb-6" x-data="{
                         mainImage: {{ \Illuminate\Support\Js::from(!empty($selectedListing['images']) && count($selectedListing['images']) > 0 ? $selectedListing['images'][0] : 'https://placehold.co/800x600?text=No+Image') }},
                         images: {{ \Illuminate\Support\Js::from(!empty($selectedListing['images']) ? $selectedListing['images'] : ['https://placehold.co/800x600?text=No+Image']) }},
+                        selectedImages: [],
+                        isDownloading: false,
+                        getAllUniqueImages() {
+                            return [...new Set([this.mainImage, ...this.images])];
+                        },
                         swapImage(newImage, index) {
                             const oldMain = this.mainImage;
                             this.mainImage = newImage;
                             this.images[index] = oldMain;
+                        },
+                        toggleSelection(img) {
+                            let idx = this.selectedImages.indexOf(img);
+                            if (idx > -1) {
+                                this.selectedImages.splice(idx, 1);
+                            } else {
+                                this.selectedImages.push(img);
+                            }
+                        },
+                        isSelected(img) {
+                            return this.selectedImages.includes(img);
+                        },
+                        selectAll() {
+                            const allUnique = this.getAllUniqueImages();
+                            if (this.selectedImages.length === allUnique.length) {
+                                this.selectedImages = [];
+                            } else {
+                                this.selectedImages = [...allUnique];
+                            }
+                        },
+                        async downloadImages(urls) {
+                            if (!urls || urls.length === 0) {
+                                alert('Vui lòng chọn ít nhất 1 ảnh để tải về.');
+                                return;
+                            }
+                            this.isDownloading = true;
+                            for (let i = 0; i < urls.length; i++) {
+                                try {
+                                    const response = await fetch(urls[i]);
+                                    const blob = await response.blob();
+                                    const url = window.URL.createObjectURL(blob);
+                                    const a = document.createElement('a');
+                                    a.style.display = 'none';
+                                    a.href = url;
+                                    const ext = urls[i].split('.').pop().split('?')[0] || 'jpg';
+                                    a.download = `listing_image_${i + 1}.${ext}`;
+                                    document.body.appendChild(a);
+                                    a.click();
+                                    window.URL.revokeObjectURL(url);
+                                    document.body.removeChild(a);
+                                    await new Promise(resolve => setTimeout(resolve, 300));
+                                } catch (err) {
+                                    console.error('Download failed', err);
+                                    // Fallback if CORS fails
+                                    const a = document.createElement('a');
+                                    a.href = urls[i];
+                                    a.download = '';
+                                    a.target = '_blank';
+                                    document.body.appendChild(a);
+                                    a.click();
+                                    document.body.removeChild(a);
+                                }
+                            }
+                            this.isDownloading = false;
+                            this.selectedImages = [];
                         }
                     }">
+                        {{-- Controls --}}
+                        <div class="flex items-center justify-between mb-3 bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
+                            <div class="flex items-center gap-2 cursor-pointer" @click="selectAll()">
+                                <div class="w-5 h-5 rounded border flex items-center justify-center transition-colors"
+                                     :class="selectedImages.length > 0 && selectedImages.length === getAllUniqueImages().length ? 'bg-blue-600 border-blue-600 text-white' : 'border-gray-300'">
+                                    <i class="fa-solid fa-check text-xs" x-show="selectedImages.length > 0 && selectedImages.length === getAllUniqueImages().length"></i>
+                                </div>
+                                <span class="text-sm font-bold text-gray-700 hover:text-blue-600 transition-colors">Chọn tất cả</span>
+                                <span class="text-xs text-gray-500 ml-2" x-show="selectedImages.length > 0">
+                                    (Đã chọn <span x-text="selectedImages.length"></span> ảnh)
+                                </span>
+                            </div>
+                            <div class="flex gap-2">
+                                <button type="button" @click="downloadImages(selectedImages)" 
+                                        class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 md:px-4 md:py-2 rounded flex items-center gap-2 text-xs md:text-sm font-bold shadow transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                        :disabled="selectedImages.length === 0 || isDownloading">
+                                    <i class="fa-solid" :class="isDownloading ? 'fa-spinner fa-spin' : 'fa-download'"></i>
+                                    <span class="hidden md:inline" x-text="isDownloading ? 'Đang tải...' : 'Tải đã chọn'"></span>
+                                    <span class="md:hidden" x-text="isDownloading ? 'Đang tải...' : 'Tải' + (selectedImages.length ? ' (' + selectedImages.length + ')' : '')"></span>
+                                </button>
+                                <button type="button" @click="downloadImages(getAllUniqueImages())" 
+                                        class="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 md:px-4 md:py-2 rounded flex items-center gap-2 text-xs md:text-sm font-bold shadow transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                        :disabled="isDownloading">
+                                    <i class="fa-solid" :class="isDownloading ? 'fa-spinner fa-spin' : 'fa-cloud-arrow-down'"></i>
+                                    <span class="hidden md:inline">Tải tất cả</span>
+                                    <span class="md:hidden">Tải tất cả</span>
+                                </button>
+                            </div>
+                        </div>
+
                         {{-- Main Image --}}
-                        <div class="w-full aspect-video bg-gray-200 rounded-xl overflow-hidden mb-4 shadow-lg">
+                        <div class="w-full aspect-video bg-gray-200 rounded-xl overflow-hidden mb-4 shadow-lg relative group">
                             <img :src="mainImage" class="w-full h-full object-cover"
                                 alt="{{ $selectedListing['title'] }}">
+                            
+                            <!-- Selection Checkbox on Main Image -->
+                            <div class="absolute top-3 w-full px-3 flex justify-between items-start z-10 pointer-events-none">
+                                <button type="button" @click.stop="toggleSelection(mainImage)" 
+                                        class="w-8 h-8 rounded-full flex items-center justify-center transition-all bg-white shadow-md border-2 pointer-events-auto"
+                                        :class="isSelected(mainImage) ? 'border-blue-600 text-blue-600 bg-blue-50' : 'border-gray-300 text-gray-400 hover:border-blue-400 hover:bg-white/90'">
+                                    <i class="fa-solid fa-check"></i>
+                                </button>
+                            </div>
                         </div>
 
                         {{-- Thumbnails --}}
-                        <div class="flex gap-3 overflow-x-auto pb-2">
+                        <div class="flex gap-3 overflow-x-auto pb-2 custom-scrollbar">
                             <template x-for="(img, index) in images" :key="index">
                                 <div @click="swapImage(img, index)"
-                                    class="w-24 h-24 bg-gray-200 rounded-lg overflow-hidden cursor-pointer hover:ring-4 hover:ring-blue-400 transition-all shrink-0 shadow-md hover:shadow-xl">
+                                    class="relative w-24 h-24 bg-gray-200 rounded-lg overflow-hidden cursor-pointer hover:ring-4 hover:ring-blue-400 transition-all shrink-0 shadow-md hover:shadow-xl group">
                                     <img :src="img" class="w-full h-full object-cover">
+                                    
+                                    <!-- Selection Checkbox -->
+                                    <div class="absolute top-1 left-1 z-10">
+                                        <button type="button" @click.stop="toggleSelection(img)" 
+                                                class="w-6 h-6 rounded-full flex items-center justify-center transition-all bg-white shadow-sm border"
+                                                :class="isSelected(img) ? 'border-blue-600 text-blue-600 bg-blue-50' : 'border-gray-200 text-gray-300 opacity-70 group-hover:opacity-100 hover:border-blue-400'">
+                                            <i class="fa-solid fa-check text-xs"></i>
+                                        </button>
+                                    </div>
                                 </div>
                             </template>
                         </div>

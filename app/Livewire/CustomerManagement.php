@@ -425,9 +425,12 @@ class CustomerManagement extends Component
         if (!$customer)
             return;
 
-        // Navigate to listings with phone filter
+        // Collect all available phones from the customer
+        $phones = array_filter([$customer->phone, $customer->phone2]);
+
+        // Navigate to listings with phone filter (comma separated)
         return redirect()->route('listings', [
-            'filter_phone' => $customer->phone
+            'filter_phone' => implode(',', $phones)
         ]);
     }
 
