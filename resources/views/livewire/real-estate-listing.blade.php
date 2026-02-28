@@ -869,24 +869,35 @@
                             }
                             this.isDownloading = true;
 
-                            for (let i = 0; i < urls.length; i++) {
-                                const proxyUrl = `/download-proxy?url=${encodeURIComponent(urls[i])}`;
-                                
-                                // Tạo the iframe hoặc the a để tải mà không reload trang hiện tại
-                                const a = document.createElement('a');
-                                a.href = proxyUrl;
-                                // Adding a download attribute to hint the browser if needed, though backend sets headers
-                                a.download = `listing_image_${i + 1}.jpg`; 
-                                document.body.appendChild(a);
-                                a.click();
-                                document.body.removeChild(a);
-                                
-                                // Đợi 1 chút giữa mỗi file để trình duyệt kịp xử lý nhiều file
-                                await new Promise(resolve => setTimeout(resolve, 800));
+                            const form = document.createElement('form');
+                            form.method = 'POST';
+                            form.action = '/download-bulk-images';
+
+                            const csrfTokenMeta = document.querySelector('meta[name="csrf-token"]');
+                            if (csrfTokenMeta) {
+                                const csrfInput = document.createElement('input');
+                                csrfInput.type = 'hidden';
+                                csrfInput.name = '_token';
+                                csrfInput.value = csrfTokenMeta.content;
+                                form.appendChild(csrfInput);
                             }
+
+                            urls.forEach(url => {
+                                const input = document.createElement('input');
+                                input.type = 'hidden';
+                                input.name = 'urls[]';
+                                input.value = url;
+                                form.appendChild(input);
+                            });
+
+                            document.body.appendChild(form);
+                            form.submit();
                             
-                            this.isDownloading = false;
-                            this.selectedImages = [];
+                            setTimeout(() => {
+                                document.body.removeChild(form);
+                                this.isDownloading = false;
+                                this.selectedImages = [];
+                            }, 2000);
                         }
                     }">
                         {{-- Controls --}}

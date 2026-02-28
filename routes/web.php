@@ -19,32 +19,57 @@ Route::get('/listings', RealEstateListing::class)->middleware('auth')->name('lis
 Route::get('/accounts', \App\Livewire\AccountManagement::class)->middleware(['auth', 'admin'])->name('accounts');
 Route::get('/customers', \App\Livewire\CustomerManagement::class)->middleware('auth')->name('customers');
 
-Route::get('/download-proxy', function (\Illuminate\Http\Request $request) {
-    $url = $request->query('url');
-    if (!$url) {
-        return abort(400, 'Missing URL parameter');
+Route::post('/download-bulk-images', function (\Illuminate\Http\Request $request) {
+    $urls = $request->input('urls');
+    if (!$urls || !is_array($urls)) {
+        return back()->with('error', 'Không có ảnh nào được chọn.');
     }
 
-    try {
-        $response = \Illuminate\Support\Facades\Http::get($url);
-
-        if ($response->successful()) {
-            $filename = basename(parse_url($url, PHP_URL_PATH));
-            if (!$filename) {
-                $filename = 'downloaded_image.jpg';
+    // 1 ảnh -> Tải thẳng
+    if (count($urls) === 1) {
+        $url = $urls[0];
+        try {
+            $response = \Illuminate\Support\Facades\Http::get($url);
+            if ($response->successful()) {
+                $filename = basename(parse_url($url, PHP_URL_PATH));
+                if (!$filename || $filename == '')
+                    $filename = 'image.jpg';
+                return response($response->body())
+                    ->header('Content-Type', $response->header('Content-Type') ?? 'image/jpeg')
+                    ->header('Content-Disposition', 'attachment; filename="' . $filename . '"');
             }
-
-            return response($response->body())
-                ->header('Content-Type', $response->header('Content-Type') ?? 'image/jpeg')
-                ->header('Content-Disposition', 'attachment; filename="' . $filename . '"');
+        } catch (\Exception $e) {
         }
-    } catch (\Exception $e) {
-        \Illuminate\Support\Facades\Log::error('Download proxy failed: ' . $e->getMessage());
+        return back()->with('error', 'Lỗi tải ảnh.');
     }
 
-    // Fallback redirect if fetch fails
-    return redirect()->away($url);
-})->middleware('auth')->name('download-proxy');
+    // Nhiều ảnh -> Zip
+    $zipFileName = 'listing_images_' . time() . '.zip';
+    $zipPath = sys_get_temp_dir() . '/' . $zipFileName;
+
+    $zip = new ZipArchive();
+    if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) === TRUE) {
+        foreach ($urls as $index => $url) {
+            try {
+                $response = \Illuminate\Support\Facades\Http::get($url);
+                if ($response->successful()) {
+                    $ext = pathinfo(parse_url($url, PHP_URL_PATH), PATHINFO_EXTENSION);
+                    if (!$ext)
+                        $ext = 'jpg';
+                    $zip->addFromString('image_' . ($index + 1) . '.' . $ext, $response->body());
+                }
+            } catch (\Exception $e) {
+            }
+        }
+        $zip->close();
+    }
+
+    if (file_exists($zipPath)) {
+        return response()->download($zipPath, $zipFileName)->deleteFileAfterSend(true);
+    }
+
+    return back()->with('error', 'Lỗi nén ảnh.');
+})->middleware('auth')->name('download-bulk-images');
 
 Route::get('/test-s3', function () {
     try {
