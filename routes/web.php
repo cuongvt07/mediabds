@@ -19,8 +19,27 @@ Route::get('/listings', RealEstateListing::class)->middleware('auth')->name('lis
 Route::get('/accounts', \App\Livewire\AccountManagement::class)->middleware(['auth', 'admin'])->name('accounts');
 Route::get('/customers', \App\Livewire\CustomerManagement::class)->middleware('auth')->name('customers');
 
+Route::get('/proxy-image-download', function (\Illuminate\Http\Request $request) {
+    $url = $request->query('url');
+    if (!$url)
+        return abort(400);
 
+    try {
+        $response = \Illuminate\Support\Facades\Http::get($url);
+        if ($response->successful()) {
+            $filename = basename(parse_url($url, PHP_URL_PATH));
+            if (!$filename)
+                $filename = 'image.jpg';
 
+            return response($response->body())
+                ->header('Content-Type', $response->header('Content-Type') ?? 'image/jpeg')
+                ->header('Content-Disposition', 'attachment; filename="' . $filename . '"');
+        }
+    } catch (\Exception $e) {
+    }
+
+    return redirect()->away($url);
+})->middleware('auth')->name('proxy-image-download');
 Route::get('/test-s3', function () {
     try {
         $config = config('filesystems.disks.s3');

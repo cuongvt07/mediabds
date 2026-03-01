@@ -870,7 +870,21 @@
                             this.isDownloading = true;
 
                             try {
-                                await this.$wire.downloadBulkImages(urls);
+                                for (let i = 0; i < urls.length; i++) {
+                                    const encodedUrl = encodeURIComponent(urls[i]);
+                                    const proxyUrl = `/proxy-image-download?url=${encodedUrl}`;
+                                    
+                                    // Tạo thẻ a ẩn để kích hoạt tải xuống
+                                    const a = document.createElement('a');
+                                    a.href = proxyUrl;
+                                    a.download = '';
+                                    document.body.appendChild(a);
+                                    a.click();
+                                    document.body.removeChild(a);
+
+                                    // Delay nhỏ (300ms) giữa các file để trình duyệt không chặn popup/download hàng loạt
+                                    await new Promise(resolve => setTimeout(resolve, 300));
+                                }
                             } catch (e) {
                                 console.error('Lỗi tải ảnh', e);
                             } finally {

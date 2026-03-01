@@ -895,12 +895,13 @@ class RealEstateListing extends Component
 
     public function downloadBulkImages($urls)
     {
+        // Phục vụ tải tuần tự - trả lại file trực tiếp nếu bấm 1 cái
         if (!$urls || !is_array($urls)) {
             $this->dispatch('toast', ['message' => 'Không có ảnh nào được chọn.', 'type' => 'error']);
             return;
         }
 
-        // 1 ảnh -> Tải thẳng
+        // Tải 1 ảnh duy nhất (nếu người dùng ko xài nút xanh)
         if (count($urls) === 1) {
             $url = $urls[0];
             try {
@@ -918,32 +919,5 @@ class RealEstateListing extends Component
             $this->dispatch('toast', ['message' => 'Lỗi kết nối tải ảnh.', 'type' => 'error']);
             return;
         }
-
-        // Nhiều ảnh -> Zip
-        $zipFileName = 'listing_images_' . time() . '.zip';
-        $zipPath = sys_get_temp_dir() . '/' . $zipFileName;
-
-        $zip = new \ZipArchive();
-        if ($zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) === TRUE) {
-            foreach ($urls as $index => $url) {
-                try {
-                    $response = \Illuminate\Support\Facades\Http::get($url);
-                    if ($response->successful()) {
-                        $ext = pathinfo(parse_url($url, PHP_URL_PATH), PATHINFO_EXTENSION);
-                        if (!$ext)
-                            $ext = 'jpg';
-                        $zip->addFromString('image_' . ($index + 1) . '.' . $ext, $response->body());
-                    }
-                } catch (\Exception $e) {
-                }
-            }
-            $zip->close();
-        }
-
-        if (file_exists($zipPath)) {
-            return response()->download($zipPath, $zipFileName)->deleteFileAfterSend(true);
-        }
-
-        $this->dispatch('toast', ['message' => 'Trình nén ảnh bị lỗi.', 'type' => 'error']);
     }
 }
