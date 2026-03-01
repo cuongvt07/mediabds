@@ -870,20 +870,18 @@
                             this.isDownloading = true;
 
                             for (let i = 0; i < urls.length; i++) {
-                                try {
-                                    const res = await fetch(urls[i]);
-                                    const blob = await res.blob();
-                                    const blobUrl = URL.createObjectURL(blob);
-                                    const a = document.createElement('a');
-                                    a.href = blobUrl;
-                                    a.download = urls[i].split('/').pop() || ('image_' + (i+1) + '.jpg');
-                                    document.body.appendChild(a);
-                                    a.click();
-                                    document.body.removeChild(a);
-                                    URL.revokeObjectURL(blobUrl);
-                                } catch(e) { console.error(e); }
-                                await new Promise(r => setTimeout(r, 300));
+                                const proxyUrl = '/proxy-image-download?url=' + encodeURIComponent(urls[i]);
+                                const iframe = document.createElement('iframe');
+                                iframe.style.display = 'none';
+                                iframe.src = proxyUrl;
+                                document.body.appendChild(iframe);
+                                await new Promise(r => setTimeout(r, 500));
                             }
+
+                            // Dọn iframe sau 5s
+                            setTimeout(() => {
+                                document.querySelectorAll('iframe[style*=none]').forEach(f => f.remove());
+                            }, 5000);
 
                             this.isDownloading = false;
                             this.selectedImages = [];
