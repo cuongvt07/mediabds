@@ -862,19 +862,29 @@
                                 this.selectedImages = [...allUnique];
                             }
                         },
+                        downloadCount: 0,
+                        downloadTotal: 0,
                         async downloadImages(urls) {
                             if (!urls || urls.length === 0) {
                                 alert('Vui lòng chọn ít nhất 1 ảnh để tải về.');
                                 return;
                             }
                             this.isDownloading = true;
+                            this.downloadTotal = urls.length;
+                            this.downloadCount = 0;
 
                             for (let i = 0; i < urls.length; i++) {
+                                this.downloadCount = i + 1;
                                 await this.$wire.downloadSingleImage(urls[i]);
-                                await new Promise(r => setTimeout(r, 500));
+                                // Chờ 2s cho mobile kịp hoàn tất tải file trước khi bắt đầu file kế tiếp
+                                if (i < urls.length - 1) {
+                                    await new Promise(r => setTimeout(r, 2000));
+                                }
                             }
 
                             this.isDownloading = false;
+                            this.downloadCount = 0;
+                            this.downloadTotal = 0;
                             this.selectedImages = [];
                         }
                     }">
@@ -895,8 +905,8 @@
                                         class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 md:px-4 md:py-2 rounded flex items-center gap-2 text-xs md:text-sm font-bold shadow transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                         :disabled="selectedImages.length === 0 || isDownloading">
                                     <i class="fa-solid" :class="isDownloading ? 'fa-spinner fa-spin' : 'fa-download'"></i>
-                                    <span class="hidden md:inline" x-text="isDownloading ? 'Đang tải...' : 'Tải đã chọn'"></span>
-                                    <span class="md:hidden" x-text="isDownloading ? 'Đang tải...' : 'Tải' + (selectedImages.length ? ' (' + selectedImages.length + ')' : '')"></span>
+                                    <span class="hidden md:inline" x-text="isDownloading ? 'Đang tải ' + downloadCount + '/' + downloadTotal + '...' : 'Tải đã chọn'"></span>
+                                    <span class="md:hidden" x-text="isDownloading ? downloadCount + '/' + downloadTotal : 'Tải' + (selectedImages.length ? ' (' + selectedImages.length + ')' : '')"></span>
                                 </button>
                                 <button type="button" @click="downloadImages(getAllUniqueImages())" 
                                         class="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 md:px-4 md:py-2 rounded flex items-center gap-2 text-xs md:text-sm font-bold shadow transition-all disabled:opacity-50 disabled:cursor-not-allowed"
