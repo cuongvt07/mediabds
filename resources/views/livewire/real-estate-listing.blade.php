@@ -870,13 +870,18 @@
                             this.isDownloading = true;
 
                             for (let i = 0; i < urls.length; i++) {
-                                const a = document.createElement('a');
-                                a.href = urls[i];
-                                a.download = '';
-                                a.target = '_blank';
-                                document.body.appendChild(a);
-                                a.click();
-                                document.body.removeChild(a);
+                                try {
+                                    const res = await fetch(urls[i]);
+                                    const blob = await res.blob();
+                                    const blobUrl = URL.createObjectURL(blob);
+                                    const a = document.createElement('a');
+                                    a.href = blobUrl;
+                                    a.download = urls[i].split('/').pop() || ('image_' + (i+1) + '.jpg');
+                                    document.body.appendChild(a);
+                                    a.click();
+                                    document.body.removeChild(a);
+                                    URL.revokeObjectURL(blobUrl);
+                                } catch(e) { console.error(e); }
                                 await new Promise(r => setTimeout(r, 300));
                             }
 
