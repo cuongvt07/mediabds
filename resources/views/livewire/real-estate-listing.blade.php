@@ -870,18 +870,9 @@
                             this.isDownloading = true;
 
                             for (let i = 0; i < urls.length; i++) {
-                                const proxyUrl = '/proxy-image-download?url=' + encodeURIComponent(urls[i]);
-                                const iframe = document.createElement('iframe');
-                                iframe.style.display = 'none';
-                                iframe.src = proxyUrl;
-                                document.body.appendChild(iframe);
+                                await this.$wire.downloadSingleImage(urls[i]);
                                 await new Promise(r => setTimeout(r, 500));
                             }
-
-                            // Dọn iframe sau 5s
-                            setTimeout(() => {
-                                document.querySelectorAll('iframe[style*=none]').forEach(f => f.remove());
-                            }, 5000);
 
                             this.isDownloading = false;
                             this.selectedImages = [];

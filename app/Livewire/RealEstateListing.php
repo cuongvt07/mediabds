@@ -893,31 +893,24 @@ class RealEstateListing extends Component
         ])->layout('components.layouts.blog');
     }
 
-    public function downloadBulkImages($urls)
+    public function downloadSingleImage($url)
     {
-        // Phục vụ tải tuần tự - trả lại file trực tiếp nếu bấm 1 cái
-        if (!$urls || !is_array($urls)) {
-            $this->dispatch('toast', ['message' => 'Không có ảnh nào được chọn.', 'type' => 'error']);
+        if (!$url)
             return;
+
+        try {
+            $response = \Illuminate\Support\Facades\Http::get($url);
+            if ($response->successful()) {
+                $filename = basename(parse_url($url, PHP_URL_PATH));
+                if (!$filename || $filename == '')
+                    $filename = 'image.jpg';
+                return response()->streamDownload(function () use ($response) {
+                    echo $response->body();
+                }, $filename, ['Content-Type' => $response->header('Content-Type') ?? 'image/jpeg']);
+            }
+        } catch (\Exception $e) {
         }
 
-        // Tải 1 ảnh duy nhất (nếu người dùng ko xài nút xanh)
-        if (count($urls) === 1) {
-            $url = $urls[0];
-            try {
-                $response = \Illuminate\Support\Facades\Http::get($url);
-                if ($response->successful()) {
-                    $filename = basename(parse_url($url, PHP_URL_PATH));
-                    if (!$filename || $filename == '')
-                        $filename = 'image.jpg';
-                    return response()->streamDownload(function () use ($response) {
-                        echo $response->body();
-                    }, $filename, ['Content-Type' => $response->header('Content-Type') ?? 'image/jpeg']);
-                }
-            } catch (\Exception $e) {
-            }
-            $this->dispatch('toast', ['message' => 'Lỗi kết nối tải ảnh.', 'type' => 'error']);
-            return;
-        }
+        $this->dispatch('toast', ['message' => 'Lỗi tải ảnh.', 'type' => 'error']);
     }
 }
