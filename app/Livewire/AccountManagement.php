@@ -20,12 +20,13 @@ class AccountManagement extends Component
     public $selectedUserId = null;
 
     // Form Fields
-    public $name;
-    public $phone;
-    public $password;
+    public $name = '';
+    public $phone = '';
+    public $password = '';
     public $property_types = [];
-    public $inviterCode = null;
+    public $inviterUserId = null;
     public $rootInviteCode = null;
+    public $existingInviteCode = null;
 
     protected function rules()
     {
@@ -37,19 +38,27 @@ class AccountManagement extends Component
                 Rule::unique('users', 'phone')->ignore($this->selectedUserId),
             ],
             'property_types' => 'nullable|array',
+            'inviterUserId' => 'nullable|exists:users,id',
+            'rootInviteCode' => [
+                Rule::requiredIf(fn() => $this->shouldRequireRootInviteCode()),
+                'nullable',
+                'regex:/^[A-Z0-9]+$/',
+                Rule::unique('users', 'invite_code')->ignore($this->selectedUserId),
+            ],
         ];
 
-        if (!$this->selectedUserId) {
-            $rules['inviterCode'] = 'nullable|string|exists:users,invite_code';
-            $rules['rootInviteCode'] = [
-                Rule::requiredIf(fn() => blank($this->inviterCode)),
-                'nullable',
-                'regex:/^[A-Z]+$/',
-                Rule::unique('users', 'invite_code'),
-            ];
+        return $rules;
+    }
+
+    protected function shouldRequireRootInviteCode(): bool
+    {
+        // Already has code => cannot edit code anymore.
+        if (!blank($this->existingInviteCode)) {
+            return false;
         }
 
-        return $rules;
+        // No inviter selected => this is root account, must input root code.
+        return blank($this->inviterUserId);
     }
 
     public function render()
@@ -67,8 +76,15 @@ class AccountManagement extends Component
             ->latest()
             ->paginate(10);
 
+        $inviters = User::query()
+            ->whereNotNull('invite_code')
+            ->when($this->selectedUserId, fn($q) => $q->where('id', '!=', $this->selectedUserId))
+            ->orderBy('name')
+            ->get(['id', 'name', 'phone', 'invite_code']);
+
         return view('livewire.account-management', [
             'users' => $users,
+            'inviters' => $inviters,
             'propertyTypeOptions' => RealEstateListing::PROPERTY_TYPES,
         ])->layout('components.layouts.app', ['title' => 'Account Management']);
     }
@@ -92,23 +108,29 @@ class AccountManagement extends Component
         $this->name = $user->name;
         $this->phone = $user->phone;
         $this->property_types = $user->property_types ?? [];
+        $this->inviterUserId = $user->invited_by_user_id;
+        $this->existingInviteCode = $user->invite_code;
+        $this->rootInviteCode = blank($user->invite_code) ? '' : $user->invite_code;
         $this->showCreatePopup = true;
     }
 
     public function saveUser()
     {
-        $this->inviterCode = Str::upper(trim((string) $this->inviterCode));
         $this->rootInviteCode = Str::upper(trim((string) $this->rootInviteCode));
-
-        if ($this->inviterCode === '') {
-            $this->inviterCode = null;
-        }
-
         if ($this->rootInviteCode === '') {
             $this->rootInviteCode = null;
         }
 
         $this->validate();
+
+        $inviter = null;
+        if (!blank($this->inviterUserId)) {
+            $inviter = User::select('id', 'invite_code')->find($this->inviterUserId);
+            if (!$inviter || blank($inviter->invite_code)) {
+                $this->addError('inviterUserId', 'Nguoi moi duoc chon chua co ma moi hop le.');
+                return;
+            }
+        }
 
         $data = [
             'name' => $this->name,
@@ -117,26 +139,47 @@ class AccountManagement extends Component
         ];
 
         if ($this->selectedUserId) {
-            User::where('id', $this->selectedUserId)->update($data);
-            $message = 'Da cap nhat tai khoan thanh cong!';
-        } else {
-            DB::transaction(function () use ($data) {
-                $inviter = null;
-                if (!blank($this->inviterCode)) {
-                    $inviter = User::where('invite_code', $this->inviterCode)->first();
+            DB::transaction(function () use ($data, $inviter) {
+                $user = User::findOrFail($this->selectedUserId);
+                $oldInviterId = $user->invited_by_user_id;
+
+                $updates = array_merge($data, [
+                    'invited_by_user_id' => $inviter?->id,
+                ]);
+
+                // If account has no code yet, allow setting code one-time.
+                if (blank($user->invite_code)) {
+                    $updates['invite_code'] = $inviter
+                        ? ($inviter->invite_code . $user->id)
+                        : $this->rootInviteCode;
                 }
 
+                $user->update($updates);
+
+                // Save invitation relation history when inviter is set/changed.
+                if ($inviter && $oldInviterId !== $inviter->id) {
+                    UserInvite::create([
+                        'inviter_user_id' => $inviter->id,
+                        'invited_user_id' => $user->id,
+                        'inviter_code' => $inviter->invite_code,
+                    ]);
+                }
+            });
+
+            $message = 'Da cap nhat tai khoan thanh cong!';
+        } else {
+            DB::transaction(function () use ($data, $inviter) {
                 $user = User::create(array_merge($data, [
                     'password' => bcrypt(Str::random(16)),
+                    'invited_by_user_id' => $inviter?->id,
                 ]));
 
                 $generatedInviteCode = $inviter
-                    ? $inviter->invite_code . $user->id
+                    ? ($inviter->invite_code . $user->id)
                     : $this->rootInviteCode;
 
                 $user->update([
                     'invite_code' => $generatedInviteCode,
-                    'invited_by_user_id' => $inviter?->id,
                 ]);
 
                 if ($inviter) {
@@ -147,6 +190,7 @@ class AccountManagement extends Component
                     ]);
                 }
             });
+
             $message = 'Da tao tai khoan thanh cong!';
         }
 
@@ -183,8 +227,9 @@ class AccountManagement extends Component
         $this->phone = '';
         $this->password = '';
         $this->property_types = [];
-        $this->inviterCode = null;
+        $this->inviterUserId = null;
         $this->rootInviteCode = null;
+        $this->existingInviteCode = null;
         $this->resetValidation();
     }
 }

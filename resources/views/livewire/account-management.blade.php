@@ -98,7 +98,7 @@
     @if ($showCreatePopup)
         <div class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
             x-transition.opacity>
-            <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl flex flex-col animate-[scaleIn_0.2s_ease-out]">
+            <div class="bg-white w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col max-h-[calc(100vh-3rem)] animate-[scaleIn_0.2s_ease-out]">
                 <div
                     class="flex justify-between items-center px-6 py-4 border-b border-gray-200 bg-gray-50 rounded-t-2xl">
                     <h2 class="text-xl font-black text-gray-800 uppercase flex items-center gap-2">
@@ -112,7 +112,7 @@
                     </button>
                 </div>
 
-                <div class="p-6 space-y-4">
+                <div class="p-6 space-y-4 overflow-y-auto">
                     <div>
                         <label class="block text-sm font-bold text-gray-700 mb-1">Họ và Tên <span
                                 class="text-red-500">*</span></label>
@@ -135,29 +135,56 @@
                         @enderror
                     </div>
 
-                    @if (!$selectedUserId)
-                        <div>
-                            <label class="block text-sm font-bold text-gray-700 mb-1">Ma moi duoc nhap (neu co)</label>
-                            <input wire:model="inviterCode" type="text"
-                                class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none font-mono uppercase"
-                                placeholder="Vi du: NDT hoac NDT23">
-                            @error('inviterCode')
-                                <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
-                            @enderror
-                            <p class="text-xs text-gray-500 mt-1">Neu nhap ma nay, he thong se tao ma moi theo dang MA + ID.</p>
-                        </div>
+                    @php
+                        $selectedInviter = collect($inviters ?? [])->firstWhere('id', (int) $inviterUserId);
+                    @endphp
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-1">Nguoi moi (neu co)</label>
+                        <select wire:model.live="inviterUserId"
+                            class="w-full border border-gray-300 rounded-lg px-4 py-2.5 bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+                            <option value="">Tai khoan goc (khong co nguoi moi)</option>
+                            @foreach ($inviters as $inviter)
+                                <option value="{{ $inviter->id }}">
+                                    {{ $inviter->name }}{{ $inviter->phone ? ' - ' . $inviter->phone : '' }}
+                                </option>
+                            @endforeach
+                        </select>
+                        @error('inviterUserId')
+                            <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
+                        @enderror
 
-                        <div>
-                            <label class="block text-sm font-bold text-gray-700 mb-1">Ma goc (khi khong nhap ma moi)</label>
+                        @if ($selectedInviter)
+                            <p class="text-xs text-gray-500 mt-1">Ma nguoi moi: <span
+                                    class="font-mono font-bold">{{ $selectedInviter->invite_code }}</span></p>
+                        @endif
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-1">Ma code tai khoan</label>
+
+                        @if ($selectedUserId && !blank($existingInviteCode))
+                            <input type="text" value="{{ $existingInviteCode }}" disabled
+                                class="w-full border border-gray-200 bg-gray-100 rounded-lg px-4 py-2.5 font-mono text-gray-600">
+                            <p class="text-xs text-gray-500 mt-1">Tai khoan da co ma, khong the thay doi nua.</p>
+                        @elseif ($inviterUserId && $selectedInviter)
+                            <div class="w-full border border-blue-200 bg-blue-50 rounded-lg px-4 py-2.5">
+                                <p class="text-xs text-blue-700">Ma se duoc tao tu dong:</p>
+                                <p class="font-mono font-bold text-blue-800">
+                                    {{ $selectedInviter->invite_code }}{{ $selectedUserId ? $selectedUserId : '{id moi}' }}
+                                </p>
+                            </div>
+                        @else
                             <input wire:model="rootInviteCode" type="text"
                                 class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none font-mono uppercase"
-                                placeholder="Vi du: NDT">
+                                placeholder="Nhap ma goc (vi du: NDT)">
                             @error('rootInviteCode')
                                 <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
                             @enderror
-                            <p class="text-xs text-gray-500 mt-1">Ma goc chi cho phep chu cai va phai la duy nhat.</p>
-                        </div>
-                    @endif
+                            <p class="text-xs text-gray-500 mt-1">
+                                Chi nhap khi tai khoan chua co ma va khong chon nguoi moi.
+                            </p>
+                        @endif
+                    </div>
 
 
                     <div>
