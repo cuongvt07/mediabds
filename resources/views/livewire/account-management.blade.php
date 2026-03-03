@@ -257,56 +257,55 @@
             </div>
         </div>
     @endif
-</div>
-
-@once
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-    <script>
-        window.initInviterSelect2 = function(selectEl, selectedValue) {
-            if (!window.jQuery || !window.jQuery.fn.select2 || !selectEl) {
-                return;
-            }
-
-            const $select = window.jQuery(selectEl);
-            if ($select.hasClass('select2-hidden-accessible')) {
-                $select.select2('destroy');
-            }
-
-            const $modal = $select.closest('.fixed');
-
-            $select.select2({
-                width: '100%',
-                placeholder: 'Tìm kiếm tài khoản mời...',
-                allowClear: true,
-                dropdownParent: $modal.length ? $modal : window.jQuery(document.body),
-                language: {
-                    noResults: function() {
-                        return 'Không tìm thấy tài khoản';
-                    },
-                    searching: function() {
-                        return 'Đang tìm...';
-                    },
-                    inputTooShort: function() {
-                        return 'Nhập thêm ký tự để tìm kiếm';
-                    }
-                }
-            });
-
-            $select.val(selectedValue ? String(selectedValue) : '').trigger('change.select2');
-
-            $select.off('change.accountInviter').on('change.accountInviter', function() {
-                const livewireId = this.getAttribute('data-livewire-id');
-                if (!livewireId || !window.Livewire) {
+    @once
+        <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+        <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+        <script>
+            window.initInviterSelect2 = function(selectEl, selectedValue) {
+                if (!window.jQuery || !window.jQuery.fn.select2 || !selectEl) {
                     return;
                 }
 
-                const selected = this.value === '' ? null : Number(this.value);
-                window.Livewire.find(livewireId).set('inviterUserId', selected);
-            });
-        };
-    </script>
-@endonce
+                const $select = window.jQuery(selectEl);
+                if ($select.hasClass('select2-hidden-accessible')) {
+                    $select.select2('destroy');
+                }
+
+                const $modal = $select.closest('.fixed');
+
+                $select.select2({
+                    width: '100%',
+                    placeholder: 'Tìm kiếm tài khoản mời...',
+                    allowClear: true,
+                    dropdownParent: $modal.length ? $modal : window.jQuery(document.body),
+                    language: {
+                        noResults: function() {
+                            return 'Không tìm thấy tài khoản';
+                        },
+                        searching: function() {
+                            return 'Đang tìm...';
+                        },
+                        inputTooShort: function() {
+                            return 'Nhập thêm ký tự để tìm kiếm';
+                        }
+                    }
+                });
+
+                $select.val(selectedValue ? String(selectedValue) : '').trigger('change.select2');
+
+                $select.off('change.accountInviter').on('change.accountInviter', function() {
+                    const livewireId = this.getAttribute('data-livewire-id');
+                    if (!livewireId || !window.Livewire) {
+                        return;
+                    }
+
+                    const selected = this.value === '' ? null : Number(this.value);
+                    window.Livewire.find(livewireId).set('inviterUserId', selected);
+                });
+            };
+        </script>
+    @endonce
+</div>
 
 
