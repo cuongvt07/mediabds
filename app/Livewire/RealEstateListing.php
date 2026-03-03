@@ -810,9 +810,9 @@ class RealEstateListing extends Component
 
     protected function recalculateSaleNumbers(): void
     {
-        $actualPrice = $this->normalizeMoneyInput($this->saleActualPrice) ?? 0;
-        $percent = $this->normalizeMoneyInput($this->saleRevenuePercent) ?? 0;
-        $bonus = $this->normalizeMoneyInput($this->saleBonusAmount) ?? 0;
+        $actualPrice = $this->normalizeCurrencyInput($this->saleActualPrice) ?? 0;
+        $percent = $this->normalizePercentInput($this->saleRevenuePercent) ?? 0;
+        $bonus = $this->normalizeCurrencyInput($this->saleBonusAmount) ?? 0;
 
         $revenue = ($actualPrice * $percent) / 100;
         $net = $revenue + $bonus;
@@ -822,7 +822,22 @@ class RealEstateListing extends Component
         $this->saleNetAmount = round($net, 2);
     }
 
-    protected function normalizeMoneyInput($value): ?float
+    protected function normalizeCurrencyInput($value): ?float
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        // Currency fields are stored as VND-style whole numbers.
+        $clean = preg_replace('/[^0-9]/', '', (string) $value);
+        if ($clean === null || $clean === '') {
+            return null;
+        }
+
+        return is_numeric($clean) ? (float) $clean : null;
+    }
+
+    protected function normalizePercentInput($value): ?float
     {
         if ($value === null || $value === '') {
             return null;
@@ -833,13 +848,14 @@ class RealEstateListing extends Component
             return null;
         }
 
-        if (str_contains($clean, ',') && str_contains($clean, '.')) {
-            $clean = str_replace('.', '', $clean);
+        if (str_contains($clean, ',')) {
             $clean = str_replace(',', '.', $clean);
-        } elseif (str_contains($clean, ',')) {
-            $clean = str_replace(',', '.', $clean);
-        } elseif (substr_count($clean, '.') > 1) {
-            $clean = str_replace('.', '', $clean);
+        }
+
+        if (substr_count($clean, '.') > 1) {
+            $parts = explode('.', $clean);
+            $decimal = array_pop($parts);
+            $clean = implode('', $parts) . '.' . $decimal;
         }
 
         return is_numeric($clean) ? (float) $clean : null;
@@ -854,9 +870,9 @@ class RealEstateListing extends Component
         }
 
         $this->recalculateSaleNumbers();
-        $actualPrice = $this->normalizeMoneyInput($this->saleActualPrice);
-        $percent = $this->normalizeMoneyInput($this->saleRevenuePercent);
-        $bonus = $this->normalizeMoneyInput($this->saleBonusAmount) ?? 0;
+        $actualPrice = $this->normalizeCurrencyInput($this->saleActualPrice);
+        $percent = $this->normalizePercentInput($this->saleRevenuePercent);
+        $bonus = $this->normalizeCurrencyInput($this->saleBonusAmount) ?? 0;
 
         $this->validate([
             'saleListingId' => 'required|exists:real_estate_listings,id',
