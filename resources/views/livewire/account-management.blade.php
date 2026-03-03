@@ -138,37 +138,49 @@
                     @php
                         $selectedInviter = collect($inviters ?? [])->firstWhere('id', (int) $inviterUserId);
                     @endphp
-                    <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-1">Nguoi moi (neu co)</label>
-                        <select wire:model.live="inviterUserId"
-                            class="w-full border border-gray-300 rounded-lg px-4 py-2.5 bg-white focus:ring-2 focus:ring-blue-500 outline-none">
-                            <option value="">Tai khoan goc (khong co nguoi moi)</option>
-                            @foreach ($inviters as $inviter)
-                                <option value="{{ $inviter->id }}">
-                                    {{ $inviter->name }}{{ $inviter->phone ? ' - ' . $inviter->phone : '' }}
-                                </option>
-                            @endforeach
-                        </select>
+                    <div x-data
+                        x-init="$nextTick(() => {
+                            const boot = () => {
+                                if (window.initInviterSelect2) {
+                                    window.initInviterSelect2($refs.inviterSelect, @js($inviterUserId));
+                                    return;
+                                }
+                                setTimeout(boot, 50);
+                            };
+                            boot();
+                        })">
+                        <label class="block text-sm font-bold text-gray-700 mb-1">Người mời (nếu có)</label>
+                        <div wire:ignore>
+                            <select x-ref="inviterSelect" data-livewire-id="{{ $this->getId() }}"
+                                class="inviter-select2 w-full border border-gray-300 rounded-lg bg-white">
+                                <option value="">Tài khoản gốc (không có người mời)</option>
+                                @foreach ($inviters as $inviter)
+                                    <option value="{{ $inviter->id }}" @selected((string) $inviterUserId === (string) $inviter->id)>
+                                        {{ $inviter->name }}{{ $inviter->phone ? ' - ' . $inviter->phone : '' }}{{ $inviter->invite_code ? ' - Mã: ' . $inviter->invite_code : ' - Chưa có mã' }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
                         @error('inviterUserId')
                             <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
                         @enderror
 
                         @if ($selectedInviter)
-                            <p class="text-xs text-gray-500 mt-1">Ma nguoi moi: <span
-                                    class="font-mono font-bold">{{ $selectedInviter->invite_code }}</span></p>
+                            <p class="text-xs text-gray-500 mt-1">Mã người mời: <span
+                                    class="font-mono font-bold">{{ $selectedInviter->invite_code ?: 'Chưa có mã' }}</span></p>
                         @endif
                     </div>
 
                     <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-1">Ma code tai khoan</label>
+                        <label class="block text-sm font-bold text-gray-700 mb-1">Mã code tài khoản</label>
 
                         @if ($selectedUserId && !blank($existingInviteCode))
                             <input type="text" value="{{ $existingInviteCode }}" disabled
                                 class="w-full border border-gray-200 bg-gray-100 rounded-lg px-4 py-2.5 font-mono text-gray-600">
-                            <p class="text-xs text-gray-500 mt-1">Tai khoan da co ma, khong the thay doi nua.</p>
+                            <p class="text-xs text-gray-500 mt-1">Tài khoản đã có mã, không thể thay đổi nữa.</p>
                         @elseif ($inviterUserId && $selectedInviter)
                             <div class="w-full border border-blue-200 bg-blue-50 rounded-lg px-4 py-2.5">
-                                <p class="text-xs text-blue-700">Ma se duoc tao tu dong:</p>
+                                <p class="text-xs text-blue-700">Mã sẽ được tạo tự động:</p>
                                 <p class="font-mono font-bold text-blue-800">
                                     {{ $selectedInviter->invite_code }}{{ $selectedUserId ? $selectedUserId : '{id moi}' }}
                                 </p>
@@ -176,12 +188,12 @@
                         @else
                             <input wire:model="rootInviteCode" type="text"
                                 class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none font-mono uppercase"
-                                placeholder="Nhap ma goc (vi du: NDT)">
+                                placeholder="Nhập mã gốc (ví dụ: NDT)">
                             @error('rootInviteCode')
                                 <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
                             @enderror
                             <p class="text-xs text-gray-500 mt-1">
-                                Chi nhap khi tai khoan chua co ma va khong chon nguoi moi.
+                                Chỉ nhập khi tài khoản chưa có mã và không chọn người mời.
                             </p>
                         @endif
                     </div>
@@ -246,5 +258,55 @@
         </div>
     @endif
 </div>
+
+@once
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script>
+        window.initInviterSelect2 = function(selectEl, selectedValue) {
+            if (!window.jQuery || !window.jQuery.fn.select2 || !selectEl) {
+                return;
+            }
+
+            const $select = window.jQuery(selectEl);
+            if ($select.hasClass('select2-hidden-accessible')) {
+                $select.select2('destroy');
+            }
+
+            const $modal = $select.closest('.fixed');
+
+            $select.select2({
+                width: '100%',
+                placeholder: 'Tìm kiếm tài khoản mời...',
+                allowClear: true,
+                dropdownParent: $modal.length ? $modal : window.jQuery(document.body),
+                language: {
+                    noResults: function() {
+                        return 'Không tìm thấy tài khoản';
+                    },
+                    searching: function() {
+                        return 'Đang tìm...';
+                    },
+                    inputTooShort: function() {
+                        return 'Nhập thêm ký tự để tìm kiếm';
+                    }
+                }
+            });
+
+            $select.val(selectedValue ? String(selectedValue) : '').trigger('change.select2');
+
+            $select.off('change.accountInviter').on('change.accountInviter', function() {
+                const livewireId = this.getAttribute('data-livewire-id');
+                if (!livewireId || !window.Livewire) {
+                    return;
+                }
+
+                const selected = this.value === '' ? null : Number(this.value);
+                window.Livewire.find(livewireId).set('inviterUserId', selected);
+            });
+        };
+    </script>
+@endonce
 
 

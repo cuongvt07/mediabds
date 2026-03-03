@@ -77,8 +77,6 @@ class AccountManagement extends Component
             ->paginate(10);
 
         $inviters = User::query()
-            ->whereNotNull('invite_code')
-            ->when($this->selectedUserId, fn($q) => $q->where('id', '!=', $this->selectedUserId))
             ->orderBy('name')
             ->get(['id', 'name', 'phone', 'invite_code']);
 
@@ -125,9 +123,14 @@ class AccountManagement extends Component
 
         $inviter = null;
         if (!blank($this->inviterUserId)) {
+            if ($this->selectedUserId && (int) $this->inviterUserId === (int) $this->selectedUserId) {
+                $this->addError('inviterUserId', 'Không thể chọn chính tài khoản này làm người mời.');
+                return;
+            }
+
             $inviter = User::select('id', 'invite_code')->find($this->inviterUserId);
             if (!$inviter || blank($inviter->invite_code)) {
-                $this->addError('inviterUserId', 'Nguoi moi duoc chon chua co ma moi hop le.');
+                $this->addError('inviterUserId', 'Người mời được chọn chưa có mã mời hợp lệ.');
                 return;
             }
         }
