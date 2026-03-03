@@ -4,7 +4,9 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -79,6 +81,38 @@ class User extends Authenticatable
     }
 
     /**
+     * Get the user who invited this account.
+     */
+    public function inviter(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'invited_by_user_id');
+    }
+
+    /**
+     * Get users invited by this account.
+     */
+    public function invitees(): HasMany
+    {
+        return $this->hasMany(User::class, 'invited_by_user_id');
+    }
+
+    /**
+     * Get invitation logs sent by this account.
+     */
+    public function sentInviteLogs(): HasMany
+    {
+        return $this->hasMany(UserInvite::class, 'inviter_user_id');
+    }
+
+    /**
+     * Get invite log that created this account.
+     */
+    public function inviteLog(): HasOne
+    {
+        return $this->hasOne(UserInvite::class, 'invited_user_id');
+    }
+
+    /**
      * The attributes that are mass assignable.
      *
      * @var list<string>
@@ -92,6 +126,8 @@ class User extends Authenticatable
         'license_expires_at',
         'trial_ends_at',
         'property_types',
+        'invite_code',
+        'invited_by_user_id',
     ];
 
     /**

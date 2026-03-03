@@ -1098,6 +1098,45 @@
                             </div>
                         </div>
 
+                        @if (!empty($selectedListing['sale']))
+                            <div class="bg-emerald-50 rounded-xl p-4 border border-emerald-200">
+                                <h4 class="text-sm font-bold text-emerald-700 uppercase mb-3 flex items-center gap-2">
+                                    <i class="fa-solid fa-handshake-angle"></i>
+                                    Thong Tin Giao Dich Da Ban
+                                </h4>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                                    <div>
+                                        <span class="text-gray-500 font-semibold">Du an:</span>
+                                        <span class="font-bold text-gray-800">{{ $selectedListing['sale']['project_name'] ?? '-' }}</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-gray-500 font-semibold">Nguoi ban:</span>
+                                        <span class="font-bold text-gray-800">{{ data_get($selectedListing, 'sale.sold_by.name', '-') }}</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-gray-500 font-semibold">Gia thuc te:</span>
+                                        <span class="font-bold text-gray-800">{{ number_format((float) data_get($selectedListing, 'sale.actual_price', 0), 0, ',', '.') }}</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-gray-500 font-semibold">Doanh thu (%):</span>
+                                        <span class="font-bold text-gray-800">{{ number_format((float) data_get($selectedListing, 'sale.revenue_percent', 0), 2, ',', '.') }}%</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-gray-500 font-semibold">Doanh thu (tien):</span>
+                                        <span class="font-bold text-gray-800">{{ number_format((float) data_get($selectedListing, 'sale.revenue_amount', 0), 0, ',', '.') }}</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-gray-500 font-semibold">Thuong:</span>
+                                        <span class="font-bold text-gray-800">{{ number_format((float) data_get($selectedListing, 'sale.bonus_amount', 0), 0, ',', '.') }}</span>
+                                    </div>
+                                    <div class="md:col-span-2">
+                                        <span class="text-gray-500 font-semibold">Thuc nhan:</span>
+                                        <span class="font-black text-emerald-700 text-base">{{ number_format((float) data_get($selectedListing, 'sale.net_received_amount', 0), 0, ',', '.') }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        @endif
+
                         {{-- Description --}}
                         @if ($selectedListing['description'])
                             <div class="bg-gray-50 rounded-xl p-4 border border-gray-200">
@@ -1148,6 +1187,103 @@
                     </button>
                 </div>
 
+            </div>
+        </div>
+    @endif
+
+    @if ($showSoldPopup)
+        <div class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
+            <div class="bg-white w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden">
+                <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gray-50">
+                    <h3 class="text-lg font-black text-gray-800 uppercase flex items-center gap-2">
+                        <span class="bg-green-100 text-green-700 p-2 rounded-lg"><i class="fa-solid fa-file-signature"></i></span>
+                        Nhap Thong Tin Da Ban
+                    </h3>
+                    <button wire:click="closeSoldPopup" class="text-gray-400 hover:text-red-500 transition-colors">
+                        <i class="fa-solid fa-times"></i>
+                    </button>
+                </div>
+
+                <div class="p-6 space-y-4">
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-1">Du an</label>
+                        <input wire:model="saleProjectName" type="text"
+                            class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-green-500 outline-none"
+                            placeholder="Ten du an / ten tin dang">
+                        @error('saleProjectName')
+                            <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
+                        @enderror
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-1">Nguoi ban</label>
+                        <select wire:model="saleUserId"
+                            class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-green-500 outline-none">
+                            <option value="">Chon account da ban</option>
+                            @foreach ($salesUsers as $u)
+                                <option value="{{ $u->id }}">{{ $u->name }}{{ $u->phone ? ' - ' . $u->phone : '' }}</option>
+                            @endforeach
+                        </select>
+                        @error('saleUserId')
+                            <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
+                        @enderror
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-bold text-gray-700 mb-1">Gia thuc te</label>
+                            <input wire:model.live="saleActualPrice" type="text"
+                                class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-green-500 outline-none"
+                                placeholder="Vi du: 4.500.000.000">
+                            @error('saleActualPrice')
+                                <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
+                            @enderror
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-1">% doanh thu</label>
+                            <input wire:model.live="saleRevenuePercent" type="text"
+                                class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-green-500 outline-none"
+                                placeholder="Vi du: 1.5">
+                            @error('saleRevenuePercent')
+                                <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
+                            @enderror
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-1">Thuong kem</label>
+                        <input wire:model.live="saleBonusAmount" type="text"
+                            class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-green-500 outline-none"
+                            placeholder="Vi du: 20.000.000">
+                        @error('saleBonusAmount')
+                            <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
+                        @enderror
+                    </div>
+
+                    <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-4 grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                        <div>
+                            <div class="text-gray-500">Doanh thu</div>
+                            <div class="font-bold text-emerald-700">{{ number_format((float) $saleRevenueAmount, 0, ',', '.') }}</div>
+                        </div>
+                        <div>
+                            <div class="text-gray-500">Thuong</div>
+                            <div class="font-bold text-emerald-700">{{ number_format((float) $saleBonusNumeric, 0, ',', '.') }}</div>
+                        </div>
+                        <div>
+                            <div class="text-gray-500">Thuc nhan</div>
+                            <div class="font-black text-emerald-700 text-base">{{ number_format((float) $saleNetAmount, 0, ',', '.') }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="px-6 py-4 border-t border-gray-200 bg-gray-50 flex justify-end gap-3">
+                    <button wire:click="closeSoldPopup"
+                        class="px-5 py-2.5 rounded-xl text-gray-600 hover:bg-gray-200 font-bold transition-colors">Huy</button>
+                    <button wire:click="saveSoldInformation"
+                        class="px-6 py-2.5 rounded-xl bg-green-600 text-white hover:bg-green-700 font-bold shadow-lg">
+                        Luu thong tin da ban
+                    </button>
+                </div>
             </div>
         </div>
     @endif

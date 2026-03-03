@@ -29,6 +29,9 @@
                     <tr>
                         <th class="px-6 py-4">Họ và Tên</th>
                         <th class="px-6 py-4">Số điện thoại</th>
+                        <th class="px-6 py-4">Mã code</th>
+                        <th class="px-6 py-4">Được mời bởi</th>
+                        <th class="px-6 py-4">Lượt dùng mã</th>
                         <th class="px-6 py-4">Ngày tạo</th>
                         <th class="px-6 py-4 text-right">Thao tác</th>
                     </tr>
@@ -46,6 +49,16 @@
                                 </div>
                             </td>
                             <td class="px-6 py-4 font-mono text-slate-600">{{ $user->phone }}</td>
+                            <td class="px-6 py-4 font-mono text-slate-700">{{ $user->invite_code ?? '-' }}</td>
+                            <td class="px-6 py-4 text-sm text-gray-500">
+                                @if ($user->inviter)
+                                    <div>{{ $user->inviter->name }}</div>
+                                    <div class="font-mono text-xs text-gray-400">{{ $user->inviter->invite_code }}</div>
+                                @else
+                                    <span>-</span>
+                                @endif
+                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-500">{{ $user->sent_invite_logs_count }}</td>
                             <td class="px-6 py-4 text-sm text-gray-500">{{ $user->created_at->format('d/m/Y') }}</td>
                             <td class="px-6 py-4 text-right">
                                 <div
@@ -65,7 +78,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="4" class="px-6 py-12 text-center text-gray-400">
+                            <td colspan="7" class="px-6 py-12 text-center text-gray-400">
                                 <div class="flex flex-col items-center gap-2">
                                     <i class="fa-solid fa-users-slash text-4xl mb-2 text-gray-300"></i>
                                     <p>Không tìm thấy tài khoản nào.</p>
@@ -121,6 +134,31 @@
                             <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
                         @enderror
                     </div>
+
+                    @if (!$selectedUserId)
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-1">Ma moi duoc nhap (neu co)</label>
+                            <input wire:model="inviterCode" type="text"
+                                class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none font-mono uppercase"
+                                placeholder="Vi du: NDT hoac NDT23">
+                            @error('inviterCode')
+                                <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
+                            @enderror
+                            <p class="text-xs text-gray-500 mt-1">Neu nhap ma nay, he thong se tao ma moi theo dang MA + ID.</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-1">Ma goc (khi khong nhap ma moi)</label>
+                            <input wire:model="rootInviteCode" type="text"
+                                class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none font-mono uppercase"
+                                placeholder="Vi du: NDT">
+                            @error('rootInviteCode')
+                                <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
+                            @enderror
+                            <p class="text-xs text-gray-500 mt-1">Ma goc chi cho phep chu cai va phai la duy nhat.</p>
+                        </div>
+                    @endif
+
 
                     <div>
                         <label class="block text-sm font-bold text-gray-700 mb-2">
@@ -181,3 +219,5 @@
         </div>
     @endif
 </div>
+
+

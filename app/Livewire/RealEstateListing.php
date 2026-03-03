@@ -2,12 +2,14 @@
 
 namespace App\Livewire;
 
-use Livewire\Component;
-use Livewire\WithPagination;
-use Livewire\WithFileUploads;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Storage;
 use App\Models\RealEstateListing as ListingModel;
+use App\Models\RealEstateListingSale;
+use App\Models\User;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
+use Livewire\Component;
+use Livewire\WithFileUploads;
+use Livewire\WithPagination;
 
 class RealEstateListing extends Component
 {
@@ -17,6 +19,7 @@ class RealEstateListing extends Component
     public $showCreatePopup = false;
     public $showMediaPopup = false;
     public $showDetailPopup = false;
+    public $showSoldPopup = false;
     public $selectedListing = null;
 
     // Filters
@@ -109,6 +112,15 @@ class RealEstateListing extends Component
     public $tempAvatar; // For avatar upload
 
     public $selectedListingId = null;
+    public $saleListingId = null;
+    public $saleUserId = null;
+    public $saleProjectName = '';
+    public $saleActualPrice = '';
+    public $saleRevenuePercent = '';
+    public $saleBonusAmount = '';
+    public $saleBonusNumeric = 0;
+    public $saleRevenueAmount = 0;
+    public $saleNetAmount = 0;
 
     // Dynamic Options
     public $districts = [];
@@ -636,7 +648,7 @@ class RealEstateListing extends Component
 
     public function viewListingDetail($id)
     {
-        $listing = ListingModel::find($id);
+        $listing = ListingModel::with('sale.soldBy')->find($id);
         if (!$listing)
             return;
 
@@ -646,6 +658,10 @@ class RealEstateListing extends Component
 
     protected function prepareListingForDetail($listing)
     {
+        if (!$listing->relationLoaded('sale')) {
+            $listing->load('sale.soldBy');
+        }
+
         $data = $listing->toArray();
         // Prepare slider images for detail view: Avatar first, then others
         if (!empty($data['avatar'])) {
@@ -716,30 +732,193 @@ class RealEstateListing extends Component
 
     public function toggleSold($id)
     {
-        // Permission check - only admin can toggle sold status
         $user = auth()->user();
         if (!$user || !$user->isAdmin()) {
-            $this->dispatch('toast', ['message' => 'Chỉ Admin mới có quyền đánh dấu đã bán!', 'type' => 'error']);
+            $this->dispatch('toast', ['message' => 'Chi Admin moi co quyen danh dau da ban!', 'type' => 'error']);
             return;
         }
 
         $listing = ListingModel::find($id);
-        if ($listing) {
-            $listing->is_sold = !$listing->is_sold;
-            $listing->save();
-            $this->refreshCacheVersion(); // Refresh cache
-
-            $status = $listing->is_sold ? 'đã bán' : 'chưa bán';
-            $this->dispatch('toast', ['message' => "Đã đánh dấu tin {$status}!", 'type' => 'success']);
-
-            // Refresh the detail popup if it's open
-            if ($this->selectedListing && $this->selectedListing['id'] == $id) {
-                $this->selectedListing = $this->prepareListingForDetail($listing);
-            }
+        if (!$listing) {
+            return;
         }
+
+        if ($listing->is_sold) {
+            DB::transaction(function () use ($listing) {
+                $listing->update(['is_sold' => false]);
+                RealEstateListingSale::where('listing_id', $listing->id)->delete();
+            });
+
+            $this->refreshCacheVersion();
+            $this->dispatch('toast', ['message' => 'Da chuyen tin ve trang thai chua ban!', 'type' => 'success']);
+            $this->refreshSelectedListing($listing->id);
+            return;
+        }
+
+        $this->openSoldPopup($id);
     }
 
+    public function openSoldPopup($id)
+    {
+        $listing = ListingModel::find($id);
+        if (!$listing) {
+            return;
+        }
 
+        $this->saleListingId = $listing->id;
+        $this->saleUserId = null;
+        $this->saleProjectName = $listing->title ?? '';
+        $this->saleActualPrice = $listing->price ? number_format((float) $listing->price, 0, ',', '.') : '';
+        $this->saleRevenuePercent = '';
+        $this->saleBonusAmount = '';
+        $this->saleBonusNumeric = 0;
+        $this->saleRevenueAmount = 0;
+        $this->saleNetAmount = 0;
+        $this->resetValidation();
+        $this->showSoldPopup = true;
+    }
+
+    public function closeSoldPopup()
+    {
+        $this->showSoldPopup = false;
+        $this->saleListingId = null;
+        $this->saleUserId = null;
+        $this->saleProjectName = '';
+        $this->saleActualPrice = '';
+        $this->saleRevenuePercent = '';
+        $this->saleBonusAmount = '';
+        $this->saleBonusNumeric = 0;
+        $this->saleRevenueAmount = 0;
+        $this->saleNetAmount = 0;
+        $this->resetValidation();
+    }
+
+    public function updatedSaleActualPrice()
+    {
+        $this->recalculateSaleNumbers();
+    }
+
+    public function updatedSaleRevenuePercent()
+    {
+        $this->recalculateSaleNumbers();
+    }
+
+    public function updatedSaleBonusAmount()
+    {
+        $this->recalculateSaleNumbers();
+    }
+
+    protected function recalculateSaleNumbers(): void
+    {
+        $actualPrice = $this->normalizeMoneyInput($this->saleActualPrice) ?? 0;
+        $percent = $this->normalizeMoneyInput($this->saleRevenuePercent) ?? 0;
+        $bonus = $this->normalizeMoneyInput($this->saleBonusAmount) ?? 0;
+
+        $revenue = ($actualPrice * $percent) / 100;
+        $net = $revenue + $bonus;
+
+        $this->saleBonusNumeric = round($bonus, 2);
+        $this->saleRevenueAmount = round($revenue, 2);
+        $this->saleNetAmount = round($net, 2);
+    }
+
+    protected function normalizeMoneyInput($value): ?float
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        $clean = preg_replace('/[^0-9,.\-]/', '', (string) $value);
+        if ($clean === null || $clean === '') {
+            return null;
+        }
+
+        if (str_contains($clean, ',') && str_contains($clean, '.')) {
+            $clean = str_replace('.', '', $clean);
+            $clean = str_replace(',', '.', $clean);
+        } elseif (str_contains($clean, ',')) {
+            $clean = str_replace(',', '.', $clean);
+        } elseif (substr_count($clean, '.') > 1) {
+            $clean = str_replace('.', '', $clean);
+        }
+
+        return is_numeric($clean) ? (float) $clean : null;
+    }
+
+    public function saveSoldInformation()
+    {
+        $user = auth()->user();
+        if (!$user || !$user->isAdmin()) {
+            $this->dispatch('toast', ['message' => 'Chi Admin moi co quyen danh dau da ban!', 'type' => 'error']);
+            return;
+        }
+
+        $this->recalculateSaleNumbers();
+        $actualPrice = $this->normalizeMoneyInput($this->saleActualPrice);
+        $percent = $this->normalizeMoneyInput($this->saleRevenuePercent);
+        $bonus = $this->normalizeMoneyInput($this->saleBonusAmount) ?? 0;
+
+        $this->validate([
+            'saleListingId' => 'required|exists:real_estate_listings,id',
+            'saleUserId' => 'required|exists:users,id',
+            'saleProjectName' => 'required|string|max:255',
+        ]);
+
+        if ($actualPrice === null || $actualPrice <= 0) {
+            $this->addError('saleActualPrice', 'Gia thuc te phai lon hon 0.');
+            return;
+        }
+
+        if ($percent === null || $percent < 0 || $percent > 100) {
+            $this->addError('saleRevenuePercent', 'Phan tram doanh thu phai tu 0 den 100.');
+            return;
+        }
+
+        if ($bonus < 0) {
+            $this->addError('saleBonusAmount', 'Thuong khong duoc am.');
+            return;
+        }
+
+        $revenueAmount = round(($actualPrice * $percent) / 100, 2);
+        $netAmount = round($revenueAmount + $bonus, 2);
+
+        DB::transaction(function () use ($actualPrice, $percent, $bonus, $revenueAmount, $netAmount) {
+            $listing = ListingModel::findOrFail($this->saleListingId);
+            $listing->update(['is_sold' => true]);
+
+            RealEstateListingSale::updateOrCreate(
+                ['listing_id' => $listing->id],
+                [
+                    'sold_by_user_id' => $this->saleUserId,
+                    'project_name' => $this->saleProjectName,
+                    'actual_price' => $actualPrice,
+                    'revenue_percent' => $percent,
+                    'revenue_amount' => $revenueAmount,
+                    'bonus_amount' => $bonus,
+                    'net_received_amount' => $netAmount,
+                    'sold_at' => now(),
+                ]
+            );
+        });
+
+        $this->refreshCacheVersion();
+        $this->dispatch('toast', ['message' => 'Da luu thong tin ban va gan nguoi ban thanh cong!', 'type' => 'success']);
+        $listingId = $this->saleListingId;
+        $this->closeSoldPopup();
+        $this->refreshSelectedListing($listingId);
+    }
+
+    protected function refreshSelectedListing($id): void
+    {
+        if (!$this->selectedListing || (int) $this->selectedListing['id'] !== (int) $id) {
+            return;
+        }
+
+        $listing = ListingModel::with('sale.soldBy')->find($id);
+        if ($listing) {
+            $this->selectedListing = $this->prepareListingForDetail($listing);
+        }
+    }
 
     protected function uploadFile($file)
     {
@@ -889,7 +1068,8 @@ class RealEstateListing extends Component
         });
 
         return view('livewire.real-estate-listing', [
-            'listings' => $listings
+            'listings' => $listings,
+            'salesUsers' => User::orderBy('name')->get(['id', 'name', 'phone']),
         ])->layout('components.layouts.blog');
     }
 
