@@ -106,9 +106,9 @@
                             class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors group-focus-within:text-emerald-500 text-slate-500">
                             <i class="fa-solid fa-gift"></i>
                         </div>
-                        <input id="registerInviteCode" type="text" wire:model="registerInviteCode"
+                        <input id="registerInviteCode" type="text" wire:model="registerInviteCode" required
                             class="block w-full pl-11 pr-4 py-3.5 bg-slate-900 border border-slate-700 rounded-xl text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all sm:text-sm font-medium hover:bg-slate-900/70"
-                            placeholder="Mã người giới thiệu (Không bắt buộc)">
+                            placeholder="Mã người giới thiệu (* Bắt buộc)">
                     </div>
                     @error('registerInviteCode')
                         <span class="text-red-400 text-xs mt-1">{{ $message }}</span>

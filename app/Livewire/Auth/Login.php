@@ -22,7 +22,7 @@ class Login extends Component
             return [
                 'registerName' => 'required|min:2',
                 'registerPhone' => 'required|unique:users,phone',
-                'registerInviteCode' => 'nullable|exists:users,invite_code',
+                'registerInviteCode' => 'required|exists:users,invite_code',
             ];
         }
 
@@ -37,7 +37,8 @@ class Login extends Component
             'registerName.required' => 'Vui lòng nhập họ và tên.',
             'registerPhone.required' => 'Vui lòng nhập số điện thoại.',
             'registerPhone.unique' => 'Số điện thoại này đã tồn tại.',
-            'registerInviteCode.exists' => 'Mã mời không hợp lệ.',
+            'registerInviteCode.required' => 'Vui lòng nhập mã giới thiệu hợp lệ.',
+            'registerInviteCode.exists' => 'Mã giới thiệu không tồn tại. Vui lòng kiểm tra lại.',
             'phone.required' => 'Vui lòng nhập số điện thoại.',
             'phone.exists' => 'Số điện thoại này chưa được đăng ký.',
         ];
@@ -71,37 +72,45 @@ class Login extends Component
         $this->validate($this->rules(), $this->messages());
 
         $inviterId = null;
+        $inviterCode = '';
 
         if ($this->registerInviteCode) {
             $inviter = \App\Models\User::where('invite_code', $this->registerInviteCode)->first();
             if ($inviter) {
                 $inviterId = $inviter->id;
+                $inviterCode = $inviter->invite_code;
             }
         }
 
-        // Generate unique 6-character alphanumeric invite code
-        $inviteCode = null;
-        do {
-            $inviteCode = strtoupper(\Illuminate\Support\Str::random(6));
-        } while (\App\Models\User::where('invite_code', $inviteCode)->exists());
+        // Must logically have an inviter since it's validated, but check again to be safe.
+        if (!$inviterId) {
+            $this->addError('registerInviteCode', 'Không tìm thấy người giới thiệu.');
+            return;
+        }
 
-        $user = \App\Models\User::create([
-            'name' => $this->registerName,
-            'phone' => $this->registerPhone,
-            'password' => \Illuminate\Support\Facades\Hash::make('password'), // default placeholder
-            'invite_code' => $inviteCode,
-            'invited_by_user_id' => $inviterId,
-        ]);
+        \Illuminate\Support\Facades\DB::transaction(function () use ($inviterId, $inviterCode) {
+            $user = \App\Models\User::create([
+                'name' => $this->registerName,
+                'phone' => $this->registerPhone,
+                'password' => \Illuminate\Support\Facades\Hash::make('password'), // default placeholder
+                'invite_code' => 'TEMP', // Will update right after getting ID
+                'invited_by_user_id' => $inviterId,
+            ]);
 
-        if ($inviterId) {
+            // Generate structured invite code: [InviterCode][NewUserID]
+            $user->update([
+                'invite_code' => $inviterCode . $user->id,
+            ]);
+
             \App\Models\UserInvite::create([
                 'inviter_user_id' => $inviterId,
                 'invited_user_id' => $user->id,
                 'inviter_code' => $this->registerInviteCode,
             ]);
-        }
 
-        Auth::login($user, true);
+            Auth::login($user, true);
+        });
+
         session()->regenerate();
         return redirect()->route('listings');
     }
