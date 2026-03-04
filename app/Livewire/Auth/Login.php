@@ -20,8 +20,8 @@ class Login extends Component
     {
         if ($this->isRegistering) {
             return [
-                'registerName' => 'required|min:2',
-                'registerPhone' => 'required|unique:users,phone',
+                'registerName' => 'required|string|min:2|max:255',
+                'registerPhone' => ['required', 'regex:/^(0[3|5|7|8|9])+([0-9]{8})$/', 'unique:users,phone'],
                 'registerInviteCode' => 'required|exists:users,invite_code',
             ];
         }
@@ -35,8 +35,11 @@ class Login extends Component
     {
         return [
             'registerName.required' => 'Vui lòng nhập họ và tên.',
+            'registerName.min' => 'Họ và tên phải có ít nhất 2 ký tự.',
+            'registerName.max' => 'Họ và tên không được vượt quá 255 ký tự.',
             'registerPhone.required' => 'Vui lòng nhập số điện thoại.',
-            'registerPhone.unique' => 'Số điện thoại này đã tồn tại.',
+            'registerPhone.regex' => 'Số điện thoại không đúng định dạng (Ví dụ: 098... hoặc 03...).',
+            'registerPhone.unique' => 'Số điện thoại này đã tồn tại trong hệ thống.',
             'registerInviteCode.required' => 'Vui lòng nhập mã giới thiệu hợp lệ.',
             'registerInviteCode.exists' => 'Mã giới thiệu không tồn tại. Vui lòng kiểm tra lại.',
             'phone.required' => 'Vui lòng nhập số điện thoại.',
