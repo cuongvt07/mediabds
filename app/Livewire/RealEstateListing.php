@@ -1017,8 +1017,27 @@ class RealEstateListing extends Component
 
             // Auto-filter by user's property types (if not admin)
             $user = auth()->user();
-            if ($user && !$user->isAdmin() && !empty($user->property_types)) {
-                $query->whereIn('property_type', $user->property_types);
+            if ($user && !$user->isAdmin()) {
+                if (!empty($user->property_types)) {
+                    $query->whereIn('property_type', $user->property_types);
+                }
+
+                // Filter by CTV Rank price limits
+                $invitesCount = $user->sentInviteLogs()->count();
+                $ctvRank = \App\Models\CtvRank::where('min_invites', '<=', $invitesCount)
+                    ->orderBy('min_invites', 'desc')
+                    ->first();
+
+                if ($ctvRank) {
+                    if (!empty($ctvRank->min_price)) {
+                        $query->whereRaw("(CASE WHEN price_unit = 'Triệu' THEN CAST(price AS DECIMAL(15,2)) / 1000 ELSE CAST(price AS DECIMAL(15,2)) END) >= ?", [$ctvRank->min_price]);
+                    }
+                    if (!empty($ctvRank->max_price)) {
+                        $query->whereRaw("(CASE WHEN price_unit = 'Triệu' THEN CAST(price AS DECIMAL(15,2)) / 1000 ELSE CAST(price AS DECIMAL(15,2)) END) <= ?", [$ctvRank->max_price]);
+                    }
+                } else {
+                    $query->whereId(0);
+                }
             }
 
             if (!empty($this->search)) {

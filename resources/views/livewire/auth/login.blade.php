@@ -12,44 +12,127 @@
         </p>
     </div>
 
-    <form wire:submit="login" class="space-y-6">
-        <div class="space-y-4">
-            <!-- Phone Input -->
-            <div>
-                <label for="phone" class="sr-only">Phone Number</label>
-                <div class="relative group">
-                    <div
-                        class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors group-focus-within:text-blue-500 text-slate-500">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z">
-                            </path>
-                        </svg>
+    @if(!$isRegistering)
+        <form wire:submit="login" class="space-y-6">
+            <div class="space-y-4">
+                <!-- Phone Input -->
+                <div>
+                    <label for="phone" class="sr-only">Phone Number</label>
+                    <div class="relative group">
+                        <div
+                            class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors group-focus-within:text-blue-500 text-slate-500">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z">
+                                </path>
+                            </svg>
+                        </div>
+                        <input id="phone" name="phone" type="text" wire:model="phone" required=""
+                            class="block w-full pl-11 pr-4 py-3.5 bg-slate-900 border border-slate-700 rounded-xl text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all sm:text-sm font-medium hover:bg-slate-900/70"
+                            placeholder="Phone Number">
                     </div>
-                    <input id="phone" name="phone" type="text" wire:model="phone" required=""
-                        class="block w-full pl-11 pr-4 py-3.5 bg-slate-900 border border-slate-700 rounded-xl text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all sm:text-sm font-medium hover:bg-slate-900/70"
-                        placeholder="Phone Number">
+                    @error('phone')
+                        <span class="text-red-400 text-xs mt-1">{{ $message }}</span>
+                    @enderror
                 </div>
-                @error('phone')
-                    <span class="text-red-400 text-xs mt-1">{{ $message }}</span>
-                @enderror
             </div>
-        </div>
 
-        <div class="pt-2">
-            <button type="submit"
-                class="group relative w-full flex justify-center py-3.5 px-4 border border-transparent text-sm font-bold rounded-xl text-white bg-blue-600 hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-blue-500 transition-all shadow-[0_0_20px_rgba(37,99,235,0.3)] hover:shadow-[0_0_30px_rgba(37,99,235,0.5)]">
-                <span class="absolute left-0 inset-y-0 flex items-center pl-3">
-                    <svg class="h-5 w-5 text-blue-300 group-hover:text-blue-200 transition-colors" fill="none"
-                        viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
-                    </svg>
-                </span>
-                Sign In
-            </button>
-        </div>
-    </form>
+            <div class="pt-2">
+                <button type="submit"
+                    class="group relative w-full flex justify-center py-3.5 px-4 border border-transparent text-sm font-bold rounded-xl text-white bg-blue-600 hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-blue-500 transition-all shadow-[0_0_20px_rgba(37,99,235,0.3)] hover:shadow-[0_0_30px_rgba(37,99,235,0.5)]">
+                    <span class="absolute left-0 inset-y-0 flex items-center pl-3">
+                        <svg class="h-5 w-5 text-blue-300 group-hover:text-blue-200 transition-colors" fill="none"
+                            viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                        </svg>
+                    </span>
+                    Sign In
+                </button>
+            </div>
+            
+            <div class="text-center mt-4">
+                <button type="button" wire:click="toggleRegister" class="text-sm text-blue-400 hover:text-blue-300 transition-colors cursor-pointer">
+                    Chưa có tài khoản? Đăng ký ngay
+                </button>
+            </div>
+        </form>
+    @else
+        <form wire:submit="register" class="space-y-6">
+            <div class="space-y-4">
+                <!-- Name Input -->
+                <div>
+                    <label for="registerName" class="sr-only">Họ và Tên</label>
+                    <div class="relative group">
+                        <div
+                            class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors group-focus-within:text-blue-500 text-slate-500">
+                            <i class="fa-solid fa-user"></i>
+                        </div>
+                        <input id="registerName" type="text" wire:model="registerName" required
+                            class="block w-full pl-11 pr-4 py-3.5 bg-slate-900 border border-slate-700 rounded-xl text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all sm:text-sm font-medium hover:bg-slate-900/70"
+                            placeholder="Họ và Tên">
+                    </div>
+                    @error('registerName')
+                        <span class="text-red-400 text-xs mt-1">{{ $message }}</span>
+                    @enderror
+                </div>
+
+                <!-- Phone Input -->
+                <div>
+                    <label for="registerPhone" class="sr-only">Số điện thoại</label>
+                    <div class="relative group">
+                        <div
+                            class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors group-focus-within:text-blue-500 text-slate-500">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z">
+                                </path>
+                            </svg>
+                        </div>
+                        <input id="registerPhone" type="text" wire:model="registerPhone" required
+                            class="block w-full pl-11 pr-4 py-3.5 bg-slate-900 border border-slate-700 rounded-xl text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all sm:text-sm font-medium hover:bg-slate-900/70"
+                            placeholder="Số điện thoại">
+                    </div>
+                    @error('registerPhone')
+                        <span class="text-red-400 text-xs mt-1">{{ $message }}</span>
+                    @enderror
+                </div>
+
+                <!-- Invite Code Input -->
+                <div>
+                    <label for="registerInviteCode" class="sr-only">Người giới thiệu (Mã mời)</label>
+                    <div class="relative group">
+                        <div
+                            class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors group-focus-within:text-emerald-500 text-slate-500">
+                            <i class="fa-solid fa-gift"></i>
+                        </div>
+                        <input id="registerInviteCode" type="text" wire:model="registerInviteCode"
+                            class="block w-full pl-11 pr-4 py-3.5 bg-slate-900 border border-slate-700 rounded-xl text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all sm:text-sm font-medium hover:bg-slate-900/70"
+                            placeholder="Mã người giới thiệu (Không bắt buộc)">
+                    </div>
+                    @error('registerInviteCode')
+                        <span class="text-red-400 text-xs mt-1">{{ $message }}</span>
+                    @enderror
+                </div>
+            </div>
+
+            <div class="pt-2">
+                <button type="submit"
+                    class="group relative w-full flex justify-center py-3.5 px-4 border border-transparent text-sm font-bold rounded-xl text-white bg-emerald-600 hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-emerald-500 transition-all shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:shadow-[0_0_30px_rgba(16,185,129,0.5)]">
+                    <span class="absolute left-0 inset-y-0 flex items-center pl-3">
+                        <i class="fa-solid fa-user-plus text-emerald-300 group-hover:text-emerald-200 transition-colors"></i>
+                    </span>
+                    Đăng Ký
+                </button>
+            </div>
+
+            <div class="text-center mt-4">
+                <button type="button" wire:click="toggleRegister" class="text-sm text-slate-400 hover:text-slate-300 transition-colors cursor-pointer">
+                    Đã có tài khoản? Quay lại đăng nhập
+                </button>
+            </div>
+        </form>
+    @endif
 
 
 </div>

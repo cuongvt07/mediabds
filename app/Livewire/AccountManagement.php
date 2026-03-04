@@ -73,6 +73,7 @@ class AccountManagement extends Component
                         ->orWhere('invite_code', 'like', '%' . $this->search . '%');
                 });
             })
+            ->orderBy('sent_invite_logs_count', 'desc')
             ->latest()
             ->paginate(10);
 

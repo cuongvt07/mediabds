@@ -76,6 +76,16 @@
                     </div>
                     <span class="text-[10px] font-bold text-center leading-none">Account</span>
                 </a>
+                
+                <a href="{{ route('ctv.ranks') }}" wire:navigate
+                    class="flex flex-col items-center justify-center p-3 rounded-2xl transition-all group {{ request()->routeIs('ctv.ranks') ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-white hover:bg-slate-800' }}"
+                    title="Cấu hình Hạng CTV">
+                    <div
+                        class="w-8 h-8 flex items-center justify-center rounded-lg mb-1 {{ request()->routeIs('ctv.ranks') ? 'bg-white/20' : 'bg-slate-800 group-hover:bg-slate-700' }}">
+                        <i class="fa-solid fa-ranking-star text-sm"></i>
+                    </div>
+                    <span class="text-[10px] font-bold text-center leading-none">Hạng CTV</span>
+                </a>
                 @endif
 
                 <a href="{{ route('customers') }}" wire:navigate
