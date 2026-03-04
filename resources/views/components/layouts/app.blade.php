@@ -76,16 +76,7 @@
                     </div>
                     <span class="text-[10px] font-bold text-center leading-none">Account</span>
                 </a>
-                
-                <a href="{{ route('ctv.ranks') }}" wire:navigate
-                    class="flex flex-col items-center justify-center p-3 rounded-2xl transition-all group {{ request()->routeIs('ctv.ranks') ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-white hover:bg-slate-800' }}"
-                    title="Cấu hình Hạng CTV">
-                    <div
-                        class="w-8 h-8 flex items-center justify-center rounded-lg mb-1 {{ request()->routeIs('ctv.ranks') ? 'bg-white/20' : 'bg-slate-800 group-hover:bg-slate-700' }}">
-                        <i class="fa-solid fa-ranking-star text-sm"></i>
-                    </div>
-                    <span class="text-[10px] font-bold text-center leading-none">Hạng CTV</span>
-                </a>
+
                 @endif
 
                 <a href="{{ route('customers') }}" wire:navigate
@@ -100,10 +91,40 @@
             </div>
 
             <!-- Bottom Actions -->
-            <div class="mt-auto flex flex-col gap-4">
-                <button
-                    class="w-10 h-10 rounded-full bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 flex items-center justify-center transition-colors">
-                    <i class="fa-solid fa-gear"></i>
+            <div class="mt-auto flex flex-col gap-4 relative" x-data="{ showSettings: false }">
+                
+                <!-- Settings Dropdown -->
+                <div x-show="showSettings" @click.away="showSettings = false"
+                    x-transition:enter="transition ease-out duration-200"
+                    x-transition:enter-start="opacity-0 translate-y-2 scale-95"
+                    x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+                    x-transition:leave="transition ease-in duration-150"
+                    x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+                    x-transition:leave-end="opacity-0 translate-y-2 scale-95"
+                    class="absolute bottom-12 left-14 w-60 bg-slate-800 rounded-xl shadow-2xl border border-slate-700 py-2 z-50 mb-2 hidden"
+                    :class="{ 'hidden': !showSettings }">
+                    <div class="px-4 py-2 border-b border-slate-700/50 mb-2">
+                        <h3 class="text-[11px] font-black text-slate-400 uppercase tracking-wider">Module Cấu Hình</h3>
+                    </div>
+                    
+                    @if(auth()->user() && auth()->user()->isAdmin())
+                    <a href="{{ route('ctv.ranks') }}" wire:navigate
+                        class="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-300 hover:text-white hover:bg-slate-700/50 transition-colors {{ request()->routeIs('ctv.ranks') ? 'bg-slate-700/50 text-blue-400 font-bold border-l-2 border-blue-500' : 'border-l-2 border-transparent' }}">
+                        <div class="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center shrink-0">
+                            <i class="fa-solid fa-ranking-star"></i>
+                        </div>
+                        <div class="flex-1">
+                            <div class="leading-tight">Hạng CTV</div>
+                            <div class="text-[10px] text-slate-500 font-normal mt-0.5">Xếp hạng & hiển thị giá</div>
+                        </div>
+                    </a>
+                    @endif
+                </div>
+
+                <button @click="showSettings = !showSettings"
+                    class="w-10 h-10 rounded-full bg-slate-800 hover:text-white flex items-center justify-center transition-all duration-200 {{ request()->routeIs('ctv.ranks') ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30' : 'text-slate-400 hover:bg-slate-700' }}"
+                    :class="{ 'bg-slate-700 text-white shadow-lg': showSettings }">
+                    <i class="fa-solid fa-gear" :class="{ 'animate-[spin_3s_linear_infinite]': showSettings }"></i>
                 </button>
                 <div
                     class="w-10 h-10 rounded-full bg-gradient-to-tr from-purple-500 to-pink-500 text-white flex items-center justify-center font-bold text-xs shadow-lg">

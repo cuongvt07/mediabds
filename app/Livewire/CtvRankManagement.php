@@ -23,8 +23,8 @@ class CtvRankManagement extends Component
     protected $rules = [
         'name' => 'required|string|max:255',
         'min_invites' => 'required|integer|min:0',
-        'min_price' => 'required|numeric|min:0',
-        'max_price' => 'nullable|numeric|gt:min_price',
+        'min_price' => 'required|string',
+        'max_price' => 'nullable|string',
     ];
 
     protected $messages = [
@@ -33,10 +33,6 @@ class CtvRankManagement extends Component
         'min_invites.integer' => 'Số lượng mời phải là một số nguyên.',
         'min_invites.min' => 'Số lượng mời không được nhỏ hơn 0.',
         'min_price.required' => 'Mức giá tối thiểu không được để trống.',
-        'min_price.numeric' => 'Mức giá phải là một số.',
-        'min_price.min' => 'Mức giá không được nhỏ hơn 0.',
-        'max_price.numeric' => 'Mức giá tối đa phải là một số.',
-        'max_price.gt' => 'Mức giá tối đa phải lớn hơn mức giá tối thiểu.',
     ];
 
     public function updatingSearch()
@@ -77,19 +73,27 @@ class CtvRankManagement extends Component
         $this->rankId = '';
         $this->name = '';
         $this->min_invites = 0;
-        $this->min_price = 0;
-        $this->max_price = null;
+        $this->min_price = '';
+        $this->max_price = '';
     }
 
     public function store()
     {
         $this->validate();
 
+        $minPriceClean = (float) str_replace('.', '', $this->min_price);
+        $maxPriceClean = $this->max_price ? (float) str_replace('.', '', $this->max_price) : null;
+
+        if ($maxPriceClean !== null && $maxPriceClean <= $minPriceClean) {
+            $this->addError('max_price', 'Mức giá tối đa phải lớn hơn mức giá tối thiểu.');
+            return;
+        }
+
         CtvRank::updateOrCreate(['id' => $this->rankId], [
             'name' => $this->name,
             'min_invites' => $this->min_invites,
-            'min_price' => $this->min_price,
-            'max_price' => $this->max_price === '' ? null : $this->max_price,
+            'min_price' => $minPriceClean,
+            'max_price' => $maxPriceClean,
         ]);
 
         $this->closeModal();
@@ -103,8 +107,8 @@ class CtvRankManagement extends Component
         $this->rankId = $id;
         $this->name = $rank->name;
         $this->min_invites = $rank->min_invites;
-        $this->min_price = $rank->min_price;
-        $this->max_price = $rank->max_price;
+        $this->min_price = number_format($rank->min_price, 0, ',', '.');
+        $this->max_price = $rank->max_price ? number_format($rank->max_price, 0, ',', '.') : '';
 
         $this->openModal();
     }

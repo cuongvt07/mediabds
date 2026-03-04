@@ -70,8 +70,8 @@
                                 </span>
                             </td>
                             <td class="py-4 px-5 font-medium text-slate-700">
-                                {{ number_format($rank->min_price, 2) }}
-                                {{ $rank->max_price ? ' - ' . number_format($rank->max_price, 2) : ' trở lên' }} Tỷ VNĐ
+                                {{ number_format($rank->min_price, 0, ',', '.') }}
+                                {{ $rank->max_price ? ' - ' . number_format($rank->max_price, 0, ',', '.') : ' trở lên' }} VNĐ
                             </td>
                             <td class="py-4 px-5 text-right space-x-2">
                                 <button wire:click="edit({{ $rank->id }})" class="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors inline-block" title="Sửa">
@@ -142,16 +142,38 @@
                     <!-- Mức giá hiển thị -->
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label for="min_price" class="block text-sm font-semibold text-slate-700 mb-1.5">Giá tối thiểu (Tỷ VND) <span class="text-red-500">*</span></label>
-                            <input type="number" id="min_price" wire:model="min_price" step="0.01" min="0"
+                            <label for="min_price" class="block text-sm font-semibold text-slate-700 mb-1.5">Giá tối thiểu (VNĐ) <span class="text-red-500">*</span></label>
+                            <input type="text" id="min_price" wire:model="min_price"
+                                x-data="{
+                                    formatInput(el) {
+                                        let val = el.value.replace(/[^0-9]/g, '');
+                                        if(val) {
+                                            val = parseInt(val, 10).toLocaleString('vi-VN').replace(/,/g, '.');
+                                        }
+                                        el.value = val;
+                                        $wire.set('min_price', val);
+                                    }
+                                }"
+                                x-on:input="formatInput($el)"
                                 class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm font-medium shadow-sm"
                                 placeholder="0">
                             @error('min_price') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
                         </div>
 
                         <div>
-                            <label for="max_price" class="block text-sm font-semibold text-slate-700 mb-1.5">Giá tối đa (Tỷ VND)</label>
-                            <input type="number" id="max_price" wire:model="max_price" step="0.01" min="0"
+                            <label for="max_price" class="block text-sm font-semibold text-slate-700 mb-1.5">Giá tối đa (VNĐ)</label>
+                            <input type="text" id="max_price" wire:model="max_price"
+                                x-data="{
+                                    formatInput(el) {
+                                        let val = el.value.replace(/[^0-9]/g, '');
+                                        if(val) {
+                                            val = parseInt(val, 10).toLocaleString('vi-VN').replace(/,/g, '.');
+                                        }
+                                        el.value = val;
+                                        $wire.set('max_price', val);
+                                    }
+                                }"
+                                x-on:input="formatInput($el)"
                                 class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm font-medium placeholder-slate-400 shadow-sm"
                                 placeholder="Để trống nếu không giới hạn">
                             @error('max_price') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror

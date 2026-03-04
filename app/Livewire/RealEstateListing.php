@@ -1030,10 +1030,10 @@ class RealEstateListing extends Component
 
                 if ($ctvRank) {
                     if (!empty($ctvRank->min_price)) {
-                        $query->whereRaw("(CASE WHEN price_unit = 'Triệu' THEN CAST(price AS DECIMAL(15,2)) / 1000 ELSE CAST(price AS DECIMAL(15,2)) END) >= ?", [$ctvRank->min_price]);
+                        $query->whereRaw("(CASE WHEN price_unit = 'Triệu' THEN CAST(price AS DECIMAL(15,2)) * 1000000 ELSE CAST(price AS DECIMAL(15,2)) * 1000000000 END) >= ?", [$ctvRank->min_price]);
                     }
                     if (!empty($ctvRank->max_price)) {
-                        $query->whereRaw("(CASE WHEN price_unit = 'Triệu' THEN CAST(price AS DECIMAL(15,2)) / 1000 ELSE CAST(price AS DECIMAL(15,2)) END) <= ?", [$ctvRank->max_price]);
+                        $query->whereRaw("(CASE WHEN price_unit = 'Triệu' THEN CAST(price AS DECIMAL(15,2)) * 1000000 ELSE CAST(price AS DECIMAL(15,2)) * 1000000000 END) <= ?", [$ctvRank->max_price]);
                     }
                 } else {
                     $query->whereId(0);
