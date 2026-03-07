@@ -162,7 +162,7 @@
                 </div>
 
                 <button @click="showUserMenu = !showUserMenu"
-                    class="w-10 h-10 rounded-full bg-gradient-to-tr from-purple-500 to-pink-500 text-white flex items-center justify-center font-bold text-xs shadow-lg transition-transform active:scale-90 hover:ring-2 hover:ring-purple-400/50">
+                    class="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-600 text-white flex items-center justify-center font-bold text-sm shadow-md transition-transform active:scale-90 hover:ring-2 hover:ring-white ring-2 ring-white">
                     {{ substr(auth()->user()->name ?? 'U', 0, 1) }}
                 </button>
             </div>

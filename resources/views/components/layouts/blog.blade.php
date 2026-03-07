@@ -49,15 +49,44 @@
                         <span>Media Manager</span>
                     </a>
 
-                    <!-- User Profile Dropdown (Simplified) -->
-                    <div class="flex items-center gap-3 pl-4 border-l border-gray-100">
+                    <!-- User Profile Dropdown -->
+                    <div class="flex items-center gap-3 pl-4 border-l border-gray-100 relative" x-data="{ showUserMenu: false }">
                         <div class="text-right hidden md:block">
-                            <div class="text-sm font-bold text-slate-700">{{ auth()->user()->name }}</div>
-                            <div class="text-xs text-slate-500">Administrator</div>
+                            <div class="text-sm font-bold text-slate-700 leading-tight">{{ auth()->user()->name }}</div>
+                            <div class="text-[10px] text-slate-500 uppercase font-bold tracking-wider tracking-[0.05em]">{{ auth()->user()->isAdmin() ? 'Administrator' : 'User' }}</div>
                         </div>
-                        <div
-                            class="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-600 text-white flex items-center justify-center font-bold text-sm shadow-md ring-2 ring-white">
+                        
+                        <!-- Avatar Button -->
+                        <button @click="showUserMenu = !showUserMenu" 
+                            class="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-600 text-white flex items-center justify-center font-bold text-sm shadow-md ring-2 ring-white transition-transform active:scale-90 hover:shadow-lg">
                             {{ substr(auth()->user()->name, 0, 1) }}
+                        </button>
+
+                        <!-- Dropdown Menu -->
+                        <div x-show="showUserMenu" @click.away="showUserMenu = false"
+                            x-transition:enter="transition ease-out duration-200"
+                            x-transition:enter-start="opacity-0 translate-y-2 scale-95"
+                            x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+                            class="absolute top-12 right-0 w-52 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-[60]"
+                            style="display: none;">
+                            <div class="p-4 border-b border-gray-50 bg-slate-50/50">
+                                <div class="text-[10px] text-gray-400 uppercase font-black tracking-[0.1em] mb-1">Tài khoản</div>
+                                <div class="text-xs font-bold text-slate-800 truncate">{{ auth()->user()->name }}</div>
+                                <div class="text-[9px] text-gray-500 font-mono mt-0.5">{{ auth()->user()->phone }}</div>
+                            </div>
+                            
+                            <div class="p-2">
+                                <form action="{{ route('logout') }}" method="POST">
+                                    @csrf
+                                    <button type="submit" 
+                                        class="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-red-500 hover:bg-red-50 transition-all font-bold text-xs group">
+                                        <div class="w-7 h-7 flex items-center justify-center rounded-lg bg-red-500/10 group-hover:bg-red-500/20 transition-colors">
+                                            <i class="fa-solid fa-right-from-bracket"></i>
+                                        </div>
+                                        Đăng xuất
+                                    </button>
+                                </form>
+                            </div>
                         </div>
                     </div>
                 </div>
