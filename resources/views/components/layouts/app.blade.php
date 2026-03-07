@@ -77,6 +77,16 @@
                     <span class="text-[10px] font-bold text-center leading-none">Account</span>
                 </a>
 
+                <a href="{{ route('business') }}" wire:navigate
+                    class="flex flex-col items-center justify-center p-3 rounded-2xl transition-all group {{ request()->routeIs('business') ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-white hover:bg-slate-800' }}"
+                    title="Quản lý kinh doanh">
+                    <div
+                        class="w-8 h-8 flex items-center justify-center rounded-lg mb-1 {{ request()->routeIs('business') ? 'bg-white/20' : 'bg-slate-800 group-hover:bg-slate-700' }}">
+                        <i class="fa-solid fa-briefcase text-sm"></i>
+                    </div>
+                    <span class="text-[10px] font-bold text-center leading-none">Kinh Doanh</span>
+                </a>
+
                 @endif
 
                 <a href="{{ route('customers') }}" wire:navigate
