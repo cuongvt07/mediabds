@@ -137,9 +137,21 @@
                     <i class="fa-solid fa-gear" :class="{ 'animate-[spin_3s_linear_infinite]': showSettings }"></i>
                 </button>
                 <div
-                    class="w-10 h-10 rounded-full bg-gradient-to-tr from-purple-500 to-pink-500 text-white flex items-center justify-center font-bold text-xs shadow-lg">
+                    class="w-10 h-10 rounded-full bg-gradient-to-tr from-purple-500 to-pink-500 text-white flex items-center justify-center font-bold text-xs shadow-lg mb-2">
                     {{ substr(auth()->user()->name ?? 'U', 0, 1) }}
                 </div>
+
+                <form action="{{ route('logout') }}" method="POST" class="w-full px-2 mt-2">
+                    @csrf
+                    <button type="submit" 
+                        class="w-full flex flex-col items-center justify-center p-2 rounded-xl text-red-400 hover:text-white hover:bg-red-500/20 transition-all group"
+                        title="Đăng xuất">
+                        <div class="w-8 h-8 flex items-center justify-center rounded-lg bg-red-500/10 group-hover:bg-red-500/20 mb-1">
+                            <i class="fa-solid fa-right-from-bracket text-xs"></i>
+                        </div>
+                        <span class="text-[9px] font-bold text-center leading-none">Logout</span>
+                    </button>
+                </form>
             </div>
         </aside>
 
