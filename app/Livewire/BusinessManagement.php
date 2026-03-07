@@ -27,6 +27,10 @@ class BusinessManagement extends Component
     public $revenueTotal = 0;
     public $bonusTotal = 0;
 
+    // Filters for Detail
+    public $filterYear;
+    public $filterQuarter = 'all';
+
     protected $queryString = [
         'search' => ['except' => ''],
     ];
@@ -69,6 +73,8 @@ class BusinessManagement extends Component
         $this->selectedUser = User::find($userId);
         $this->showDetailPopup = true;
         $this->activeTab = 'info';
+        $this->filterYear = date('Y');
+        $this->filterQuarter = 'all';
         $this->loadTabData();
     }
 
@@ -96,10 +102,28 @@ class BusinessManagement extends Component
                     ->get();
                 break;
             case 'sales':
-                $this->saleLogs = RealEstateListingSale::where('sold_by_user_id', $this->selectedUserId)
+                $query = RealEstateListingSale::where('sold_by_user_id', $this->selectedUserId)
                     ->with('listing')
-                    ->latest()
-                    ->get();
+                    ->latest();
+
+                if ($this->filterYear) {
+                    $query->whereYear('sold_at', $this->filterYear);
+                }
+
+                if ($this->filterQuarter !== 'all') {
+                    $months = match ((int)$this->filterQuarter) {
+                        1 => [1, 2, 3],
+                        2 => [4, 5, 6],
+                        3 => [7, 8, 9],
+                        4 => [10, 11, 12],
+                        default => []
+                    };
+                    if (!empty($months)) {
+                        $query->whereIn(\DB::raw('MONTH(sold_at)'), $months);
+                    }
+                }
+
+                $this->saleLogs = $query->get();
                 $this->salesTotal = $this->saleLogs->sum('actual_price');
                 $this->revenueTotal = $this->saleLogs->sum('revenue_amount');
                 $this->bonusTotal = $this->saleLogs->sum('bonus_amount');

@@ -255,6 +255,33 @@
                             </table>
                         </div>
                     @elseif ($activeTab === 'sales')
+                        <!-- Filters -->
+                        <div class="mb-6 bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
+                            <h3 class="text-blue-600 font-bold uppercase text-xs flex items-center gap-2">
+                                <i class="fa-solid fa-filter"></i> Lọc Kết Quả
+                            </h3>
+                            <div class="flex items-center gap-4">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-[11px] text-gray-400 uppercase font-bold text-nowrap">Năm:</span>
+                                    <select wire:model.live="filterYear" wire:change="loadTabData" class="border border-gray-200 rounded-lg px-3 py-1.5 text-xs font-bold text-slate-700 focus:ring-2 focus:ring-blue-500 outline-none bg-slate-50">
+                                        @for ($y = date('Y'); $y >= 2024; $y--)
+                                            <option value="{{ $y }}">{{ $y }}</option>
+                                        @endfor
+                                    </select>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-[11px] text-gray-400 uppercase font-bold text-nowrap">Quý:</span>
+                                    <select wire:model.live="filterQuarter" wire:change="loadTabData" class="border border-gray-200 rounded-lg px-3 py-1.5 text-xs font-bold text-slate-700 focus:ring-2 focus:ring-blue-500 outline-none bg-slate-50">
+                                        <option value="all">Tất cả quý</option>
+                                        <option value="1">Quý 1 (Tháng 1-3)</option>
+                                        <option value="2">Quý 2 (Tháng 4-6)</option>
+                                        <option value="3">Quý 3 (Tháng 7-9)</option>
+                                        <option value="4">Quý 4 (Tháng 10-12)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="mb-6 grid grid-cols-4 gap-4 uppercase font-bold">
                             <div class="bg-blue-600 text-white p-5 rounded-2xl shadow-lg">
                                 <div class="text-[10px] opacity-80 mb-1">Giá trị giao dịch</div>
