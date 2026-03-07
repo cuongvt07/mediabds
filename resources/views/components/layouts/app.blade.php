@@ -101,18 +101,15 @@
             </div>
 
             <!-- Bottom Actions -->
-            <div class="mt-auto flex flex-col gap-4 relative" x-data="{ showSettings: false }">
+            <div class="mt-auto flex flex-col gap-4 relative" x-data="{ showSettings: false, showUserMenu: false }">
                 
                 <!-- Settings Dropdown -->
                 <div x-show="showSettings" @click.away="showSettings = false"
                     x-transition:enter="transition ease-out duration-200"
                     x-transition:enter-start="opacity-0 translate-y-2 scale-95"
                     x-transition:enter-end="opacity-100 translate-y-0 scale-100"
-                    x-transition:leave="transition ease-in duration-150"
-                    x-transition:leave-start="opacity-100 translate-y-0 scale-100"
-                    x-transition:leave-end="opacity-0 translate-y-2 scale-95"
-                    class="absolute bottom-12 left-14 w-60 bg-slate-800 rounded-xl shadow-2xl border border-slate-700 py-2 z-50 mb-2 hidden"
-                    :class="{ 'hidden': !showSettings }">
+                    class="absolute bottom-12 left-14 w-60 bg-slate-800 rounded-xl shadow-2xl border border-slate-700 py-2 z-50 mb-2"
+                    style="display: none;">
                     <div class="px-4 py-2 border-b border-slate-700/50 mb-2">
                         <h3 class="text-[11px] font-black text-slate-400 uppercase tracking-wider">Module Cấu Hình</h3>
                     </div>
@@ -136,22 +133,38 @@
                     :class="{ 'bg-slate-700 text-white shadow-lg': showSettings }">
                     <i class="fa-solid fa-gear" :class="{ 'animate-[spin_3s_linear_infinite]': showSettings }"></i>
                 </button>
-                <div
-                    class="w-10 h-10 rounded-full bg-gradient-to-tr from-purple-500 to-pink-500 text-white flex items-center justify-center font-bold text-xs shadow-lg mb-2">
-                    {{ substr(auth()->user()->name ?? 'U', 0, 1) }}
+
+                <!-- User Dropdown Menu -->
+                <div x-show="showUserMenu" @click.away="showUserMenu = false"
+                    x-transition:enter="transition ease-out duration-200"
+                    x-transition:enter-start="opacity-0 translate-y-2 scale-95"
+                    x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+                    class="absolute bottom-0 left-14 w-52 bg-slate-800 rounded-2xl shadow-2xl border border-slate-700 overflow-hidden z-[60]"
+                    style="display: none;">
+                    <div class="p-4 border-b border-slate-700/50 bg-slate-800/50">
+                        <div class="text-[10px] text-slate-500 uppercase font-black tracking-[0.1em] mb-1">Tài khoản</div>
+                        <div class="text-xs font-bold text-white truncate">{{ auth()->user()->name ?? 'User' }}</div>
+                        <div class="text-[9px] text-slate-400 font-mono mt-0.5">{{ auth()->user()->phone ?? '' }}</div>
+                    </div>
+                    
+                    <div class="p-2">
+                        <form action="{{ route('logout') }}" method="POST">
+                            @csrf
+                            <button type="submit" 
+                                class="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-all font-bold text-xs group">
+                                <div class="w-7 h-7 flex items-center justify-center rounded-lg bg-red-500/10 group-hover:bg-red-500/20 transition-colors">
+                                    <i class="fa-solid fa-right-from-bracket"></i>
+                                </div>
+                                Đăng xuất
+                            </button>
+                        </form>
+                    </div>
                 </div>
 
-                <form action="{{ route('logout') }}" method="POST" class="w-full px-2 mt-2">
-                    @csrf
-                    <button type="submit" 
-                        class="w-full flex flex-col items-center justify-center p-2 rounded-xl text-red-400 hover:text-white hover:bg-red-500/20 transition-all group"
-                        title="Đăng xuất">
-                        <div class="w-8 h-8 flex items-center justify-center rounded-lg bg-red-500/10 group-hover:bg-red-500/20 mb-1">
-                            <i class="fa-solid fa-right-from-bracket text-xs"></i>
-                        </div>
-                        <span class="text-[9px] font-bold text-center leading-none">Logout</span>
-                    </button>
-                </form>
+                <button @click="showUserMenu = !showUserMenu"
+                    class="w-10 h-10 rounded-full bg-gradient-to-tr from-purple-500 to-pink-500 text-white flex items-center justify-center font-bold text-xs shadow-lg transition-transform active:scale-90 hover:ring-2 hover:ring-purple-400/50">
+                    {{ substr(auth()->user()->name ?? 'U', 0, 1) }}
+                </button>
             </div>
         </aside>
 
