@@ -25,6 +25,7 @@ class BusinessManagement extends Component
     public $saleLogs = [];
     public $salesTotal = 0;
     public $revenueTotal = 0;
+    public $bonusTotal = 0;
 
     protected $queryString = [
         'search' => ['except' => ''],
@@ -101,6 +102,7 @@ class BusinessManagement extends Component
                     ->get();
                 $this->salesTotal = $this->saleLogs->sum('actual_price');
                 $this->revenueTotal = $this->saleLogs->sum('revenue_amount');
+                $this->bonusTotal = $this->saleLogs->sum('bonus_amount');
                 break;
         }
     }

@@ -255,18 +255,22 @@
                             </table>
                         </div>
                     @elseif ($activeTab === 'sales')
-                        <div class="mb-6 grid grid-cols-3 gap-6 uppercase font-bold">
-                            <div class="bg-blue-600 text-white p-6 rounded-2xl shadow-lg">
-                                <div class="text-[11px] opacity-80 mb-1">Tổng giá trị bán</div>
-                                <div class="text-2xl font-mono">{{ number_format($salesTotal, 0, ',', '.') }} đ</div>
+                        <div class="mb-6 grid grid-cols-4 gap-4 uppercase font-bold">
+                            <div class="bg-blue-600 text-white p-5 rounded-2xl shadow-lg">
+                                <div class="text-[10px] opacity-80 mb-1">Giá trị giao dịch</div>
+                                <div class="text-xl font-mono">{{ number_format($salesTotal, 0, ',', '.') }} đ</div>
                             </div>
-                            <div class="bg-green-600 text-white p-6 rounded-2xl shadow-lg">
-                                <div class="text-[11px] opacity-80 mb-1">Tổng doanh thu</div>
-                                <div class="text-2xl font-mono">{{ number_format($revenueTotal, 0, ',', '.') }} đ</div>
+                            <div class="bg-green-600 text-white p-5 rounded-2xl shadow-lg">
+                                <div class="text-[10px] opacity-80 mb-1">Doanh thu</div>
+                                <div class="text-xl font-mono">{{ number_format($revenueTotal, 0, ',', '.') }} đ</div>
                             </div>
-                            <div class="bg-indigo-600 text-white p-6 rounded-2xl shadow-lg">
-                                <div class="text-[11px] opacity-80 mb-1">Số lượng chốt</div>
-                                <div class="text-2xl font-mono">{{ count($saleLogs) }}</div>
+                            <div class="bg-orange-500 text-white p-5 rounded-2xl shadow-lg">
+                                <div class="text-[10px] opacity-80 mb-1">Tổng thưởng</div>
+                                <div class="text-xl font-mono">{{ number_format($bonusTotal, 0, ',', '.') }} đ</div>
+                            </div>
+                            <div class="bg-indigo-600 text-white p-5 rounded-2xl shadow-lg">
+                                <div class="text-[10px] opacity-80 mb-1">Hợp đồng</div>
+                                <div class="text-xl font-mono">{{ count($saleLogs) }}</div>
                             </div>
                         </div>
 
@@ -277,10 +281,12 @@
                                         <th class="px-6 py-4">Sản phẩm/Dự án</th>
                                         <th class="px-6 py-4 text-right">Giá bán</th>
                                         <th class="px-6 py-4 text-right">Hoa hồng</th>
+                                        <th class="px-6 py-4 text-right">Thưởng</th>
+                                        <th class="px-6 py-4 text-right">Tổng nhận</th>
                                         <th class="px-6 py-4">Ngày bán</th>
                                     </tr>
                                 </thead>
-                                <tbody class="divide-y divide-gray-100 text-[13px] font-bold uppercase">
+                                <tbody class="divide-y divide-gray-100 text-[12px] font-bold uppercase">
                                     @forelse ($saleLogs as $sale)
                                         <tr class="hover:bg-slate-50 transition-colors">
                                             <td class="px-6 py-4">
@@ -292,7 +298,13 @@
                                             </td>
                                             <td class="px-6 py-4 text-right font-mono text-green-600">
                                                 {{ number_format($sale->revenue_amount, 0, ',', '.') }} đ
-                                                <div class="text-[10px] text-gray-400">({{ $sale->revenue_percent }}%)</div>
+                                                <div class="text-[10px] text-gray-400 font-normal">({{ $sale->revenue_percent }}%)</div>
+                                            </td>
+                                            <td class="px-6 py-4 text-right font-mono text-orange-500">
+                                                {{ number_format($sale->bonus_amount ?? 0, 0, ',', '.') }} đ
+                                            </td>
+                                            <td class="px-6 py-4 text-right font-mono text-blue-600 bg-slate-50/50">
+                                                {{ number_format(($sale->revenue_amount ?? 0) + ($sale->bonus_amount ?? 0), 0, ',', '.') }} đ
                                             </td>
                                             <td class="px-6 py-4 text-gray-500 normal-case font-normal">
                                                 {{ $sale->sold_at->format('d/m/Y') }}
@@ -300,7 +312,7 @@
                                         </tr>
                                     @empty
                                         <tr>
-                                            <td colspan="4" class="px-6 py-12 text-center text-gray-400 normal-case font-normal">
+                                            <td colspan="6" class="px-6 py-12 text-center text-gray-400 normal-case font-normal">
                                                 Chưa có dữ liệu bán hàng.
                                             </td>
                                         </tr>
