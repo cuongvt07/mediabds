@@ -75,6 +75,16 @@
                                 <div class="text-[9px] text-gray-500 font-mono mt-0.5">{{ auth()->user()->phone }}</div>
                             </div>
                             
+                            <div class="p-2 border-b border-gray-50">
+                                <a href="{{ route('business.detail', auth()->id()) }}" 
+                                    class="flex items-center gap-3 px-3 py-2 rounded-xl text-slate-600 hover:bg-blue-50 hover:text-blue-600 transition-all font-bold text-xs group">
+                                    <div class="w-7 h-7 flex items-center justify-center rounded-lg bg-blue-500/10 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                                        <i class="fa-solid fa-user-gear"></i>
+                                    </div>
+                                    Chi tiết cá nhân
+                                </a>
+                            </div>
+
                             <div class="p-2">
                                 <form action="{{ route('logout') }}" method="POST">
                                     @csrf
