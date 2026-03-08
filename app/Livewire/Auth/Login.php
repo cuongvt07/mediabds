@@ -10,6 +10,13 @@ class Login extends Component
     public $phone = '';
     public $remember = true;
 
+    public function mount()
+    {
+        if (request()->query('register')) {
+            $this->isRegistering = true;
+        }
+    }
+
     // Registration properties
     public $isRegistering = false;
     public $registerName = '';

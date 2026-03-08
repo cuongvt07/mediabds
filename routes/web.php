@@ -28,6 +28,9 @@ Route::get('/accounts', \App\Livewire\AccountManagement::class)->middleware(['au
 Route::get('/ctv-ranks', \App\Livewire\CtvRankManagement::class)->middleware(['auth', 'admin'])->name('ctv.ranks');
 Route::get('/business', \App\Livewire\BusinessManagement::class)->middleware(['auth', 'admin'])->name('business');
 Route::get('/customers', \App\Livewire\CustomerManagement::class)->middleware('auth')->name('customers');
+Route::get('/landing/ctv', \App\Livewire\CtvLanding::class)->name('landing.ctv');
+Route::get('/business/detail/{id}', \App\Livewire\BusinessDetail::class)->middleware(['auth', 'admin'])->name('business.detail');
+Route::get('/business/statistics', \App\Livewire\CtvStatistics::class)->middleware(['auth', 'admin'])->name('business.statistics');
 
 
 

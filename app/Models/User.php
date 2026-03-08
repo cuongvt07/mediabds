@@ -141,6 +141,22 @@ class User extends Authenticatable
     ];
 
     /**
+     * Get the user's current CTV rank.
+     */
+    public function getRankAttribute()
+    {
+        $invitesCount = $this->invitees()->count();
+        $totalRevenue = RealEstateListingSale::where('sold_by_user_id', $this->id)->sum('revenue_amount');
+
+        return \App\Models\CtvRank::query()
+            ->where('min_invites', '<=', $invitesCount)
+            ->where('min_price', '<=', $totalRevenue)
+            ->orderByDesc('min_price')
+            ->orderByDesc('min_invites')
+            ->first();
+    }
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>

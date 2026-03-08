@@ -20,6 +20,9 @@
                     d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
             </svg>
         </div>
+        <a href="{{ route('business.statistics') }}" class="ml-auto bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-md transition-all flex items-center gap-2">
+            <i class="fa-solid fa-chart-line"></i> Thống kê tổng hợp
+        </a>
     </div>
 
     <!-- Content -->
@@ -64,11 +67,15 @@
                             <td class="px-6 py-4 text-gray-500 normal-case font-normal">
                                 {{ $user->updated_at->format('d/m/Y H:i') }}
                             </td>
-                            <td class="px-6 py-4 text-right">
+                            <td class="px-6 py-4 text-right flex flex-col items-end gap-2">
                                 <button wire:click="showDetail({{ $user->id }})"
-                                    class="bg-slate-100 hover:bg-blue-600 hover:text-white text-slate-600 px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ml-auto">
-                                    <i class="fa-solid fa-eye"></i> Chi tiết
+                                    class="bg-slate-100 hover:bg-blue-600 hover:text-white text-slate-600 px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2">
+                                    <i class="fa-solid fa-eye"></i> Xem nhanh
                                 </button>
+                                <a href="{{ route('business.detail', $user->id) }}"
+                                    class="text-blue-600 hover:underline text-[11px] font-bold uppercase tracking-tight">
+                                    Chi tiết đầy đủ <i class="fa-solid fa-chevron-right ml-1"></i>
+                                </a>
                             </td>
                         </tr>
                     @empty
