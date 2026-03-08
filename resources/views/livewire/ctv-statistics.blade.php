@@ -1,19 +1,19 @@
 <div class="h-full flex flex-col bg-slate-50">
-    <div class="sticky top-0 z-10 bg-white/80 backdrop-blur-md border-b border-gray-200 px-6 py-4 flex items-center justify-between shadow-sm">
-        <h1 class="text-2xl font-black text-slate-800 tracking-tight flex items-center gap-3 lowercase">
+    <div class="sticky top-0 z-10 bg-white/80 backdrop-blur-md border-b border-gray-200 px-4 sm:px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
+        <h1 class="text-xl sm:text-2xl font-black text-slate-800 tracking-tight flex items-center gap-3 lowercase">
             <span class="p-2 bg-indigo-100 text-indigo-600 rounded-xl">
                 <i class="fa-solid fa-chart-pie"></i>
             </span>
-            Thống kê tổng hợp CTV
+            Thống kê <span class="hidden sm:inline">tổng hợp</span> CTV
         </h1>
 
-        <div class="flex items-center gap-3">
-            <select wire:model.live="filterYear" class="bg-white border border-gray-200 rounded-xl px-4 py-2 text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20 uppercase tracking-widest">
+        <div class="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
+            <select wire:model.live="filterYear" class="flex-1 sm:flex-none bg-white border border-gray-200 rounded-xl px-3 py-2 md:px-4 text-[10px] md:text-xs font-black text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20 uppercase tracking-widest overflow-hidden truncate">
                 @for ($y = date('Y'); $y >= 2024; $y--)
                     <option value="{{ $y }}">Năm {{ $y }}</option>
                 @endfor
             </select>
-            <select wire:model.live="filterQuarter" class="bg-white border border-gray-200 rounded-xl px-4 py-2 text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20 uppercase tracking-widest">
+            <select wire:model.live="filterQuarter" class="flex-1 sm:flex-none bg-white border border-gray-200 rounded-xl px-3 py-2 md:px-4 text-[10px] md:text-xs font-black text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20 uppercase tracking-widest overflow-hidden truncate">
                 <option value="all">Tất cả quý</option>
                 <option value="1">Quý 1</option>
                 <option value="2">Quý 2</option>
@@ -25,26 +25,26 @@
 
     <div class="flex-1 overflow-auto p-6 space-y-8">
         <!-- Overview Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div class="bg-white p-8 rounded-[32px] border border-gray-100 shadow-sm relative overflow-hidden">
-                <div class="absolute top-0 right-0 p-6 text-blue-500/5 text-5xl font-black lowercase italic">rev</div>
-                <p class="text-[10px] text-gray-400 font-black uppercase tracking-[0.2em] mb-2">Tổng doanh thu</p>
-                <h3 class="text-3xl font-mono font-black text-slate-800">{{ number_format($overallStats['total_revenue'], 0, ',', '.') }} <span class="text-xs font-sans">đ</span></h3>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+            <div class="bg-white p-5 sm:p-8 rounded-[24px] sm:rounded-[32px] border border-gray-100 shadow-sm relative overflow-hidden">
+                <div class="absolute top-0 right-0 p-4 sm:p-6 text-blue-500/5 text-3xl sm:text-5xl font-black lowercase italic">rev</div>
+                <p class="text-[9px] sm:text-[10px] text-gray-400 font-black uppercase tracking-[0.1em] sm:tracking-[0.2em] mb-1 sm:mb-2">Doanh thu</p>
+                <h3 class="text-xl sm:text-3xl font-mono font-black text-slate-800 truncate">{{ number_format($overallStats['total_revenue'] / 1000000, 1) }}<span class="text-[10px] font-sans">M</span></h3>
             </div>
-            <div class="bg-white p-8 rounded-[32px] border border-gray-100 shadow-sm relative overflow-hidden">
-                <div class="absolute top-0 right-0 p-6 text-emerald-500/5 text-5xl font-black lowercase italic">bonus</div>
-                <p class="text-[10px] text-gray-400 font-black uppercase tracking-[0.2em] mb-2">Tổng tiền thưởng</p>
-                <h3 class="text-3xl font-mono font-black text-slate-800">{{ number_format($overallStats['total_bonus'], 0, ',', '.') }} <span class="text-xs font-sans">đ</span></h3>
+            <div class="bg-white p-5 sm:p-8 rounded-[24px] sm:rounded-[32px] border border-gray-100 shadow-sm relative overflow-hidden">
+                <div class="absolute top-0 right-0 p-4 sm:p-6 text-emerald-500/5 text-3xl sm:text-5xl font-black lowercase italic">bn</div>
+                <p class="text-[9px] sm:text-[10px] text-gray-400 font-black uppercase tracking-[0.1em] sm:tracking-[0.2em] mb-1 sm:mb-2">Tiền thưởng</p>
+                <h3 class="text-xl sm:text-3xl font-mono font-black text-slate-800 truncate">{{ number_format($overallStats['total_bonus'] / 1000000, 1) }}<span class="text-[10px] font-sans">M</span></h3>
             </div>
-            <div class="bg-white p-8 rounded-[32px] border border-gray-100 shadow-sm relative overflow-hidden">
-                <div class="absolute top-0 right-0 p-6 text-orange-500/5 text-5xl font-black lowercase italic">deal</div>
-                <p class="text-[10px] text-gray-400 font-black uppercase tracking-[0.2em] mb-2">Tổng giao dịch</p>
-                <h3 class="text-3xl font-mono font-black text-slate-800">{{ number_format($overallStats['total_deals']) }}</h3>
+            <div class="bg-white p-5 sm:p-8 rounded-[24px] sm:rounded-[32px] border border-gray-100 shadow-sm relative overflow-hidden">
+                <div class="absolute top-0 right-0 p-4 sm:p-6 text-orange-500/5 text-3xl sm:text-5xl font-black lowercase italic">deal</div>
+                <p class="text-[9px] sm:text-[10px] text-gray-400 font-black uppercase tracking-[0.1em] sm:tracking-[0.2em] mb-1 sm:mb-2">Giao dịch</p>
+                <h3 class="text-xl sm:text-3xl font-mono font-black text-slate-800">{{ number_format($overallStats['total_deals']) }}</h3>
             </div>
-            <div class="bg-white p-8 rounded-[32px] border border-gray-100 shadow-sm relative overflow-hidden">
-                <div class="absolute top-0 right-0 p-6 text-indigo-500/5 text-5xl font-black lowercase italic">new</div>
-                <p class="text-[10px] text-gray-400 font-black uppercase tracking-[0.2em] mb-2">CTV mới</p>
-                <h3 class="text-3xl font-mono font-black text-slate-800">{{ number_format($overallStats['new_ctvs']) }}</h3>
+            <div class="bg-white p-5 sm:p-8 rounded-[24px] sm:rounded-[32px] border border-gray-100 shadow-sm relative overflow-hidden">
+                <div class="absolute top-0 right-0 p-4 sm:p-6 text-indigo-500/5 text-3xl sm:text-5xl font-black lowercase italic">new</div>
+                <p class="text-[9px] sm:text-[10px] text-gray-400 font-black uppercase tracking-[0.1em] sm:tracking-[0.2em] mb-1 sm:mb-2">CTV mới</p>
+                <h3 class="text-xl sm:text-3xl font-mono font-black text-slate-800">{{ number_format($overallStats['new_ctvs']) }}</h3>
             </div>
         </div>
 
