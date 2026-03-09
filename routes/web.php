@@ -29,7 +29,7 @@ Route::get('/ctv-ranks', \App\Livewire\CtvRankManagement::class)->middleware(['a
 Route::get('/business', \App\Livewire\BusinessManagement::class)->middleware(['auth', 'admin'])->name('business');
 Route::get('/customers', \App\Livewire\CustomerManagement::class)->middleware('auth')->name('customers');
 Route::get('/landing/ctv', \App\Livewire\CtvLanding::class)->name('landing.ctv');
-Route::get('/business/detail/{id}', \App\Livewire\BusinessDetail::class)->middleware(['auth', 'admin'])->name('business.detail');
+Route::get('/business/detail/{id}', \App\Livewire\BusinessDetail::class)->middleware(['auth'])->name('business.detail');
 Route::get('/business/statistics', \App\Livewire\CtvStatistics::class)->middleware(['auth', 'admin'])->name('business.statistics');
 
 

@@ -142,7 +142,6 @@
                     class="absolute bottom-0 left-14 w-52 bg-slate-800 rounded-2xl shadow-2xl border border-slate-700 overflow-hidden z-[60]"
                     style="display: none;">
                     <div class="p-2 border-b border-slate-700/50">
-                        @if(auth()->user()->isAdmin())
                         <a href="{{ route('business.detail', auth()->id()) }}" 
                             class="flex items-center gap-3 px-3 py-2 rounded-xl text-slate-300 hover:bg-blue-500/10 hover:text-white transition-all font-bold text-xs group">
                             <div class="w-7 h-7 flex items-center justify-center rounded-lg bg-blue-500/10 group-hover:bg-blue-500/20 transition-colors">
@@ -150,7 +149,6 @@
                             </div>
                             Chi tiết cá nhân
                         </a>
-                        @endif
                         <a href="{{ route('landing.ctv') }}" wire:navigate
                             class="flex items-center gap-3 px-3 py-2 rounded-xl text-slate-300 hover:bg-emerald-500/10 hover:text-white transition-all font-bold text-xs group">
                             <div class="w-7 h-7 flex items-center justify-center rounded-lg bg-emerald-500/10 group-hover:bg-emerald-500/20 transition-colors">
