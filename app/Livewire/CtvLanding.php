@@ -2,14 +2,15 @@
 
 namespace App\Livewire;
 
-use App\Models\User;
 use App\Models\RealEstateListingSale;
-use Livewire\Component;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Livewire\Component;
 
 class CtvLanding extends Component
 {
     public $topPerformers = [];
+
     public $stats = [
         'total_revenue' => 0,
         'total_ctvs' => 0,
@@ -31,7 +32,6 @@ class CtvLanding extends Component
 
     private function loadTopPerformers()
     {
-        // Get top 5 performers by revenue amount
         $this->topPerformers = User::query()
             ->join('real_estate_listing_sales', 'users.id', '=', 'real_estate_listing_sales.sold_by_user_id')
             ->select('users.id', 'users.name', 'users.phone', DB::raw('SUM(real_estate_listing_sales.revenue_amount) as total_revenue'))
@@ -44,6 +44,6 @@ class CtvLanding extends Component
     public function render()
     {
         return view('livewire.ctv-landing')
-            ->layout('components.layouts.blog', ['title' => 'Trở thành Đối tác Chiến lược - Antigravity Systems']);
+            ->layout('components.layouts.blog', ['title' => 'Landing CTV BDS | PhongPhatLand']);
     }
 }
