@@ -17,52 +17,47 @@
             font-family: 'Inter', sans-serif;
             background-color: #f8fafc;
         }
-
-        .header-gradient {
-            background: linear-gradient(to right, #2563eb, #1d4ed8);
-        }
     </style>
 </head>
 
 <body class="antialiased min-h-screen flex flex-col">
-
-    <!-- Header / Navigation -->
     <header class="bg-white border-b border-gray-100 sticky top-0 z-50">
         <div class="max-w-[95%] mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-16">
-                <!-- Branding -->
-                <div class="flex items-center gap-3">
+                <div class="flex items-center gap-3 min-w-0">
                     <img src="https://s3-hcm5-r1.longvan.net/phongland/2026/01/d13bf59afd35726b2b24.jpg" alt="Logo"
-                        class="h-10 w-auto object-contain">
-                    <div>
-                        <h1 class="text-lg font-bold text-slate-800 tracking-tight leading-none">PHONGPHATLAND</h1>
-                        <p class="text-[11px] text-gray-500 font-medium">Quản lý tin đăng & dữ liệu</p>
+                        class="h-10 w-auto object-contain shrink-0">
+                    <div class="min-w-0">
+                        <h1 class="text-base sm:text-lg font-bold text-slate-800 tracking-tight leading-none truncate">PHONGPHATLAND</h1>
+                        <p class="hidden sm:block text-[11px] text-gray-500 font-medium">Quản lý tin đăng và dữ liệu</p>
                     </div>
                 </div>
 
-                <!-- Right Actions -->
-                <div class="flex items-center gap-4">
-                    <!-- Link to Media Manager -->
+                <div class="flex items-center gap-2 sm:gap-4">
+                    @auth
+                    @php($currentUser = auth()->user())
+
+                    @if($currentUser->isAdmin())
                     <a href="{{ route('media') }}"
                         class="hidden sm:flex items-center gap-2 px-4 py-2 text-sm font-bold text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all">
                         <i class="fa-solid fa-photo-film"></i>
                         <span>Media Manager</span>
                     </a>
+                    @endif
 
-                    <!-- User Profile Dropdown -->
-                    <div class="flex items-center gap-3 pl-4 border-l border-gray-100 relative" x-data="{ showUserMenu: false }">
+                    <div class="flex items-center gap-3 pl-3 sm:pl-4 border-l border-gray-100 relative" x-data="{ showUserMenu: false }">
                         <div class="text-right hidden md:block">
-                            <div class="text-sm font-bold text-slate-700 leading-tight">{{ auth()->user()->name }}</div>
-                            <div class="text-[10px] text-slate-500 uppercase font-bold tracking-wider tracking-[0.05em]">{{ auth()->user()->isAdmin() ? 'Administrator' : 'User' }}</div>
+                            <div class="text-sm font-bold text-slate-700 leading-tight">{{ $currentUser->name }}</div>
+                            <div class="text-[10px] text-slate-500 uppercase font-bold tracking-wider tracking-[0.05em]">
+                                {{ $currentUser->isAdmin() ? 'Administrator' : 'User' }}
+                            </div>
                         </div>
-                        
-                        <!-- Avatar Button -->
-                        <button @click="showUserMenu = !showUserMenu" 
+
+                        <button @click="showUserMenu = !showUserMenu"
                             class="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-600 text-white flex items-center justify-center font-bold text-sm shadow-md ring-2 ring-white transition-transform active:scale-90 hover:shadow-lg">
-                            {{ substr(auth()->user()->name, 0, 1) }}
+                            {{ strtoupper(substr($currentUser->name, 0, 1)) }}
                         </button>
 
-                        <!-- Dropdown Menu -->
                         <div x-show="showUserMenu" @click.away="showUserMenu = false"
                             x-transition:enter="transition ease-out duration-200"
                             x-transition:enter-start="opacity-0 translate-y-2 scale-95"
@@ -71,12 +66,13 @@
                             style="display: none;">
                             <div class="p-4 border-b border-gray-50 bg-slate-50/50">
                                 <div class="text-[10px] text-gray-400 uppercase font-black tracking-[0.1em] mb-1">Tài khoản</div>
-                                <div class="text-xs font-bold text-slate-800 truncate">{{ auth()->user()->name }}</div>
-                                <div class="text-[9px] text-gray-500 font-mono mt-0.5">{{ auth()->user()->phone }}</div>
+                                <div class="text-xs font-bold text-slate-800 truncate">{{ $currentUser->name }}</div>
+                                <div class="text-[9px] text-gray-500 font-mono mt-0.5">{{ $currentUser->phone }}</div>
                             </div>
-                            
+
+                            @if($currentUser->isAdmin())
                             <div class="p-2 border-b border-gray-50">
-                                <a href="{{ route('business.detail', auth()->id()) }}" 
+                                <a href="{{ route('business.detail', $currentUser->id) }}"
                                     class="flex items-center gap-3 px-3 py-2 rounded-xl text-slate-600 hover:bg-blue-50 hover:text-blue-600 transition-all font-bold text-xs group">
                                     <div class="w-7 h-7 flex items-center justify-center rounded-lg bg-blue-500/10 group-hover:bg-blue-600 group-hover:text-white transition-colors">
                                         <i class="fa-solid fa-user-gear"></i>
@@ -84,11 +80,12 @@
                                     Chi tiết cá nhân
                                 </a>
                             </div>
+                            @endif
 
                             <div class="p-2">
                                 <form action="{{ route('logout') }}" method="POST">
                                     @csrf
-                                    <button type="submit" 
+                                    <button type="submit"
                                         class="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-red-500 hover:bg-red-50 transition-all font-bold text-xs group">
                                         <div class="w-7 h-7 flex items-center justify-center rounded-lg bg-red-500/10 group-hover:bg-red-500/20 transition-colors">
                                             <i class="fa-solid fa-right-from-bracket"></i>
@@ -99,12 +96,18 @@
                             </div>
                         </div>
                     </div>
+                    @else
+                    <a href="{{ route('login') }}"
+                        class="inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-white px-3 py-2 text-xs sm:text-sm font-bold text-blue-600 hover:bg-blue-50 transition-colors">
+                        <i class="fa-solid fa-right-to-bracket"></i>
+                        Đăng nhập
+                    </a>
+                    @endauth
                 </div>
             </div>
         </div>
     </header>
 
-    <!-- Main Content -->
     <main class="flex-1 max-w-[95%] w-full mx-auto px-4 sm:px-6 lg:px-8 py-2">
         {{ $slot }}
     </main>
@@ -117,21 +120,20 @@
 
     @livewireScripts
 
-    <!-- Global Toast Component -->
-    <div x-data="{ 
+    <div x-data="{
         messages: [],
         remove(id) {
             this.messages = this.messages.filter(m => m.id !== id)
         }
-    }" 
+    }"
     @toast.window="
         const id = Date.now();
         messages.push({ id, message: $event.detail[0].message, type: $event.detail[0].type });
         setTimeout(() => remove(id), 3000);
     "
-    class="fixed bottom-5 right-5 z-[9999] flex flex-col gap-2">
+    class="fixed bottom-4 right-4 z-[9999] flex flex-col gap-2">
         <template x-for="m in messages" :key="m.id">
-            <div x-show="true" 
+            <div x-show="true"
                 x-transition:enter="transition ease-out duration-300"
                 x-transition:enter-start="opacity-0 transform translate-x-8"
                 x-transition:enter-end="opacity-100 transform translate-x-0"
@@ -143,7 +145,7 @@
                     'bg-red-600': m.type === 'error',
                     'bg-blue-600': m.type === 'info'
                 }"
-                class="text-white px-6 py-3 rounded-xl shadow-2xl flex items-center gap-3 min-w-[300px]">
+                class="text-white px-4 sm:px-6 py-3 rounded-xl shadow-2xl flex items-center gap-3 w-[calc(100vw-2rem)] sm:min-w-[300px] sm:w-auto">
                 <i :class="{
                     'fa-solid fa-check-circle': m.type === 'success',
                     'fa-solid fa-circle-exclamation': m.type === 'error',
