@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\Http;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use Livewire\WithPagination;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\ListingsExport;
 
 class RealEstateListing extends Component
 {
@@ -1127,5 +1129,25 @@ class RealEstateListing extends Component
         }
 
         $this->dispatch('toast', ['message' => 'Lỗi tải ảnh.', 'type' => 'error']);
+    }
+
+    public function exportExcel()
+    {
+        $filters = [
+            'search' => $this->search,
+            'price_min' => $this->filter_price_min,
+            'price_max' => $this->filter_price_max,
+            'province' => $this->filter_province,
+            'district' => $this->filter_district,
+            'ward' => $this->filter_ward,
+            'property_type' => $this->filter_property_type,
+            'type' => $this->filter_type,
+            'is_sold' => $this->filter_is_sold,
+            'month' => $this->filter_month,
+            'year' => $this->filter_year,
+            'phone' => $this->filter_phone,
+        ];
+
+        return Excel::download(new ListingsExport($filters), 'tong-hop-tin-dang-' . date('Y-m-d') . '.xlsx');
     }
 }
