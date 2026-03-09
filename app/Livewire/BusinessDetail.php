@@ -114,6 +114,6 @@ class BusinessDetail extends Component
         return view('livewire.business-detail', [
             'sales' => $sales,
             'invites' => $invites,
-        ])->layout('components.layouts.app', ['title' => 'Chi tiết kinh doanh - ' . $this->user->name]);
+        ])->layout('components.layouts.blog', ['title' => 'Chi tiết kinh doanh - ' . $this->user->name]);
     }
 }
