@@ -3,23 +3,20 @@
 namespace App\Livewire;
 
 use App\Models\User;
-use App\Models\CustomerWork;
 use App\Models\UserInvite;
 use App\Models\RealEstateListingSale;
 use Livewire\Component;
 use Livewire\WithPagination;
 use Illuminate\Support\Facades\DB;
 
-class BusinessDetail extends Component
+class UserProfile extends Component
 {
     use WithPagination;
 
-    public $userId;
     public $user;
     public $filterYear;
     public $filterQuarter = 'all';
-    
-    // Stats for summary
+
     public $stats = [
         'total_revenue' => 0,
         'total_bonus' => 0,
@@ -27,15 +24,9 @@ class BusinessDetail extends Component
         'total_invites' => 0,
     ];
 
-    public function mount($id)
+    public function mount()
     {
-        // Authorization check: User can only view their own detail unless they are admin
-        if (!auth()->user()->isAdmin() && auth()->id() != $id) {
-            return redirect()->route('listings')->with('error', 'Bạn không có quyền truy cập trang này.');
-        }
-
-        $this->userId = $id;
-        $this->user = User::findOrFail($id);
+        $this->user = auth()->user();
         $this->filterYear = date('Y');
         $this->loadStats();
     }
@@ -45,7 +36,7 @@ class BusinessDetail extends Component
 
     public function loadStats()
     {
-        $query = RealEstateListingSale::where('sold_by_user_id', $this->userId)
+        $query = RealEstateListingSale::where('sold_by_user_id', $this->user->id)
             ->when($this->filterYear, fn($q) => $q->whereYear('sold_at', $this->filterYear))
             ->when($this->filterQuarter !== 'all', function($q) {
                 $months = match((int)$this->filterQuarter) {
@@ -62,7 +53,7 @@ class BusinessDetail extends Component
         $this->stats['total_bonus'] = (clone $query)->sum('bonus_amount');
         $this->stats['total_deals'] = (clone $query)->count();
 
-        $inviteQuery = UserInvite::where('inviter_user_id', $this->userId)
+        $inviteQuery = UserInvite::where('inviter_user_id', $this->user->id)
             ->when($this->filterYear, fn($q) => $q->whereYear('created_at', $this->filterYear))
             ->when($this->filterQuarter !== 'all', function($q) {
                 $months = match((int)$this->filterQuarter) {
@@ -79,7 +70,7 @@ class BusinessDetail extends Component
 
     public function render()
     {
-        $sales = RealEstateListingSale::where('sold_by_user_id', $this->userId)
+        $sales = RealEstateListingSale::where('sold_by_user_id', $this->user->id)
             ->with('listing')
             ->when($this->filterYear, fn($q) => $q->whereYear('sold_at', $this->filterYear))
             ->when($this->filterQuarter !== 'all', function($q) {
@@ -95,7 +86,7 @@ class BusinessDetail extends Component
             ->latest('sold_at')
             ->paginate(10, ['*'], 'salesPage');
 
-        $invites = UserInvite::where('inviter_user_id', $this->userId)
+        $invites = UserInvite::where('inviter_user_id', $this->user->id)
             ->with('invitedUser')
             ->when($this->filterYear, fn($q) => $q->whereYear('created_at', $this->filterYear))
             ->when($this->filterQuarter !== 'all', function($q) {
@@ -111,9 +102,9 @@ class BusinessDetail extends Component
             ->latest()
             ->paginate(10, ['*'], 'invitesPage');
 
-        return view('livewire.business-detail', [
+        return view('livewire.user-profile', [
             'sales' => $sales,
             'invites' => $invites,
-        ])->layout('components.layouts.app', ['title' => 'Chi tiết kinh doanh - ' . $this->user->name]);
+        ])->layout('components.layouts.blog', ['title' => 'Thông tin cá nhân - ' . $this->user->name]);
     }
 }
