@@ -44,6 +44,6 @@ class CtvLanding extends Component
     public function render()
     {
         return view('livewire.ctv-landing')
-            ->layout('components.layouts.blog', ['title' => 'Landing CTV BDS | PhongPhatLand']);
+            ->layout('components.layouts.blog', ['title' => 'Landing CTV BĐS | PhongPhatLand']);
     }
 }

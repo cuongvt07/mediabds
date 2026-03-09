@@ -8,42 +8,42 @@
             <div>
                 <div class="inline-flex items-center gap-2 rounded-full border border-[#d6c4a1] bg-white/70 px-4 py-1.5 text-[10px] font-extrabold uppercase tracking-[0.22em] text-[#7e6431]">
                     <i class="fa-solid fa-gem text-[11px]"></i>
-                    Chuong trinh CTV Bat dong san
+                    Chương trình CTV bất động sản
                 </div>
 
                 <h1 class="mt-5 font-serif-luxury text-4xl leading-tight text-[#162238] sm:text-5xl md:text-6xl">
-                    Hop tac chuan
-                    <span class="block text-[#9e7830]">dich vu cao cap</span>
-                    cho nguoi lam BDS
+                    Hợp tác chuẩn
+                    <span class="block text-[#9e7830]">dịch vụ cao cấp</span>
+                    cho người làm BĐS
                 </h1>
 
                 <p class="mt-5 max-w-2xl text-sm leading-relaxed text-[#4a5872] sm:text-base">
-                    Gia nhap he thong CTV PhongPhatLand de khai thac nguon hang that, quy trinh ro rang,
-                    hoa hong minh bach va duoc huan luyen ban hang bai ban theo tieu chuan doi ngu chuyen nghiep.
+                    Gia nhập hệ thống CTV PhongPhatLand để khai thác nguồn hàng thật, quy trình rõ ràng,
+                    hoa hồng minh bạch và được huấn luyện bán hàng bài bản theo tiêu chuẩn đội ngũ chuyên nghiệp.
                 </p>
 
                 <div class="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center">
                     <a href="/login?register=1"
                         class="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#14233b] px-7 py-3.5 text-sm font-extrabold uppercase tracking-[0.14em] text-white transition-all hover:-translate-y-0.5 hover:bg-[#0f1a2d] hover:shadow-[0_16px_30px_-14px_rgba(18,35,59,0.55)]">
-                        Dang ky ngay <i class="fa-solid fa-arrow-right-long text-xs"></i>
+                        Đăng ký ngay <i class="fa-solid fa-arrow-right-long text-xs"></i>
                     </a>
                     <a href="#bang-vang"
                         class="inline-flex items-center justify-center gap-2 rounded-2xl border border-[#d7c6a6] bg-white/75 px-7 py-3.5 text-sm font-extrabold uppercase tracking-[0.14em] text-[#8a692f] transition-all hover:-translate-y-0.5 hover:bg-[#fff7ea]">
-                        Xem bang vinh danh
+                        Xem bảng vinh danh
                     </a>
                 </div>
 
                 <div class="mt-8 grid gap-3 sm:grid-cols-3">
                     <div class="stat-pill">
-                        <div class="stat-label">Tong doanh thu</div>
+                        <div class="stat-label">Tổng doanh thu</div>
                         <div class="stat-value">{{ number_format($stats['total_revenue'] / 1000000000, 1) }}B+</div>
                     </div>
                     <div class="stat-pill">
-                        <div class="stat-label">So CTV</div>
+                        <div class="stat-label">Số CTV</div>
                         <div class="stat-value">{{ number_format($stats['total_ctvs']) }}+</div>
                     </div>
                     <div class="stat-pill">
-                        <div class="stat-label">Giao dich</div>
+                        <div class="stat-label">Giao dịch</div>
                         <div class="stat-value">{{ number_format($stats['total_deals']) }}+</div>
                     </div>
                 </div>
@@ -51,21 +51,21 @@
 
             <div class="reveal-up rounded-[26px] border border-[#e4d8c0] bg-white/75 p-6 shadow-[0_26px_50px_-35px_rgba(20,35,59,0.45)] backdrop-blur-sm md:p-7"
                 style="animation-delay: .12s;">
-                <p class="text-[10px] font-black uppercase tracking-[0.22em] text-[#8a692f]">Tieu chuan doi tac</p>
+                <p class="text-[10px] font-black uppercase tracking-[0.22em] text-[#8a692f]">Tiêu chuẩn đối tác</p>
                 <h2 class="mt-3 font-serif-luxury text-3xl leading-tight text-[#14233b]">
-                    Sang loc nghiem tuc,
-                    <span class="text-[#9e7830]">dong hanh dai han</span>
+                    Sàng lọc nghiêm túc,
+                    <span class="text-[#9e7830]">đồng hành dài hạn</span>
                 </h2>
                 <div class="mt-5 space-y-3 text-sm text-[#4b5972]">
-                    <div class="feature-line"><i class="fa-solid fa-check"></i> Nguon hang bo loc, cap nhat lien tuc</div>
-                    <div class="feature-line"><i class="fa-solid fa-check"></i> Data ho tro phan bo theo khu vuc</div>
-                    <div class="feature-line"><i class="fa-solid fa-check"></i> Chinh sach thuong theo hieu suat thuc te</div>
-                    <div class="feature-line"><i class="fa-solid fa-check"></i> Bao cao doanh thu theo thoi gian thuc</div>
+                    <div class="feature-line"><i class="fa-solid fa-check"></i> Nguồn hàng bộ lọc, cập nhật liên tục</div>
+                    <div class="feature-line"><i class="fa-solid fa-check"></i> Dữ liệu hỗ trợ phân bổ theo khu vực</div>
+                    <div class="feature-line"><i class="fa-solid fa-check"></i> Chính sách thưởng theo hiệu suất thực tế</div>
+                    <div class="feature-line"><i class="fa-solid fa-check"></i> Báo cáo doanh thu theo thời gian thực</div>
                 </div>
                 <div class="mt-6 rounded-2xl border border-[#eadfc9] bg-[#fffaf1] p-4">
-                    <p class="text-xs font-bold uppercase tracking-[0.14em] text-[#8e6c31]">Muc tieu</p>
+                    <p class="text-xs font-bold uppercase tracking-[0.14em] text-[#8e6c31]">Mục tiêu</p>
                     <p class="mt-2 text-sm text-[#52607a]">
-                        Xay dung mang luoi CTV BDS chuyen nghiep, tang toc giao dich va tang thu nhap ben vung.
+                        Xây dựng mạng lưới CTV BĐS chuyên nghiệp, tăng tốc giao dịch và tăng thu nhập bền vững.
                     </p>
                 </div>
             </div>
@@ -75,47 +75,47 @@
     <section class="mt-10 grid gap-4 md:grid-cols-3">
         <article class="benefit-card reveal-up" style="animation-delay:.04s;">
             <div class="benefit-icon"><i class="fa-solid fa-building"></i></div>
-            <h3 class="benefit-title">San pham co chon loc</h3>
-            <p class="benefit-copy">Danh muc nha dat duoc cap nhat, ro phap ly, de tu van va de chot deal.</p>
+            <h3 class="benefit-title">Sản phẩm có chọn lọc</h3>
+            <p class="benefit-copy">Danh mục nhà đất được cập nhật, rõ pháp lý, dễ tư vấn và dễ chốt deal.</p>
         </article>
         <article class="benefit-card reveal-up" style="animation-delay:.1s;">
             <div class="benefit-icon"><i class="fa-solid fa-scale-balanced"></i></div>
-            <h3 class="benefit-title">Chinh sach minh bach</h3>
-            <p class="benefit-copy">Hoa hong, thuong va KPI duoc cong khai. CTV theo doi duoc moi giai doan giao dich.</p>
+            <h3 class="benefit-title">Chính sách minh bạch</h3>
+            <p class="benefit-copy">Hoa hồng, thưởng và KPI được công khai. CTV theo dõi được mọi giai đoạn giao dịch.</p>
         </article>
         <article class="benefit-card reveal-up" style="animation-delay:.16s;">
             <div class="benefit-icon"><i class="fa-solid fa-user-tie"></i></div>
-            <h3 class="benefit-title">Ho tro tu doi ngu senior</h3>
-            <p class="benefit-copy">Duoc mentor boi doi ngu kinh doanh va van hanh de rut ngan thoi gian len doanh so.</p>
+            <h3 class="benefit-title">Hỗ trợ từ đội ngũ senior</h3>
+            <p class="benefit-copy">Được mentor bởi đội ngũ kinh doanh và vận hành để rút ngắn thời gian lên doanh số.</p>
         </article>
     </section>
 
     <section class="mt-10 rounded-[28px] border border-[#e8ddca] bg-white/80 p-6 sm:p-8 md:p-10 reveal-up" style="animation-delay:.2s;">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
-                <p class="text-[10px] font-black uppercase tracking-[0.22em] text-[#8a692f]">Quy trinh hop tac</p>
-                <h2 class="mt-2 font-serif-luxury text-3xl text-[#14233b] sm:text-4xl">3 buoc de vao guong quay giao dich</h2>
+                <p class="text-[10px] font-black uppercase tracking-[0.22em] text-[#8a692f]">Quy trình hợp tác</p>
+                <h2 class="mt-2 font-serif-luxury text-3xl text-[#14233b] sm:text-4xl">3 bước để vào guồng quay giao dịch</h2>
             </div>
             <a href="/login?register=1" class="text-xs font-black uppercase tracking-[0.14em] text-[#8a692f] hover:text-[#6e5121]">
-                Dang ky va kich hoat tai khoan
+                Đăng ký và kích hoạt tài khoản
             </a>
         </div>
 
         <div class="mt-6 grid gap-4 md:grid-cols-3">
             <div class="step-box">
                 <div class="step-no">01</div>
-                <h3>Xac minh thong tin</h3>
-                <p>Hoan tat dang ky, nhan ma moi va kich hoat profile CTV.</p>
+                <h3>Xác minh thông tin</h3>
+                <p>Hoàn tất đăng ký, nhận mã mời và kích hoạt hồ sơ CTV.</p>
             </div>
             <div class="step-box">
                 <div class="step-no">02</div>
-                <h3>Dao tao - setup khu vuc</h3>
-                <p>Onboarding quy trinh chot deal, duoc gan nguon hang theo khu vuc phu hop.</p>
+                <h3>Đào tạo - setup khu vực</h3>
+                <p>Onboarding quy trình chốt deal, được gán nguồn hàng theo khu vực phù hợp.</p>
             </div>
             <div class="step-box">
                 <div class="step-no">03</div>
-                <h3>Ban hang - nhan thuong</h3>
-                <p>Theo doi doanh so theo thoi gian thuc, doi thuong va nang hang CTV.</p>
+                <h3>Bán hàng - nhận thưởng</h3>
+                <p>Theo dõi doanh số theo thời gian thực, đổi thưởng và nâng hạng CTV.</p>
             </div>
         </div>
     </section>
@@ -124,20 +124,20 @@
         style="animation-delay:.26s;">
         <div class="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
             <div>
-                <p class="text-[10px] font-black uppercase tracking-[0.22em] text-[#d7c090]">Bang vang CTV</p>
-                <h2 class="mt-2 font-serif-luxury text-3xl sm:text-4xl">Vinh danh doi tac dan dau doanh thu</h2>
+                <p class="text-[10px] font-black uppercase tracking-[0.22em] text-[#d7c090]">Bảng vàng CTV</p>
+                <h2 class="mt-2 font-serif-luxury text-3xl sm:text-4xl">Vinh danh đối tác dẫn đầu doanh thu</h2>
             </div>
-            <div class="text-xs font-semibold uppercase tracking-[0.14em] text-[#e8dcc7]">Cap nhat theo du lieu he thong</div>
+            <div class="text-xs font-semibold uppercase tracking-[0.14em] text-[#e8dcc7]">Cập nhật theo dữ liệu hệ thống</div>
         </div>
 
         <div class="space-y-3">
             @forelse($topPerformers as $index => $performer)
                 @php
                     $medal = match($index) {
-                        0 => 'Diamond',
-                        1 => 'Platinum',
-                        2 => 'Gold',
-                        default => 'Elite',
+                        0 => 'Kim cương',
+                        1 => 'Bạch kim',
+                        2 => 'Vàng',
+                        default => 'Tinh anh',
                     };
                     $ring = match($index) {
                         0 => 'border-[#d7b56d] bg-[#2b3c59]',
@@ -161,13 +161,13 @@
                         <span class="rounded-full border border-white/20 px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-[#f0dfb7]">{{ $medal }}</span>
                         <p class="mt-2 text-lg font-extrabold sm:text-xl">
                             {{ number_format($performer->total_revenue, 0, ',', '.') }}
-                            <span class="text-[10px] font-bold uppercase text-[#d5dcf0]">VND</span>
+                            <span class="text-[10px] font-bold uppercase text-[#d5dcf0]">VNĐ</span>
                         </p>
                     </div>
                 </article>
             @empty
                 <div class="rounded-2xl border border-white/20 bg-white/5 p-8 text-center text-sm text-[#dbe2f3]">
-                    Chua co du lieu vinh danh trong giai doan nay.
+                    Chưa có dữ liệu vinh danh trong giai đoạn này.
                 </div>
             @endforelse
         </div>
@@ -177,18 +177,18 @@
         style="animation-delay:.32s;">
         <div class="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
             <div class="max-w-2xl">
-                <p class="text-[10px] font-black uppercase tracking-[0.22em] text-[#8a692f]">San sang tang toc</p>
+                <p class="text-[10px] font-black uppercase tracking-[0.22em] text-[#8a692f]">Sẵn sàng tăng tốc</p>
                 <h2 class="mt-2 font-serif-luxury text-3xl leading-tight text-[#14233b] sm:text-4xl">
-                    Tro thanh CTV BDS trong he thong
+                    Trở thành CTV BĐS trong hệ thống
                     <span class="text-[#9e7830]">PhongPhatLand</span>
                 </h2>
                 <p class="mt-3 text-sm text-[#4d5c76] sm:text-base">
-                    Dang ky tai khoan de nhan ma moi, bat dau tiep can nguon hang chat luong va mo rong doanh thu ngay tu thang nay.
+                    Đăng ký tài khoản để nhận mã mời, bắt đầu tiếp cận nguồn hàng chất lượng và mở rộng doanh thu ngay từ tháng này.
                 </p>
             </div>
             <a href="/login?register=1"
                 class="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#9e7830] px-8 py-4 text-sm font-black uppercase tracking-[0.14em] text-white transition-all hover:-translate-y-0.5 hover:bg-[#85622a] hover:shadow-[0_16px_30px_-16px_rgba(158,120,48,0.65)]">
-                Nhan ma moi ngay <i class="fa-solid fa-paper-plane text-xs"></i>
+                Nhận mã mời ngay <i class="fa-solid fa-paper-plane text-xs"></i>
             </a>
         </div>
     </section>
