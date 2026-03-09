@@ -71,7 +71,7 @@
             </div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <!-- Sales List -->
             <div class="bg-white rounded-[32px] border border-gray-100 shadow-sm overflow-hidden flex flex-col">
                 <div class="px-5 sm:px-8 py-4 sm:py-6 border-b border-gray-50 flex items-center justify-between">
@@ -122,6 +122,7 @@
                             @endforelse
                         </tbody>
                     </table>
+                </div>
                 </div>
                 <div class="p-4 border-t border-gray-50">
                     {{ $sales->links() }}
@@ -174,6 +175,7 @@
                             @endforelse
                         </tbody>
                     </table>
+                </div>
                 </div>
                 <div class="p-4 border-t border-gray-50">
                     {{ $invites->links() }}

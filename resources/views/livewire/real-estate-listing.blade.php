@@ -23,6 +23,10 @@
                 class="bg-white border border-gray-200 hover:bg-gray-50 text-slate-600 px-3 py-2 md:px-4 md:py-2 rounded-lg font-bold text-sm flex items-center gap-2 shadow-sm transition-all whitespace-nowrap">
                 <i class="fa-solid fa-arrow-left"></i> <span class="hidden md:inline">Về PhongPhatLand</span>
             </a>
+            <a href="{{ route('landing.ctv') }}" wire:navigate
+                class="bg-white border border-emerald-200 hover:bg-emerald-50 text-emerald-700 px-3 py-2 md:px-4 md:py-2 rounded-lg font-bold text-sm flex items-center gap-2 shadow-sm transition-all whitespace-nowrap">
+                <i class="fa-solid fa-link"></i> <span class="hidden md:inline">Landing CTV</span>
+            </a>
             <a href="{{ route('media') }}"
                 class="bg-white border border-gray-200 hover:bg-gray-50 text-slate-600 px-3 py-2 md:px-4 md:py-2 rounded-lg font-bold text-sm flex items-center gap-2 shadow-sm transition-all whitespace-nowrap">
                 <i class="fa-solid fa-photo-film"></i> <span class="hidden md:inline">Media Manager</span>
