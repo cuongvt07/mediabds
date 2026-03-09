@@ -150,7 +150,7 @@ class User extends Authenticatable
 
         return \App\Models\CtvRank::query()
             ->where('min_invites', '<=', $invitesCount)
-            ->where('min_price', '<=', $totalRevenue)
+            ->whereRaw('min_price * 1000000000 <= ?', [$totalRevenue])
             ->orderByDesc('min_price')
             ->orderByDesc('min_invites')
             ->first();

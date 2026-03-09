@@ -71,7 +71,7 @@
                             </td>
                             <td class="py-4 px-5 font-medium text-slate-700">
                                 {{ number_format($rank->min_price, 0, ',', '.') }}
-                                {{ $rank->max_price ? ' - ' . number_format($rank->max_price, 0, ',', '.') : ' trở lên' }} VNĐ
+                                {{ $rank->max_price ? ' - ' . number_format($rank->max_price, 0, ',', '.') : ' trở lên' }} Tỷ VNĐ
                             </td>
                             <td class="py-4 px-5 text-right space-x-2">
                                 <button wire:click="edit({{ $rank->id }})" class="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors inline-block" title="Sửa">
@@ -142,7 +142,7 @@
                     <!-- Mức giá hiển thị -->
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label for="min_price" class="block text-sm font-semibold text-slate-700 mb-1.5">Giá tối thiểu (VNĐ) <span class="text-red-500">*</span></label>
+                            <label for="min_price" class="block text-sm font-semibold text-slate-700 mb-1.5">Giá tối thiểu (Tỷ VNĐ) <span class="text-red-500">*</span></label>
                             <input type="text" id="min_price" wire:model="min_price"
                                 x-data="{
                                     formatInput(el) {
@@ -161,7 +161,7 @@
                         </div>
 
                         <div>
-                            <label for="max_price" class="block text-sm font-semibold text-slate-700 mb-1.5">Giá tối đa (VNĐ)</label>
+                            <label for="max_price" class="block text-sm font-semibold text-slate-700 mb-1.5">Giá tối đa (Tỷ VNĐ)</label>
                             <input type="text" id="max_price" wire:model="max_price"
                                 x-data="{
                                     formatInput(el) {
