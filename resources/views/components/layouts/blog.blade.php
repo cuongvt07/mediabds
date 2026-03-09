@@ -70,7 +70,6 @@
                                 <div class="text-[9px] text-gray-500 font-mono mt-0.5">{{ $currentUser->phone }}</div>
                             </div>
 
-                            @if($currentUser->isAdmin())
                             <div class="p-2 border-b border-gray-50">
                                 <a href="{{ route('business.detail', $currentUser->id) }}"
                                     class="flex items-center gap-3 px-3 py-2 rounded-xl text-slate-600 hover:bg-blue-50 hover:text-blue-600 transition-all font-bold text-xs group">
@@ -80,7 +79,6 @@
                                     Chi tiết cá nhân
                                 </a>
                             </div>
-                            @endif
 
                             <div class="p-2">
                                 <form action="{{ route('logout') }}" method="POST">
