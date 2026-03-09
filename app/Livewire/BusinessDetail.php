@@ -30,7 +30,7 @@ class BusinessDetail extends Component
     public function mount($id)
     {
         // Authorization check: User can only view their own detail unless they are admin
-        if (!auth()->user()->isAdmin() && (int)auth()->id() !== (int)$id) {
+        if (!auth()->user()->isAdmin() && auth()->id() != $id) {
             return redirect()->route('listings')->with('error', 'Bạn không có quyền truy cập trang này.');
         }
 
