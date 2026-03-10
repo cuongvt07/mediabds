@@ -61,7 +61,7 @@
 
         <!-- Global Sidebar (Level 1) -->
         <aside :class="mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
-               class="bg-slate-900 w-20 flex flex-col items-center py-6 shrink-0 z-[60] fixed lg:static inset-y-0 left-0 transition-transform duration-300 ease-in-out shadow-2xl lg:shadow-none">
+               class="bg-slate-900 w-20 flex flex-col items-center py-6 shrink-0 z-[60] fixed lg:relative inset-y-0 left-0 transition-transform duration-300 ease-in-out shadow-2xl lg:shadow-none">
             
             <!-- Brand (Desktop) -->
             <div class="w-10 h-10 mb-8 cursor-pointer hover:bg-slate-800 rounded-xl flex items-center justify-center transition-colors hidden lg:flex">
@@ -127,6 +127,16 @@
                     </div>
                     <span class="text-[9px] font-black text-center leading-none uppercase tracking-tighter text-balance">Khách Hàng</span>
                 </a>
+
+                <a href="{{ route('landing.ctv') }}" wire:navigate
+                    class="flex flex-col items-center justify-center p-3 rounded-2xl transition-all group {{ request()->routeIs('landing.ctv') ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/30' : 'text-slate-400 hover:text-white hover:bg-slate-800' }}"
+                    title="Landing CTV">
+                    <div
+                        class="w-8 h-8 flex items-center justify-center rounded-lg mb-1 {{ request()->routeIs('landing.ctv') ? 'bg-white/20' : 'bg-slate-800 group-hover:bg-slate-700' }}">
+                        <i class="fa-solid fa-link text-sm"></i>
+                    </div>
+                    <span class="text-[9px] font-black text-center leading-none uppercase tracking-tighter">Landing CTV</span>
+                </a>
             </div>
 
             <!-- Bottom Actions -->
@@ -177,13 +187,6 @@
                                 <i class="fa-solid fa-user-gear"></i>
                             </div>
                             Chi tiết cá nhân
-                        </a>
-                        <a href="{{ route('landing.ctv') }}" wire:navigate
-                            class="flex items-center gap-3 px-3 py-2 rounded-xl text-slate-300 hover:bg-emerald-500/10 hover:text-white transition-all font-bold text-xs group">
-                            <div class="w-7 h-7 flex items-center justify-center rounded-lg bg-emerald-500/10 group-hover:bg-emerald-500/20 transition-colors">
-                                <i class="fa-solid fa-link"></i>
-                            </div>
-                            Landing CTV
                         </a>
                     </div>
                     

@@ -1,7 +1,7 @@
 <div class="h-full flex flex-col bg-slate-50 relative">
 
     <!-- Header/Topbar -->
-    <div class="bg-white/80 backdrop-blur-xl border-b border-slate-200 px-4 md:px-8 py-4 md:py-6 flex flex-col md:flex-row items-center justify-between gap-6 shrink-0 sticky top-0 z-50">
+    <div class="bg-white/80 backdrop-blur-xl border-b border-slate-200 px-4 md:px-8 py-3 md:py-4 flex flex-col md:flex-row items-center justify-between gap-6 shrink-0 sticky top-0 z-50">
         <!-- Title & Search Group -->
         <div class="flex items-center gap-6 w-full md:w-auto flex-1">
             <div class="hidden xl:flex items-center gap-3">
@@ -22,7 +22,7 @@
         <div class="flex items-center gap-3 shrink-0 w-full md:w-auto justify-end overflow-x-auto no-scrollbar pb-1 md:pb-0">
             <a href="https://phongphatland.com/"
                 class="h-12 px-5 bg-white border border-slate-200 hover:border-slate-300 text-slate-600 rounded-[1.25rem] font-black text-[10px] uppercase tracking-widest flex items-center gap-3 shadow-sm transition-all whitespace-nowrap active:scale-95">
-                <i class="fa-solid fa-earth-asia text-base"></i> <span class="hidden sm:inline">Trang chủ</span>
+                <i class="fa-solid fa-earth-asia text-base"></i> <span class="">Trang chủ</span>
             </a>
             <button wire:click="openCreatePopup"
                 class="h-12 px-6 bg-blue-600 hover:bg-blue-700 text-white rounded-[1.25rem] font-black text-[10px] uppercase tracking-widest flex items-center gap-3 shadow-xl shadow-blue-500/25 hover:shadow-blue-500/40 transition-all whitespace-nowrap active:scale-95">
@@ -31,7 +31,7 @@
             <div class="h-8 w-px bg-slate-200 mx-1 hidden md:block"></div>
             <button wire:click="exportExcel"
                 class="h-12 px-5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-[1.25rem] font-black text-[10px] uppercase tracking-widest flex items-center gap-3 shadow-lg shadow-emerald-500/20 transition-all whitespace-nowrap active:scale-95">
-                <i class="fa-solid fa-file-excel text-base"></i> <span class="hidden sm:inline">Xuất Excel</span>
+                <i class="fa-solid fa-file-excel text-base"></i> <span class="">Xuất Excel</span>
             </button>
         </div>
     </div>
@@ -173,12 +173,12 @@
     </div>
 
     <!-- Main Content: Scrollable Grid -->
-    <div class="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar">
+    <div class="flex-1 overflow-y-auto p-3 md:p-5 custom-scrollbar">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
             @foreach ($listings as $listing)
                 <div wire:key="{{ $listing['id'] }}-{{ $listing['updated_at'] }}"
                     wire:click="viewListingDetail({{ $listing['id'] }})"
-                    class="bg-white rounded-[2rem] shadow-sm hover:shadow-2xl hover:shadow-slate-200/50 transition-all duration-500 border border-slate-100 overflow-hidden flex flex-col lg:flex-row h-auto lg:h-64 group cursor-pointer relative">
+                    class="bg-white rounded-[2rem] shadow-sm hover:shadow-2xl hover:shadow-slate-200/50 transition-all duration-500 border border-slate-100 overflow-hidden flex flex-col lg:flex-row h-auto lg:h-60 group cursor-pointer relative">
                     <!-- Image -->
                     <div class="w-full h-64 lg:w-[40%] lg:h-full bg-slate-100 relative overflow-hidden shrink-0">
                         <img src="{{ !empty($listing['avatar']) ? $listing['avatar'] : (!empty($listing['images']) && count($listing['images']) > 0 ? $listing['images'][0] : 'https://placehold.co/600x400?text=No+Image') }}"
@@ -215,7 +215,7 @@
                     </div>
 
                     <!-- Info -->
-                    <div class="flex-1 p-6 md:p-8 flex flex-col min-w-0">
+                    <div class="flex-1 p-4 md:p-5 flex flex-col min-w-0">
                         <div class="flex-1">
                             <div class="flex justify-between items-start gap-4 mb-4">
                                 <h3 class="font-black text-slate-800 text-lg md:text-xl leading-tight line-clamp-2 group-hover:text-blue-600 transition-colors uppercase tracking-tight"
@@ -251,6 +251,9 @@
                                             <i class="fa-regular fa-trash-can text-lg"></i>
                                         </button>
                                     @endif
+                                    <button class="px-4 py-2 bg-blue-50 text-blue-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 hover:text-white transition-all">
+                                        Chi tiết
+                                    </button>
                                 </div>
                             </div>
 
