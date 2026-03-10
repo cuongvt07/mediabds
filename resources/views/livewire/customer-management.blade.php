@@ -9,34 +9,37 @@
     </div>
 
     <!-- Toolbar -->
-    <div class="bg-white border-b px-4 py-3 flex items-center gap-3 shrink-0">
+    <div class="bg-white border-b px-4 py-3 flex flex-col sm:flex-row items-center gap-3 shrink-0">
         <!-- Search -->
-        <div class="relative flex-1 max-w-sm">
+        <div class="relative w-full sm:flex-1 sm:max-w-sm">
             <input type="text" placeholder="Tìm kiếm SĐT, tên, mã KH..." wire:model.live.debounce.300ms="search"
                 class="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
             <i class="fa-solid fa-search text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 text-xs"></i>
         </div>
 
         <!-- Status Filter -->
-        <select wire:model.live="filterStatus"
-            class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white">
-            <option value="">Tất cả trạng thái</option>
-            @foreach ($statusLabels as $value => $label)
-                <option value="{{ $value }}">{{ $label }}</option>
-            @endforeach
-        </select>
+        <div class="w-full sm:w-auto flex items-center gap-3">
+            <select wire:model.live="filterStatus"
+                class="w-full sm:w-auto border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white">
+                <option value="">Tất cả trạng thái</option>
+                @foreach ($statusLabels as $value => $label)
+                    <option value="{{ $value }}">{{ $label }}</option>
+                @endforeach
+            </select>
 
-        @if ($search || $filterStatus)
-            <button wire:click="clearFilters" class="text-sm text-gray-500 hover:text-red-600 flex items-center gap-1">
-                <i class="fa-solid fa-times"></i> Xóa lọc
-            </button>
-        @endif
+            @if ($search || $filterStatus)
+                <button wire:click="clearFilters"
+                    class="text-sm text-gray-500 hover:text-red-600 flex items-center gap-1 whitespace-nowrap">
+                    <i class="fa-solid fa-times"></i> Xóa lọc
+                </button>
+            @endif
+        </div>
     </div>
 
     <!-- Customer List -->
     <div class="flex-1 overflow-auto p-4">
-        <div class="bg-white rounded-lg border overflow-hidden">
-            <table class="w-full text-sm">
+        <div class="bg-white rounded-lg border overflow-hidden overflow-x-auto">
+            <table class="w-full text-sm min-w-[700px]">
                 <thead class="bg-gray-50 text-gray-600 text-xs uppercase">
                     <tr>
                         <th class="px-4 py-3 text-left font-semibold">Mã KH</th>
@@ -51,7 +54,8 @@
                     @forelse ($customers as $customer)
                         <tr class="hover:bg-gray-50">
                             <td class="px-4 py-3">
-                                <span class="font-mono text-xs font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
+                                <span
+                                    class="font-mono text-xs font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
                                     {{ $customer->code }}
                                 </span>
                             </td>
@@ -59,15 +63,18 @@
                                 <div class="flex items-center gap-2">
 
                                     @if ($customer->avatar)
-                                        <img src="{{ $customer->avatar_url }}" alt="" class="w-8 h-8 rounded-full object-cover border border-gray-200">
+                                        <img src="{{ $customer->avatar_url }}" alt=""
+                                            class="w-8 h-8 rounded-full object-cover border border-gray-200">
                                     @else
-                                        <div class="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center text-xs font-medium">
+                                        <div
+                                            class="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center text-xs font-medium">
                                             {{ mb_substr($customer->name, 0, 1) }}
                                         </div>
                                     @endif
                                     <span class="font-medium text-gray-800">{{ $customer->name }}</span>
                                     @if ($customer->facebook)
-                                        <a href="{{ $customer->facebook }}" target="_blank" class="text-blue-600 hover:text-blue-800" title="Facebook">
+                                        <a href="{{ $customer->facebook }}" target="_blank"
+                                            class="text-blue-600 hover:text-blue-800" title="Facebook">
                                             <i class="fa-brands fa-facebook"></i>
                                         </a>
                                     @endif
@@ -75,7 +82,8 @@
                             </td>
                             <td class="px-4 py-3 font-mono text-gray-600">{{ $customer->phone }}</td>
                             <td class="px-4 py-3">
-                                <span class="px-2 py-1 rounded text-xs font-medium {{ $statusColors[$customer->status] ?? 'bg-gray-100 text-gray-600' }}">
+                                <span
+                                    class="px-2 py-1 rounded text-xs font-medium {{ $statusColors[$customer->status] ?? 'bg-gray-100 text-gray-600' }}">
                                     {{ $statusLabels[$customer->status] ?? $customer->status }}
                                 </span>
                             </td>
@@ -118,7 +126,8 @@
         <!-- Pagination -->
         <div class="mt-4 flex items-center justify-between text-sm">
             <span class="text-gray-500">
-                Hiển thị {{ $customers->firstItem() ?? 0 }} - {{ $customers->lastItem() ?? 0 }} / {{ $customers->total() }}
+                Hiển thị {{ $customers->firstItem() ?? 0 }} - {{ $customers->lastItem() ?? 0 }} /
+                {{ $customers->total() }}
             </span>
             {{ $customers->links() }}
         </div>
@@ -127,7 +136,7 @@
     <!-- Create/Edit Modal -->
     @if ($showCreatePopup)
         <div class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div class="bg-white w-[55%] min-w-[500px] rounded-xl shadow-xl flex flex-col max-h-[90vh]">
+            <div class="bg-white w-full sm:w-[55%] sm:min-w-[500px] rounded-xl shadow-xl flex flex-col max-h-[90vh]">
                 <!-- Header -->
                 <div class="flex justify-between items-center px-6 py-4 border-b bg-gray-50 rounded-t-xl">
                     <h2 class="text-lg font-bold text-gray-800">
@@ -140,24 +149,26 @@
                 </div>
 
                 <!-- Body -->
-                <div class="flex-1 overflow-y-auto p-6">
+                <div class="flex-1 overflow-y-auto p-4 sm:p-6">
                     <!-- Customer Code + Avatar -->
-                    <div class="flex gap-6 mb-6">
+                    <div class="flex flex-col sm:flex-row gap-4 sm:gap-6 mb-6">
                         <div class="flex-1 bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-center gap-4">
-                            <div class="w-12 h-12 bg-blue-600 text-white rounded-lg flex items-center justify-center">
+                            <div
+                                class="w-12 h-12 bg-blue-600 text-white rounded-lg flex items-center justify-center shrink-0">
                                 <i class="fa-solid fa-hashtag text-xl"></i>
                             </div>
                             <div>
                                 <p class="text-xs text-blue-600 font-medium uppercase">Mã khách hàng</p>
-                                <p class="text-2xl font-bold text-blue-700">{{ $code }}</p>
+                                <p class="text-xl sm:text-2xl font-bold text-blue-700">{{ $code }}</p>
                             </div>
                         </div>
-                        
+
                         <!-- Avatar Upload -->
-                        <div class="w-1/3">
+                        <div class="w-full sm:w-1/3">
                             <label class="block text-sm font-semibold text-gray-700 mb-2">Ảnh đại diện</label>
                             <div class="flex items-center gap-3">
-                                <div class="w-16 h-16 rounded-full border border-gray-300 overflow-hidden flex-shrink-0 bg-gray-100 flex items-center justify-center relative">
+                                <div
+                                    class="w-16 h-16 rounded-full border border-gray-300 overflow-hidden flex-shrink-0 bg-gray-100 flex items-center justify-center relative">
                                     @if ($avatar)
                                         <img src="{{ $avatar->temporaryUrl() }}" class="w-full h-full object-cover">
                                     @elseif ($existingAvatar)
@@ -165,24 +176,28 @@
                                     @else
                                         <i class="fa-solid fa-user text-gray-400 text-2xl"></i>
                                     @endif
-                                    
-                                    <div wire:loading wire:target="avatar" class="absolute inset-0 bg-black/50 flex items-center justify-center">
+
+                                    <div wire:loading wire:target="avatar"
+                                        class="absolute inset-0 bg-black/50 flex items-center justify-center">
                                         <i class="fa-solid fa-spinner fa-spin text-white"></i>
                                     </div>
                                 </div>
                                 <div class="flex-1">
-                                    <input type="file" wire:model="avatar" accept="image/*" class="text-xs text-gray-500 file:mr-2 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 w-full">
+                                    <input type="file" wire:model="avatar" accept="image/*"
+                                        class="text-xs text-gray-500 file:mr-2 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 w-full">
                                     <p class="text-[10px] text-gray-400 mt-1">PNG, JPG, GIF tối đa 5MB.</p>
-                                    @error('avatar') <span class="text-red-500 text-xs block">{{ $message }}</span> @enderror
+                                    @error('avatar')
+                                        <span class="text-red-500 text-xs block">{{ $message }}</span>
+                                    @enderror
                                 </div>
                             </div>
                         </div>
                     </div>
 
                     <!-- Form Grid -->
-                    <div class="space-y-5">
+                    <div class="space-y-4 sm:space-y-5">
                         <!-- Row 1: Name + Phone -->
-                        <div class="grid grid-cols-2 gap-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-sm font-semibold text-gray-700 mb-2">
                                     <i class="fa-solid fa-user text-gray-400 mr-1"></i>
@@ -191,7 +206,9 @@
                                 <input wire:model="name" type="text"
                                     class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                                     placeholder="Nhập họ và tên khách hàng">
-                                @error('name') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
+                                @error('name')
+                                    <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span>
+                                @enderror
                             </div>
                             <div>
                                 <label class="block text-sm font-semibold text-gray-700 mb-2">
@@ -201,36 +218,42 @@
                                 <input wire:model="phone" type="text"
                                     class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                                     placeholder="Nhập số điện thoại">
-                                @error('phone') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
+                                @error('phone')
+                                    <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span>
+                                @enderror
                             </div>
 
-                        <!-- Row 1.5: Phone 2 -->
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-sm font-semibold text-gray-700 mb-2">
-                                    <i class="fa-solid fa-phone text-gray-400 mr-1"></i>
-                                    Số điện thoại 2
-                                </label>
-                                <input wire:model="phone2" type="text"
-                                    class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                                    placeholder="Nhập SĐT phụ (nếu có)">
-                                @error('phone2') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
+                            <!-- Row 1.5: Phone 2 -->
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                        <i class="fa-solid fa-phone text-gray-400 mr-1"></i>
+                                        Số điện thoại 2
+                                    </label>
+                                    <input wire:model="phone2" type="text"
+                                        class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                                        placeholder="Nhập SĐT phụ (nếu có)">
+                                    @error('phone2')
+                                        <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span>
+                                    @enderror
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                        <i class="fa-brands fa-facebook text-blue-600 mr-1"></i>
+                                        Link Facebook
+                                    </label>
+                                    <input wire:model="facebook" type="text"
+                                        class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                                        placeholder="https://facebook.com/...">
+                                    @error('facebook')
+                                        <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span>
+                                    @enderror
+                                </div>
                             </div>
-                            <div>
-                                <label class="block text-sm font-semibold text-gray-700 mb-2">
-                                    <i class="fa-brands fa-facebook text-blue-600 mr-1"></i>
-                                    Link Facebook
-                                </label>
-                                <input wire:model="facebook" type="text"
-                                    class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                                    placeholder="https://facebook.com/...">
-                                @error('facebook') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
-                            </div>
-                        </div>
                         </div>
 
                         <!-- Row 2: Status + Assigned -->
-                        <div class="grid grid-cols-2 gap-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-sm font-semibold text-gray-700 mb-2">
                                     <i class="fa-solid fa-flag text-gray-400 mr-1"></i>
@@ -252,7 +275,8 @@
                                     class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white">
                                     <option value="">-- Chọn nhân viên --</option>
                                     @foreach ($employees as $employee)
-                                        <option value="{{ $employee->id }}">{{ $employee->name }} ({{ $employee->phone }})</option>
+                                        <option value="{{ $employee->id }}">{{ $employee->name }}
+                                            ({{ $employee->phone }})</option>
                                     @endforeach
                                 </select>
                             </div>
@@ -264,15 +288,17 @@
                                 <i class="fa-solid fa-wallet text-gray-400 mr-1"></i>
                                 Tài chính mong muốn (VNĐ)
                             </label>
-                            <div class="grid grid-cols-2 gap-4">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div class="flex gap-2 items-center">
                                     <div class="relative flex-1">
-                                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">Từ</span>
+                                        <span
+                                            class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">Từ</span>
                                         <input wire:model="budgetFromValue" type="number" step="0.1"
                                             class="w-full border border-gray-300 rounded-lg pl-10 pr-2 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                                             placeholder="VD: 1">
                                     </div>
-                                    <select wire:model="budgetFromUnit" class="w-24 border border-gray-300 rounded-lg px-2 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white">
+                                    <select wire:model="budgetFromUnit"
+                                        class="w-24 border border-gray-300 rounded-lg px-2 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white">
                                         @foreach (\App\Livewire\CustomerManagement::BUDGET_UNITS as $value => $label)
                                             <option value="{{ $value }}">{{ $label }}</option>
                                         @endforeach
@@ -280,12 +306,14 @@
                                 </div>
                                 <div class="flex gap-2 items-center">
                                     <div class="relative flex-1">
-                                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">Đến</span>
+                                        <span
+                                            class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">Đến</span>
                                         <input wire:model="budgetToValue" type="number" step="0.1"
                                             class="w-full border border-gray-300 rounded-lg pl-10 pr-2 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                                             placeholder="VD: 5">
                                     </div>
-                                    <select wire:model="budgetToUnit" class="w-24 border border-gray-300 rounded-lg px-2 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white">
+                                    <select wire:model="budgetToUnit"
+                                        class="w-24 border border-gray-300 rounded-lg px-2 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white">
                                         @foreach (\App\Livewire\CustomerManagement::BUDGET_UNITS as $value => $label)
                                             <option value="{{ $value }}">{{ $label }}</option>
                                         @endforeach
@@ -311,16 +339,19 @@
                 <div class="px-6 py-4 border-t bg-gray-50 flex justify-between rounded-b-xl">
                     <div>
                         @if ($selectedCustomerId && $editFromDetailMode)
-                            <button wire:click="backToDetail" class="px-4 py-2.5 text-blue-600 hover:bg-blue-50 rounded-lg text-sm font-medium flex items-center gap-2">
+                            <button wire:click="backToDetail"
+                                class="px-4 py-2.5 text-blue-600 hover:bg-blue-50 rounded-lg text-sm font-medium flex items-center gap-2">
                                 <i class="fa-solid fa-arrow-left"></i> Quay lại chi tiết
                             </button>
                         @endif
                     </div>
                     <div class="flex gap-3">
-                        <button wire:click="closeCreatePopup" class="px-5 py-2.5 text-gray-600 hover:bg-gray-200 rounded-lg text-sm font-medium">
+                        <button wire:click="closeCreatePopup"
+                            class="px-5 py-2.5 text-gray-600 hover:bg-gray-200 rounded-lg text-sm font-medium">
                             Hủy bỏ
                         </button>
-                        <button wire:click="saveCustomer" class="px-5 py-2.5 bg-blue-600 text-white hover:bg-blue-700 rounded-lg text-sm font-medium flex items-center gap-2">
+                        <button wire:click="saveCustomer"
+                            class="px-5 py-2.5 bg-blue-600 text-white hover:bg-blue-700 rounded-lg text-sm font-medium flex items-center gap-2">
                             <i class="fa-solid fa-save"></i> Lưu lại
                         </button>
                     </div>
@@ -332,33 +363,38 @@
     <!-- Customer Detail Modal -->
     @if ($showDetailPopup && $selectedCustomer)
         <div class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div class="bg-white w-[60%] min-w-[600px] rounded-xl shadow-xl flex flex-col max-h-[90vh]">
+            <div class="bg-white w-full sm:w-[60%] sm:min-w-[600px] rounded-xl shadow-xl flex flex-col max-h-[90vh]">
                 <!-- Header -->
                 <div class="flex justify-between items-center px-6 py-4 border-b bg-gray-50 rounded-t-xl">
                     <div class="flex items-center gap-4">
 
                         @if ($selectedCustomer->avatar)
-                            <img src="{{ $selectedCustomer->avatar_url }}" class="w-16 h-16 rounded-full object-cover border-2 border-white shadow-md">
+                            <img src="{{ $selectedCustomer->avatar_url }}"
+                                class="w-16 h-16 rounded-full object-cover border-2 border-white shadow-md">
                         @else
-                            <div class="w-16 h-16 bg-blue-600 text-white rounded-lg flex items-center justify-center text-2xl font-bold shadow-md">
+                            <div
+                                class="w-16 h-16 bg-blue-600 text-white rounded-lg flex items-center justify-center text-2xl font-bold shadow-md">
                                 {{ mb_substr($selectedCustomer->name, 0, 1) }}
                             </div>
                         @endif
-                        <div>
-                            <h2 class="text-lg font-bold text-gray-800">{{ $selectedCustomer->name }}</h2>
-                            <p class="text-sm text-gray-500">
-                                <span class="font-mono">{{ $selectedCustomer->code }}</span> • {{ $selectedCustomer->phone }}
+                        <div class="min-w-0">
+                            <h2 class="text-base sm:text-lg font-bold text-gray-800 truncate">
+                                {{ $selectedCustomer->name }}</h2>
+                            <p class="text-xs sm:text-sm text-gray-500 truncate">
+                                <span class="font-mono">{{ $selectedCustomer->code }}</span> •
+                                {{ $selectedCustomer->phone }}
                             </p>
                         </div>
                     </div>
-                    <div class="flex items-center gap-3">
-                        <button wire:click="viewCustomerListings" 
-                            class="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg text-sm font-medium flex items-center gap-2">
-                            <i class="fa-solid fa-building"></i> Xem tin đăng khách
+                    <div class="flex items-center gap-2 sm:gap-3 shrink-0 ml-2">
+                        <button wire:click="viewCustomerListings"
+                            class="px-2 py-1.5 sm:px-4 sm:py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg text-xs sm:text-sm font-medium flex items-center gap-1 sm:gap-2">
+                            <i class="fa-solid fa-building"></i> <span class="hidden sm:inline">Xem tin đăng</span>
                         </button>
                         @if ($isAdmin || $selectedCustomer->assigned_user_id === auth()->id())
-                            <button wire:click="editFromDetail" class="px-4 py-2 bg-yellow-500 text-gray-900 hover:bg-yellow-600 rounded-lg text-sm font-medium flex items-center gap-2 border border-yellow-600">
-                                <i class="fa-solid fa-pen"></i> Sửa
+                            <button wire:click="editFromDetail"
+                                class="px-2 py-1.5 sm:px-4 sm:py-2 bg-yellow-500 text-gray-900 hover:bg-yellow-600 rounded-lg text-xs sm:text-sm font-medium flex items-center gap-1 sm:gap-2 border border-yellow-600">
+                                <i class="fa-solid fa-pen"></i> <span class="hidden sm:inline">Sửa</span>
                             </button>
                         @endif
                         <button wire:click="closeDetailPopup" class="text-gray-400 hover:text-gray-600 p-1">
@@ -368,14 +404,15 @@
                 </div>
 
                 <!-- Body -->
-                <div class="flex-1 overflow-y-auto p-6">
+                <div class="flex-1 overflow-y-auto p-4 sm:p-6">
                     <!-- Info Cards -->
-                    <div class="grid grid-cols-4 gap-4 mb-6">
-                        <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6">
+                        <div class="bg-gray-50 border border-gray-200 rounded-lg p-3 sm:p-4">
                             <p class="text-xs text-gray-500 font-medium mb-1">
                                 <i class="fa-solid fa-flag text-gray-400 mr-1"></i> Trạng thái
                             </p>
-                            <span class="px-2 py-1 rounded text-xs font-medium {{ $statusColors[$selectedCustomer->status] ?? 'bg-gray-100 text-gray-600' }}">
+                            <span
+                                class="px-2 py-1 rounded text-xs font-medium {{ $statusColors[$selectedCustomer->status] ?? 'bg-gray-100 text-gray-600' }}">
                                 {{ $statusLabels[$selectedCustomer->status] ?? $selectedCustomer->status }}
                             </span>
                         </div>
@@ -383,26 +420,30 @@
                             <p class="text-xs text-gray-500 font-medium mb-1">
                                 <i class="fa-solid fa-wallet text-gray-400 mr-1"></i> Tài chính mong muốn
                             </p>
-                            <p class="text-sm font-semibold text-gray-800">{{ $selectedCustomer->formatted_budget }}</p>
+                            <p class="text-sm font-semibold text-gray-800">{{ $selectedCustomer->formatted_budget }}
+                            </p>
                         </div>
                         <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
                             <p class="text-xs text-gray-500 font-medium mb-1">
                                 <i class="fa-solid fa-user-tie text-gray-400 mr-1"></i> NV Phụ trách
                             </p>
-                            <p class="text-sm font-semibold text-gray-800">{{ $selectedCustomer->assignedUser?->name ?? 'Chưa phân công' }}</p>
+                            <p class="text-sm font-semibold text-gray-800">
+                                {{ $selectedCustomer->assignedUser?->name ?? 'Chưa phân công' }}</p>
                         </div>
                         <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
                             <p class="text-xs text-gray-500 font-medium mb-1">
                                 <i class="fa-solid fa-calendar text-gray-400 mr-1"></i> Ngày tạo
                             </p>
-                            <p class="text-sm font-semibold text-gray-800">{{ $selectedCustomer->created_at->format('d/m/Y') }}</p>
+                            <p class="text-sm font-semibold text-gray-800">
+                                {{ $selectedCustomer->created_at->format('d/m/Y') }}</p>
                         </div>
                         <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
                             <p class="text-xs text-gray-500 font-medium mb-1">
                                 <i class="fa-brands fa-facebook text-blue-600 mr-1"></i> Facebook
                             </p>
                             @if ($selectedCustomer->facebook)
-                                <a href="{{ $selectedCustomer->facebook }}" target="_blank" class="text-sm font-semibold text-blue-600 hover:underline truncate block">
+                                <a href="{{ $selectedCustomer->facebook }}" target="_blank"
+                                    class="text-sm font-semibold text-blue-600 hover:underline truncate block">
                                     Xem trang cá nhân
                                 </a>
                             @else
@@ -423,35 +464,39 @@
                     <!-- Work Timeline Section -->
                     <div>
                         <h4 class="font-bold text-gray-800 mb-4 flex items-center gap-2">
-                            <i class="fa-solid fa-clock-rotate-left text-blue-600"></i> 
+                            <i class="fa-solid fa-clock-rotate-left text-blue-600"></i>
                             Nội dung làm việc ({{ $selectedCustomer->works->count() }})
                         </h4>
 
                         <!-- Add Work Form -->
                         @if ($isAdmin || $selectedCustomer->assigned_user_id === auth()->id())
-                            <div class="bg-green-50 border border-green-200 rounded-lg p-3 mb-4 flex items-center gap-3">
-                                <span class="text-sm font-semibold text-green-800 whitespace-nowrap">
+                            <div
+                                class="bg-green-50 border border-green-200 rounded-lg p-3 mb-4 flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-3">
+                                <span
+                                    class="text-sm font-semibold text-green-800 whitespace-nowrap w-full sm:w-auto mb-1 sm:mb-0">
                                     <i class="fa-solid fa-plus-circle mr-1"></i> Thêm:
                                 </span>
                                 <input wire:model="workDate" type="date"
-                                    class="border border-gray-300 rounded-lg px-3 py-2 text-sm w-36">
-                                <input wire:model="workContent" type="text"
-                                    class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm"
-                                    placeholder="Nội dung công việc...">
+                                    class="border border-gray-300 rounded-lg px-3 py-2 text-sm w-1/2 sm:w-36">
                                 <input wire:model="workProgress" type="text"
-                                    class="border border-gray-300 rounded-lg px-3 py-2 text-sm w-28"
+                                    class="border border-gray-300 rounded-lg px-3 py-2 text-sm w-[45%] sm:w-28"
                                     placeholder="Tiến độ">
+                                <input wire:model="workContent" type="text"
+                                    class="w-full sm:flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm mt-1 sm:mt-0"
+                                    placeholder="Nội dung công việc...">
                                 <button wire:click="addWork"
                                     class="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 whitespace-nowrap">
                                     <i class="fa-solid fa-plus"></i> Thêm
                                 </button>
                             </div>
-                            @error('workContent') <div class="text-red-500 text-xs mb-3 -mt-2">{{ $message }}</div> @enderror
+                            @error('workContent')
+                                <div class="text-red-500 text-xs mb-3 -mt-2">{{ $message }}</div>
+                            @enderror
                         @endif
 
                         <!-- Work Timeline Table -->
-                        <div class="border border-gray-200 rounded-lg overflow-hidden">
-                            <table class="w-full text-sm">
+                        <div class="border border-gray-200 rounded-lg overflow-hidden overflow-x-auto">
+                            <table class="w-full text-sm min-w-[500px]">
                                 <thead class="bg-gray-50 text-xs text-gray-600 uppercase">
                                     <tr>
                                         <th class="px-4 py-3 text-left font-semibold w-28">Ngày</th>
@@ -463,16 +508,19 @@
                                 <tbody class="divide-y divide-gray-100">
                                     @forelse ($selectedCustomer->works as $work)
                                         <tr class="hover:bg-gray-50">
-                                            <td class="px-4 py-3 font-mono text-xs text-gray-600">{{ $work->formatted_date }}</td>
+                                            <td class="px-4 py-3 font-mono text-xs text-gray-600">
+                                                {{ $work->formatted_date }}</td>
                                             <td class="px-4 py-3 text-gray-800">{{ $work->content }}</td>
                                             <td class="px-4 py-3">
                                                 @if ($work->progress)
-                                                    <span class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs font-medium">{{ $work->progress }}</span>
+                                                    <span
+                                                        class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs font-medium">{{ $work->progress }}</span>
                                                 @else
                                                     <span class="text-gray-400">-</span>
                                                 @endif
                                             </td>
-                                            <td class="px-4 py-3 text-gray-600 text-xs">{{ $work->user?->name ?? '-' }}</td>
+                                            <td class="px-4 py-3 text-gray-600 text-xs">
+                                                {{ $work->user?->name ?? '-' }}</td>
                                         </tr>
                                     @empty
                                         <tr>
@@ -490,7 +538,8 @@
 
                 <!-- Footer -->
                 <div class="px-6 py-4 border-t bg-gray-50 flex justify-end rounded-b-xl">
-                    <button wire:click="closeDetailPopup" class="px-5 py-2.5 text-gray-600 hover:bg-gray-200 rounded-lg text-sm font-medium">
+                    <button wire:click="closeDetailPopup"
+                        class="px-5 py-2.5 text-gray-600 hover:bg-gray-200 rounded-lg text-sm font-medium">
                         Đóng
                     </button>
                 </div>
@@ -502,16 +551,20 @@
     @if ($confirmingDeletion)
         <div class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
             <div class="bg-white w-[400px] rounded-xl shadow-xl p-6 text-center">
-                <div class="w-14 h-14 bg-red-100 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                <div
+                    class="w-14 h-14 bg-red-100 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
                     <i class="fa-solid fa-triangle-exclamation text-2xl"></i>
                 </div>
                 <h3 class="font-bold text-gray-800 text-lg mb-2">Xóa khách hàng?</h3>
-                <p class="text-sm text-gray-500 mb-5">Hành động này không thể hoàn tác. Tất cả dữ liệu sẽ bị xóa vĩnh viễn.</p>
+                <p class="text-sm text-gray-500 mb-5">Hành động này không thể hoàn tác. Tất cả dữ liệu sẽ bị xóa vĩnh
+                    viễn.</p>
                 <div class="flex justify-center gap-3">
-                    <button wire:click="cancelDelete" class="px-5 py-2.5 text-gray-600 hover:bg-gray-100 rounded-lg text-sm font-medium">
+                    <button wire:click="cancelDelete"
+                        class="px-5 py-2.5 text-gray-600 hover:bg-gray-100 rounded-lg text-sm font-medium">
                         Hủy
                     </button>
-                    <button wire:click="deleteCustomer" class="px-5 py-2.5 bg-red-600 text-white hover:bg-red-700 rounded-lg text-sm font-medium">
+                    <button wire:click="deleteCustomer"
+                        class="px-5 py-2.5 bg-red-600 text-white hover:bg-red-700 rounded-lg text-sm font-medium">
                         Xóa
                     </button>
                 </div>
@@ -519,4 +572,3 @@
         </div>
     @endif
 </div>
-

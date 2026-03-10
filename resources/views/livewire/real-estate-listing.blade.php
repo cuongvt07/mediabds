@@ -18,7 +18,8 @@
         </div>
 
         <!-- Action Button -->
-        <div class="flex items-center gap-3 shrink-0 order-2 md:order-3">
+        <div
+            class="flex items-center gap-2 sm:gap-3 shrink-0 order-2 md:order-3 overflow-x-auto no-scrollbar max-w-full pb-1 sm:pb-0 w-full sm:w-auto mt-2 sm:mt-0">
             <a href="https://phongphatland.com/"
                 class="bg-white border border-gray-200 hover:bg-gray-50 text-slate-600 px-3 py-2 md:px-4 md:py-2 rounded-lg font-bold text-sm flex items-center gap-2 shadow-sm transition-all whitespace-nowrap">
                 <i class="fa-solid fa-arrow-left"></i> <span class="hidden md:inline">Về PhongPhatLand</span>
@@ -72,15 +73,19 @@
             @endif
         </div>
 
-        @if($filter_phone)
-        <div class="mb-3 bg-blue-50 border border-blue-200 text-blue-800 px-4 py-2.5 rounded-lg flex items-center justify-between text-sm shadow-sm animate-[fadeIn_0.3s_ease-out]">
-            <div class="flex items-center gap-2 font-medium">
-                <i class="fa-solid fa-address-book"></i> Đang lọc tin đăng liên quan đến khách hàng (SĐT: <span class="font-bold">{{ str_replace(',', ' hoặc ', $filter_phone) }}</span>)
+        @if ($filter_phone)
+            <div
+                class="mb-3 bg-blue-50 border border-blue-200 text-blue-800 px-4 py-2.5 rounded-lg flex items-center justify-between text-sm shadow-sm animate-[fadeIn_0.3s_ease-out]">
+                <div class="flex items-center gap-2 font-medium">
+                    <i class="fa-solid fa-address-book"></i> Đang lọc tin đăng liên quan đến khách hàng (SĐT: <span
+                        class="font-bold">{{ str_replace(',', ' hoặc ', $filter_phone) }}</span>)
+                </div>
+                <button wire:click="$set('filter_phone', null)"
+                    class="text-blue-600 hover:text-red-600 transition-colors font-bold whitespace-nowrap ml-3"
+                    title="Bỏ lọc theo SĐT khách">
+                    <i class="fa-solid fa-times"></i> Đóng
+                </button>
             </div>
-            <button wire:click="$set('filter_phone', null)" class="text-blue-600 hover:text-red-600 transition-colors font-bold whitespace-nowrap ml-3" title="Bỏ lọc theo SĐT khách">
-                <i class="fa-solid fa-times"></i> Đóng
-            </button>
-        </div>
         @endif
 
         <div x-show="showFilters" x-collapse class="grid grid-cols-1 md:grid-cols-6 gap-3">
@@ -113,16 +118,16 @@
 
             {{-- Property Type Filter (Admin only) --}}
             @if ($isAdmin)
-            <div>
-                <label class="text-xs font-semibold text-gray-500 uppercase mb-1 block">Loại nhà</label>
-                <select wire:model.live="filter_property_type"
-                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
-                    <option value="">Tất cả</option>
-                    @foreach (\App\Livewire\RealEstateListing::PROPERTY_TYPES as $id => $name)
-                        <option value="{{ $id }}">{{ $name }}</option>
-                    @endforeach
-                </select>
-            </div>
+                <div>
+                    <label class="text-xs font-semibold text-gray-500 uppercase mb-1 block">Loại nhà</label>
+                    <select wire:model.live="filter_property_type"
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                        <option value="">Tất cả</option>
+                        @foreach (\App\Livewire\RealEstateListing::PROPERTY_TYPES as $id => $name)
+                            <option value="{{ $id }}">{{ $name }}</option>
+                        @endforeach
+                    </select>
+                </div>
             @endif
 
             {{-- Sold Status Filter --}}
@@ -142,7 +147,7 @@
                 <select wire:model.live="filter_month"
                     class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
                     <option value="">Tất cả</option>
-                    @for($i = 1; $i <= 12; $i++)
+                    @for ($i = 1; $i <= 12; $i++)
                         <option value="{{ $i }}">Tháng {{ $i }}</option>
                     @endfor
                 </select>
@@ -158,7 +163,7 @@
                         $currentYear = date('Y');
                         $oldestYear = 2020; // Assume tracking started no earlier than 2020 realistically
                     @endphp
-                    @for($year = $currentYear; $year >= $oldestYear; $year--)
+                    @for ($year = $currentYear; $year >= $oldestYear; $year--)
                         <option value="{{ $year }}">{{ $year }}</option>
                     @endfor
                 </select>
@@ -227,18 +232,20 @@
                             loading="lazy" alt="{{ $listing['title'] }}">
 
                         <!-- Type Badge -->
-                        <div
-                            class="absolute top-2 left-2 flex flex-col gap-1 z-10">
-                            <div class="bg-blue-600 text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider">
+                        <div class="absolute top-2 left-2 flex flex-col gap-1 z-10">
+                            <div
+                                class="bg-blue-600 text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider">
                                 {{ $listing['type'] }}
                             </div>
                             @if (!empty($listing['code']))
-                                <div class="bg-slate-700 text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider">
+                                <div
+                                    class="bg-slate-700 text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider">
                                     {{ $listing['code'] }}
                                 </div>
                             @endif
                             @if ($listing['is_sold'])
-                                <div class="bg-red-600 text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider flex items-center gap-1">
+                                <div
+                                    class="bg-red-600 text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider flex items-center gap-1">
                                     <i class="fa-solid fa-check-circle"></i> ĐÃ BÁN
                                 </div>
                             @endif
@@ -468,7 +475,9 @@
                             <div class="flex items-center gap-4 h-11">
                                 <label class="relative inline-flex items-center cursor-pointer">
                                     <input type="checkbox" wire:model="is_sold" class="sr-only peer">
-                                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                    <div
+                                        class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600">
+                                    </div>
                                     <span class="ml-3 text-sm font-bold text-gray-700">Đã bán/Cho thuê xong</span>
                                 </label>
                             </div>
@@ -644,9 +653,11 @@
                             <div class="space-y-2 mb-4">
                                 <label class="block text-sm font-bold text-gray-700">Ảnh đại diện (Avatar)</label>
                                 <div class="flex gap-4 items-start">
-                                    <div class="w-32 h-32 bg-gray-100 rounded-lg border border-gray-300 flex-shrink-0 relative overflow-hidden group">
+                                    <div
+                                        class="w-32 h-32 bg-gray-100 rounded-lg border border-gray-300 flex-shrink-0 relative overflow-hidden group">
                                         @if ($tempAvatar)
-                                            <img src="{{ $tempAvatar->temporaryUrl() }}" class="w-full h-full object-cover">
+                                            <img src="{{ $tempAvatar->temporaryUrl() }}"
+                                                class="w-full h-full object-cover">
                                             <button type="button" wire:click="$set('tempAvatar', null)"
                                                 class="absolute top-1 right-1 bg-red-500 text-white w-5 h-5 rounded-full text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                                                 <i class="fa-solid fa-times"></i>
@@ -658,13 +669,14 @@
                                                 <i class="fa-solid fa-times"></i>
                                             </button>
                                         @else
-                                            <div class="w-full h-full flex flex-col items-center justify-center text-gray-400">
+                                            <div
+                                                class="w-full h-full flex flex-col items-center justify-center text-gray-400">
                                                 <i class="fa-solid fa-image fa-2x mb-1"></i>
                                                 <span class="text-[10px]">Chưa có ảnh</span>
                                             </div>
                                         @endif
                                     </div>
-                                    
+
                                     <div class="flex-1 relative group h-32">
                                         <input type="file" wire:model="tempAvatar"
                                             class="absolute inset-0 opacity-0 cursor-pointer z-10">
@@ -672,7 +684,8 @@
                                             class="bg-gray-50 hover:bg-gray-100 text-gray-500 px-6 py-4 rounded-xl border border-gray-200 border-dashed flex flex-col items-center justify-center gap-2 font-bold transition-all w-full h-full group-hover:border-blue-300 group-hover:text-blue-500">
                                             <i class="fa-solid fa-cloud-arrow-up fa-lg"></i>
                                             Tải ảnh đại diện
-                                            <span class="text-xs font-normal text-gray-400">Chọn 1 ảnh làm ảnh bìa listing</span>
+                                            <span class="text-xs font-normal text-gray-400">Chọn 1 ảnh làm ảnh bìa
+                                                listing</span>
                                         </div>
                                     </div>
                                 </div>
@@ -709,13 +722,17 @@
                                             <div
                                                 class="relative aspect-square rounded-lg overflow-hidden border border-gray-200 group">
                                                 <img src="{{ $img }}" class="w-full h-full object-cover">
-                                                
-                                                <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
-                                                    <button type="button" wire:click="setAvatarFromImage({{ $index }})"
-                                                        class="bg-white text-blue-600 text-[10px] font-bold px-2 py-1 rounded shadow-sm hover:bg-blue-50" title="Đặt làm ảnh đại diện">
+
+                                                <div
+                                                    class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
+                                                    <button type="button"
+                                                        wire:click="setAvatarFromImage({{ $index }})"
+                                                        class="bg-white text-blue-600 text-[10px] font-bold px-2 py-1 rounded shadow-sm hover:bg-blue-50"
+                                                        title="Đặt làm ảnh đại diện">
                                                         <i class="fa-solid fa-star"></i> Avatar
                                                     </button>
-                                                    <button type="button" wire:click="removeImage({{ $index }})"
+                                                    <button type="button"
+                                                        wire:click="removeImage({{ $index }})"
                                                         class="bg-red-500 text-white w-6 h-6 rounded-full text-xs flex items-center justify-center hover:bg-red-600">
                                                         <i class="fa-solid fa-times"></i>
                                                     </button>
@@ -880,7 +897,7 @@
                             this.isDownloading = true;
                             this.downloadTotal = urls.length;
                             this.downloadCount = 0;
-
+                    
                             for (let i = 0; i < urls.length; i++) {
                                 this.downloadCount = i + 1;
                                 await this.$wire.downloadSingleImage(urls[i]);
@@ -889,7 +906,7 @@
                                     await new Promise(r => setTimeout(r, 2000));
                                 }
                             }
-
+                    
                             this.isDownloading = false;
                             this.downloadCount = 0;
                             this.downloadTotal = 0;
@@ -897,29 +914,38 @@
                         }
                     }">
                         {{-- Controls --}}
-                        <div class="flex items-center justify-between mb-3 bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
+                        <div
+                            class="flex items-center justify-between mb-3 bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
                             <div class="flex items-center gap-2 cursor-pointer" @click="selectAll()">
                                 <div class="w-5 h-5 rounded border flex items-center justify-center transition-colors"
-                                     :class="selectedImages.length > 0 && selectedImages.length === getAllUniqueImages().length ? 'bg-blue-600 border-blue-600 text-white' : 'border-gray-300'">
-                                    <i class="fa-solid fa-check text-xs" x-show="selectedImages.length > 0 && selectedImages.length === getAllUniqueImages().length"></i>
+                                    :class="selectedImages.length > 0 && selectedImages.length === getAllUniqueImages().length ?
+                                        'bg-blue-600 border-blue-600 text-white' : 'border-gray-300'">
+                                    <i class="fa-solid fa-check text-xs"
+                                        x-show="selectedImages.length > 0 && selectedImages.length === getAllUniqueImages().length"></i>
                                 </div>
-                                <span class="text-sm font-bold text-gray-700 hover:text-blue-600 transition-colors">Chọn tất cả</span>
+                                <span
+                                    class="text-sm font-bold text-gray-700 hover:text-blue-600 transition-colors">Chọn
+                                    tất cả</span>
                                 <span class="text-xs text-gray-500 ml-2" x-show="selectedImages.length > 0">
                                     (Đã chọn <span x-text="selectedImages.length"></span> ảnh)
                                 </span>
                             </div>
                             <div class="flex gap-2">
-                                <button type="button" @click="downloadImages(selectedImages)" 
-                                        class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 md:px-4 md:py-2 rounded flex items-center gap-2 text-xs md:text-sm font-bold shadow transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                                        :disabled="selectedImages.length === 0 || isDownloading">
-                                    <i class="fa-solid" :class="isDownloading ? 'fa-spinner fa-spin' : 'fa-download'"></i>
-                                    <span class="hidden md:inline" x-text="isDownloading ? 'Đang tải ' + downloadCount + '/' + downloadTotal + '...' : 'Tải đã chọn'"></span>
-                                    <span class="md:hidden" x-text="isDownloading ? downloadCount + '/' + downloadTotal : 'Tải' + (selectedImages.length ? ' (' + selectedImages.length + ')' : '')"></span>
+                                <button type="button" @click="downloadImages(selectedImages)"
+                                    class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 md:px-4 md:py-2 rounded flex items-center gap-2 text-xs md:text-sm font-bold shadow transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                    :disabled="selectedImages.length === 0 || isDownloading">
+                                    <i class="fa-solid"
+                                        :class="isDownloading ? 'fa-spinner fa-spin' : 'fa-download'"></i>
+                                    <span class="hidden md:inline"
+                                        x-text="isDownloading ? 'Đang tải ' + downloadCount + '/' + downloadTotal + '...' : 'Tải đã chọn'"></span>
+                                    <span class="md:hidden"
+                                        x-text="isDownloading ? downloadCount + '/' + downloadTotal : 'Tải' + (selectedImages.length ? ' (' + selectedImages.length + ')' : '')"></span>
                                 </button>
-                                <button type="button" @click="downloadImages(getAllUniqueImages())" 
-                                        class="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 md:px-4 md:py-2 rounded flex items-center gap-2 text-xs md:text-sm font-bold shadow transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                                        :disabled="isDownloading">
-                                    <i class="fa-solid" :class="isDownloading ? 'fa-spinner fa-spin' : 'fa-cloud-arrow-down'"></i>
+                                <button type="button" @click="downloadImages(getAllUniqueImages())"
+                                    class="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 md:px-4 md:py-2 rounded flex items-center gap-2 text-xs md:text-sm font-bold shadow transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                    :disabled="isDownloading">
+                                    <i class="fa-solid"
+                                        :class="isDownloading ? 'fa-spinner fa-spin' : 'fa-cloud-arrow-down'"></i>
                                     <span class="hidden md:inline">Tải tất cả</span>
                                     <span class="md:hidden">Tải tất cả</span>
                                 </button>
@@ -927,15 +953,18 @@
                         </div>
 
                         {{-- Main Image --}}
-                        <div class="w-full aspect-video bg-gray-200 rounded-xl overflow-hidden mb-4 shadow-lg relative group">
+                        <div
+                            class="w-full aspect-video bg-gray-200 rounded-xl overflow-hidden mb-4 shadow-lg relative group">
                             <img :src="mainImage" class="w-full h-full object-cover"
                                 alt="{{ $selectedListing['title'] }}">
-                            
+
                             <!-- Selection Checkbox on Main Image -->
-                            <div class="absolute top-3 w-full px-3 flex justify-between items-start z-10 pointer-events-none">
-                                <button type="button" @click.stop="toggleSelection(mainImage)" 
-                                        class="w-8 h-8 rounded-full flex items-center justify-center transition-all bg-white shadow-md border-2 pointer-events-auto"
-                                        :class="isSelected(mainImage) ? 'border-blue-600 text-blue-600 bg-blue-50' : 'border-gray-300 text-gray-400 hover:border-blue-400 hover:bg-white/90'">
+                            <div
+                                class="absolute top-3 w-full px-3 flex justify-between items-start z-10 pointer-events-none">
+                                <button type="button" @click.stop="toggleSelection(mainImage)"
+                                    class="w-8 h-8 rounded-full flex items-center justify-center transition-all bg-white shadow-md border-2 pointer-events-auto"
+                                    :class="isSelected(mainImage) ? 'border-blue-600 text-blue-600 bg-blue-50' :
+                                        'border-gray-300 text-gray-400 hover:border-blue-400 hover:bg-white/90'">
                                     <i class="fa-solid fa-check"></i>
                                 </button>
                             </div>
@@ -947,12 +976,13 @@
                                 <div @click="swapImage(img, index)"
                                     class="relative w-24 h-24 bg-gray-200 rounded-lg overflow-hidden cursor-pointer hover:ring-4 hover:ring-blue-400 transition-all shrink-0 shadow-md hover:shadow-xl group">
                                     <img :src="img" class="w-full h-full object-cover">
-                                    
+
                                     <!-- Selection Checkbox -->
                                     <div class="absolute top-1 left-1 z-10">
-                                        <button type="button" @click.stop="toggleSelection(img)" 
-                                                class="w-6 h-6 rounded-full flex items-center justify-center transition-all bg-white shadow-sm border"
-                                                :class="isSelected(img) ? 'border-blue-600 text-blue-600 bg-blue-50' : 'border-gray-200 text-gray-300 opacity-70 group-hover:opacity-100 hover:border-blue-400'">
+                                        <button type="button" @click.stop="toggleSelection(img)"
+                                            class="w-6 h-6 rounded-full flex items-center justify-center transition-all bg-white shadow-sm border"
+                                            :class="isSelected(img) ? 'border-blue-600 text-blue-600 bg-blue-50' :
+                                                'border-gray-200 text-gray-300 opacity-70 group-hover:opacity-100 hover:border-blue-400'">
                                             <i class="fa-solid fa-check text-xs"></i>
                                         </button>
                                     </div>
@@ -1115,31 +1145,38 @@
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
                                     <div>
                                         <span class="text-gray-500 font-semibold">Dự án:</span>
-                                        <span class="font-bold text-gray-800">{{ $selectedListing['sale']['project_name'] ?? '-' }}</span>
+                                        <span
+                                            class="font-bold text-gray-800">{{ $selectedListing['sale']['project_name'] ?? '-' }}</span>
                                     </div>
                                     <div>
                                         <span class="text-gray-500 font-semibold">Người bán:</span>
-                                        <span class="font-bold text-gray-800">{{ data_get($selectedListing, 'sale.sold_by.name', '-') }}</span>
+                                        <span
+                                            class="font-bold text-gray-800">{{ data_get($selectedListing, 'sale.sold_by.name', '-') }}</span>
                                     </div>
                                     <div>
                                         <span class="text-gray-500 font-semibold">Giá thực tế:</span>
-                                        <span class="font-bold text-gray-800">{{ number_format((float) data_get($selectedListing, 'sale.actual_price', 0), 0, ',', '.') }}</span>
+                                        <span
+                                            class="font-bold text-gray-800">{{ number_format((float) data_get($selectedListing, 'sale.actual_price', 0), 0, ',', '.') }}</span>
                                     </div>
                                     <div>
                                         <span class="text-gray-500 font-semibold">Doanh thu (%):</span>
-                                        <span class="font-bold text-gray-800">{{ number_format((float) data_get($selectedListing, 'sale.revenue_percent', 0), 2, ',', '.') }}%</span>
+                                        <span
+                                            class="font-bold text-gray-800">{{ number_format((float) data_get($selectedListing, 'sale.revenue_percent', 0), 2, ',', '.') }}%</span>
                                     </div>
                                     <div>
                                         <span class="text-gray-500 font-semibold">Doanh thu (tiền):</span>
-                                        <span class="font-bold text-gray-800">{{ number_format((float) data_get($selectedListing, 'sale.revenue_amount', 0), 0, ',', '.') }}</span>
+                                        <span
+                                            class="font-bold text-gray-800">{{ number_format((float) data_get($selectedListing, 'sale.revenue_amount', 0), 0, ',', '.') }}</span>
                                     </div>
                                     <div>
                                         <span class="text-gray-500 font-semibold">Thưởng:</span>
-                                        <span class="font-bold text-gray-800">{{ number_format((float) data_get($selectedListing, 'sale.bonus_amount', 0), 0, ',', '.') }}</span>
+                                        <span
+                                            class="font-bold text-gray-800">{{ number_format((float) data_get($selectedListing, 'sale.bonus_amount', 0), 0, ',', '.') }}</span>
                                     </div>
                                     <div class="md:col-span-2">
                                         <span class="text-gray-500 font-semibold">Thực nhận:</span>
-                                        <span class="font-black text-emerald-700 text-base">{{ number_format((float) data_get($selectedListing, 'sale.net_received_amount', 0), 0, ',', '.') }}</span>
+                                        <span
+                                            class="font-black text-emerald-700 text-base">{{ number_format((float) data_get($selectedListing, 'sale.net_received_amount', 0), 0, ',', '.') }}</span>
                                     </div>
                                 </div>
                             </div>
@@ -1204,7 +1241,8 @@
             <div class="bg-white w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden">
                 <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gray-50">
                     <h3 class="text-lg font-black text-gray-800 uppercase flex items-center gap-2">
-                        <span class="bg-green-100 text-green-700 p-2 rounded-lg"><i class="fa-solid fa-file-signature"></i></span>
+                        <span class="bg-green-100 text-green-700 p-2 rounded-lg"><i
+                                class="fa-solid fa-file-signature"></i></span>
                         Nhập Thông Tin Đã Bán
                     </h3>
                     <button wire:click="closeSoldPopup" class="text-gray-400 hover:text-red-500 transition-colors">
@@ -1229,7 +1267,8 @@
                             class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-green-500 outline-none">
                             <option value="">Chọn tài khoản đã bán</option>
                             @foreach ($salesUsers as $u)
-                                <option value="{{ $u->id }}">{{ $u->name }}{{ $u->phone ? ' - ' . $u->phone : '' }}</option>
+                                <option value="{{ $u->id }}">
+                                    {{ $u->name }}{{ $u->phone ? ' - ' . $u->phone : '' }}</option>
                             @endforeach
                         </select>
                         @error('saleUserId')
@@ -1269,18 +1308,22 @@
                         @enderror
                     </div>
 
-                    <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-4 grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                    <div
+                        class="bg-emerald-50 border border-emerald-200 rounded-xl p-4 grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
                         <div>
                             <div class="text-gray-500">Doanh thu</div>
-                            <div class="font-bold text-emerald-700">{{ number_format((float) $saleRevenueAmount, 0, ',', '.') }}</div>
+                            <div class="font-bold text-emerald-700">
+                                {{ number_format((float) $saleRevenueAmount, 0, ',', '.') }}</div>
                         </div>
                         <div>
                             <div class="text-gray-500">Thưởng</div>
-                            <div class="font-bold text-emerald-700">{{ number_format((float) $saleBonusNumeric, 0, ',', '.') }}</div>
+                            <div class="font-bold text-emerald-700">
+                                {{ number_format((float) $saleBonusNumeric, 0, ',', '.') }}</div>
                         </div>
                         <div>
                             <div class="text-gray-500">Thực nhận</div>
-                            <div class="font-black text-emerald-700 text-base">{{ number_format((float) $saleNetAmount, 0, ',', '.') }}</div>
+                            <div class="font-black text-emerald-700 text-base">
+                                {{ number_format((float) $saleNetAmount, 0, ',', '.') }}</div>
                         </div>
                     </div>
                 </div>

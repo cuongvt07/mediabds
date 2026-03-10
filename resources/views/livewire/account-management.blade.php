@@ -22,9 +22,9 @@
     </div>
 
     <!-- Content -->
-    <div class="flex-1 overflow-auto p-6">
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            <table class="w-full text-left border-collapse">
+    <div class="flex-1 overflow-auto p-4 sm:p-6">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden overflow-x-auto">
+            <table class="w-full text-left border-collapse min-w-[800px]">
                 <thead class="bg-gray-50 text-gray-500 text-xs uppercase font-bold tracking-wider">
                     <tr>
                         <th class="px-6 py-4">Họ và Tên</th>
@@ -62,7 +62,7 @@
                             <td class="px-6 py-4 text-sm text-gray-500">{{ $user->created_at->format('d/m/Y') }}</td>
                             <td class="px-6 py-4 text-right">
                                 <div
-                                    class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    class="flex items-center justify-end gap-2 sm:opacity-0 group-hover:opacity-100 transition-opacity">
                                     <button wire:click="editUser({{ $user->id }})"
                                         class="w-8 h-8 flex items-center justify-center rounded-lg text-blue-600 hover:bg-blue-100 transition-colors"
                                         title="Chỉnh sửa">
@@ -98,7 +98,8 @@
     @if ($showCreatePopup)
         <div class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
             x-transition.opacity>
-            <div class="bg-white w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col max-h-[calc(100vh-3rem)] animate-[scaleIn_0.2s_ease-out]">
+            <div
+                class="bg-white w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col max-h-[calc(100vh-3rem)] animate-[scaleIn_0.2s_ease-out]">
                 <div
                     class="flex justify-between items-center px-6 py-4 border-b border-gray-200 bg-gray-50 rounded-t-2xl">
                     <h2 class="text-xl font-black text-gray-800 uppercase flex items-center gap-2">
@@ -138,17 +139,16 @@
                     @php
                         $selectedInviter = collect($inviters ?? [])->firstWhere('id', (int) $inviterUserId);
                     @endphp
-                    <div x-data
-                        x-init="$nextTick(() => {
-                            const boot = () => {
-                                if (window.initInviterSelect2) {
-                                    window.initInviterSelect2($refs.inviterSelect, @js($inviterUserId));
-                                    return;
-                                }
-                                setTimeout(boot, 50);
-                            };
-                            boot();
-                        })">
+                    <div x-data x-init="$nextTick(() => {
+                        const boot = () => {
+                            if (window.initInviterSelect2) {
+                                window.initInviterSelect2($refs.inviterSelect, @js($inviterUserId));
+                                return;
+                            }
+                            setTimeout(boot, 50);
+                        };
+                        boot();
+                    })">
                         <label class="block text-sm font-bold text-gray-700 mb-1">Người mời (nếu có)</label>
                         <div wire:ignore>
                             <select x-ref="inviterSelect" data-livewire-id="{{ $this->getId() }}"
@@ -167,7 +167,8 @@
 
                         @if ($selectedInviter)
                             <p class="text-xs text-gray-500 mt-1">Mã người mời: <span
-                                    class="font-mono font-bold">{{ $selectedInviter->invite_code ?: 'Chưa có mã' }}</span></p>
+                                    class="font-mono font-bold">{{ $selectedInviter->invite_code ?: 'Chưa có mã' }}</span>
+                            </p>
                         @endif
                     </div>
 
@@ -204,9 +205,11 @@
                             <i class="fa-solid fa-house-chimney text-blue-500 mr-1"></i>
                             Loại BĐS được phân công
                         </label>
-                        <div class="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-3 bg-gray-50">
+                        <div
+                            class="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-3 bg-gray-50">
                             @foreach ($propertyTypeOptions as $id => $name)
-                                <label class="flex items-center gap-2 text-sm cursor-pointer hover:bg-white p-2 rounded">
+                                <label
+                                    class="flex items-center gap-2 text-sm cursor-pointer hover:bg-white p-2 rounded">
                                     <input type="checkbox" wire:model="property_types" value="{{ $id }}"
                                         class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
                                     <span class="text-gray-700">{{ $name }}</span>
@@ -307,5 +310,3 @@
         </script>
     @endonce
 </div>
-
-
