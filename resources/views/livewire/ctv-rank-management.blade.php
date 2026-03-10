@@ -1,18 +1,21 @@
-<div class="h-full flex flex-col p-6 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-[1600px] w-full mx-auto relative group flex-1 pb-24">
+<div
+    class="h-full flex flex-col p-6 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-[1600px] w-full mx-auto relative group flex-1 pb-24">
     <!-- Header Area -->
-    <div class="flex items-center justify-between mb-8 flex-shrink-0">
-        <div>
-            <h1 class="text-3xl font-bold text-slate-900 tracking-tight flex items-center gap-3">
-                <div class="p-2.5 bg-blue-100 rounded-xl">
-                    <i class="fa-solid fa-ranking-star text-blue-600 text-xl"></i>
+    <div class="flex flex-col sm:flex-row items-center justify-between gap-4 mb-8 flex-shrink-0">
+        <div class="text-center sm:text-left">
+            <h1
+                class="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight flex items-center justify-center sm:justify-start gap-3">
+                <div class="p-2 sm:p-2.5 bg-blue-100 rounded-xl">
+                    <i class="fa-solid fa-ranking-star text-blue-600 text-lg sm:text-xl"></i>
                 </div>
                 Cấu hình Hạng CTV
             </h1>
-            <p class="text-slate-500 mt-2 font-medium">Quản lý các cấp độ Cộng Tác Viên và mức hiển thị giá</p>
+            <p class="text-slate-500 mt-2 font-medium text-sm sm:text-base">Quản lý các cấp độ Cộng Tác Viên và mức hiển
+                thị giá</p>
         </div>
 
         <button wire:click="create()"
-            class="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all font-semibold shadow-sm hover:shadow-md active:scale-95">
+            class="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all font-semibold shadow-sm hover:shadow-md active:scale-95">
             <i class="fa-solid fa-plus"></i>
             Thêm hạng mới
         </button>
@@ -46,15 +49,20 @@
     </div>
 
     <!-- Data Table -->
-    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex-1 flex flex-col relative before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-slate-200 before:to-transparent">
+    <div
+        class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex-1 flex flex-col relative before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-slate-200 before:to-transparent">
         <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse">
+            <table class="w-full text-left border-collapse min-w-[600px] sm:min-w-0">
                 <thead>
                     <tr class="border-b border-slate-200 bg-slate-50/80">
-                        <th class="py-3 px-5 text-xs font-semibold text-slate-500 uppercase tracking-wider">Tên hạng</th>
-                        <th class="py-3 px-5 text-xs font-semibold text-slate-500 uppercase tracking-wider">Số lượng mời tối thiểu</th>
-                        <th class="py-3 px-5 text-xs font-semibold text-slate-500 uppercase tracking-wider">Mức giá hiển thị</th>
-                        <th class="py-3 px-5 text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">Thao tác</th>
+                        <th class="py-3 px-5 text-xs font-semibold text-slate-500 uppercase tracking-wider">Tên hạng
+                        </th>
+                        <th class="py-3 px-5 text-xs font-semibold text-slate-500 uppercase tracking-wider text-center">
+                            Mời tối thiểu</th>
+                        <th class="py-3 px-5 text-xs font-semibold text-slate-500 uppercase tracking-wider">Mức giá hiển
+                            thị</th>
+                        <th class="py-3 px-5 text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">
+                            Thao tác</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
@@ -64,20 +72,27 @@
                                 <div class="font-semibold text-slate-900">{{ $rank->name }}</div>
                             </td>
                             <td class="py-4 px-5">
-                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-50 text-blue-700 text-sm font-medium border border-blue-100/50">
+                                <span
+                                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-50 text-blue-700 text-sm font-medium border border-blue-100/50">
                                     <i class="fa-solid fa-users text-xs"></i>
                                     {{ $rank->min_invites }}
                                 </span>
                             </td>
                             <td class="py-4 px-5 font-medium text-slate-700">
                                 {{ number_format($rank->min_price, 0, ',', '.') }}
-                                {{ $rank->max_price ? ' - ' . number_format($rank->max_price, 0, ',', '.') : ' trở lên' }} Tỷ VNĐ
+                                {{ $rank->max_price ? ' - ' . number_format($rank->max_price, 0, ',', '.') : ' trở lên' }}
+                                Tỷ VNĐ
                             </td>
                             <td class="py-4 px-5 text-right space-x-2">
-                                <button wire:click="edit({{ $rank->id }})" class="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors inline-block" title="Sửa">
+                                <button wire:click="edit({{ $rank->id }})"
+                                    class="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors inline-block"
+                                    title="Sửa">
                                     <i class="fa-solid fa-pen-to-square"></i>
                                 </button>
-                                <button wire:click="delete({{ $rank->id }})" wire:confirm="Bạn có chắc chắn muốn xóa hạng này?" class="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors inline-block" title="Xóa">
+                                <button wire:click="delete({{ $rank->id }})"
+                                    wire:confirm="Bạn có chắc chắn muốn xóa hạng này?"
+                                    class="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors inline-block"
+                                    title="Xóa">
                                     <i class="fa-solid fa-trash-can"></i>
                                 </button>
                             </td>
@@ -101,98 +116,115 @@
     </div>
 
     <!-- Create/Edit Modal -->
-    @if($isModalOpen)
-    <div class="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto overflow-x-hidden p-4 sm:p-0">
-        <div class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" wire:click="closeModal"></div>
-
-        <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg transform border border-slate-200 my-8 sm:my-0 animate-in zoom-in-95 duration-200">
-            <!-- Modal Header -->
-            <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-                <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
-                    <i class="fa-solid {{ $rankId ? 'fa-pen-to-square' : 'fa-plus' }} text-blue-600"></i>
-                    {{ $rankId ? 'Sửa Hạng CTV' : 'Thêm Hạng Mới' }}
-                </h3>
-                <button wire:click="closeModal" class="text-slate-400 hover:text-slate-600 p-2 rounded-xl hover:bg-slate-100 transition-colors">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
+    @if ($isModalOpen)
+        <div
+            class="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto overflow-x-hidden p-4 sm:p-0">
+            <div class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" wire:click="closeModal">
             </div>
 
-            <!-- Modal Body -->
-            <div class="px-6 py-5">
-                <form wire:submit.prevent="store" class="space-y-4">
-                    <!-- Tên hạng -->
-                    <div>
-                        <label for="name" class="block text-sm font-semibold text-slate-700 mb-1.5">Tên hạng <span class="text-red-500">*</span></label>
-                        <input type="text" id="name" wire:model="name"
-                            class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm font-medium placeholder-slate-400 shadow-sm"
-                            placeholder="Ví dụ: Vàng, Bạc, Đồng">
-                        @error('name') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
-                    </div>
+            <div
+                class="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg transform border border-slate-200 my-8 sm:my-0 animate-in zoom-in-95 duration-200">
+                <!-- Modal Header -->
+                <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+                    <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid {{ $rankId ? 'fa-pen-to-square' : 'fa-plus' }} text-blue-600"></i>
+                        {{ $rankId ? 'Sửa Hạng CTV' : 'Thêm Hạng Mới' }}
+                    </h3>
+                    <button wire:click="closeModal"
+                        class="text-slate-400 hover:text-slate-600 p-2 rounded-xl hover:bg-slate-100 transition-colors">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
 
-                    <!-- Số lượng mời -->
-                    <div>
-                        <label for="min_invites" class="block text-sm font-semibold text-slate-700 mb-1.5">Số lượng CTV mời tối thiểu <span class="text-red-500">*</span></label>
-                        <input type="number" id="min_invites" wire:model="min_invites" min="0"
-                            class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm font-medium placeholder-slate-400 shadow-sm"
-                            placeholder="0">
-                        @error('min_invites') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
-                        <p class="text-xs text-slate-500 mt-1">Hạng CTV sẽ được tự động tính dựa trên số người mà CTV này đã mời.</p>
-                    </div>
-
-                    <!-- Mức giá hiển thị -->
-                    <div class="grid grid-cols-2 gap-4">
+                <!-- Modal Body -->
+                <div class="px-6 py-5">
+                    <form wire:submit.prevent="store" class="space-y-4">
+                        <!-- Tên hạng -->
                         <div>
-                            <label for="min_price" class="block text-sm font-semibold text-slate-700 mb-1.5">Giá tối thiểu (Tỷ VNĐ) <span class="text-red-500">*</span></label>
-                            <input type="text" id="min_price" wire:model="min_price"
-                                x-data="{
+                            <label for="name" class="block text-sm font-semibold text-slate-700 mb-1.5">Tên hạng
+                                <span class="text-red-500">*</span></label>
+                            <input type="text" id="name" wire:model="name"
+                                class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm font-medium placeholder-slate-400 shadow-sm"
+                                placeholder="Ví dụ: Vàng, Bạc, Đồng">
+                            @error('name')
+                                <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span>
+                            @enderror
+                        </div>
+
+                        <!-- Số lượng mời -->
+                        <div>
+                            <label for="min_invites" class="block text-sm font-semibold text-slate-700 mb-1.5">Số lượng
+                                CTV mời tối thiểu <span class="text-red-500">*</span></label>
+                            <input type="number" id="min_invites" wire:model="min_invites" min="0"
+                                class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm font-medium placeholder-slate-400 shadow-sm"
+                                placeholder="0">
+                            @error('min_invites')
+                                <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span>
+                            @enderror
+                            <p class="text-xs text-slate-500 mt-1">Hạng CTV sẽ được tự động tính dựa trên số người mà
+                                CTV này đã mời.</p>
+                        </div>
+
+                        <!-- Mức giá hiển thị -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label for="min_price" class="block text-sm font-semibold text-slate-700 mb-1.5">Giá tối
+                                    thiểu (Tỷ VNĐ) <span class="text-red-500">*</span></label>
+                                <input type="text" id="min_price" wire:model="min_price" x-data="{
                                     formatInput(el) {
                                         let val = el.value.replace(/[^0-9]/g, '');
-                                        if(val) {
+                                        if (val) {
                                             val = parseInt(val, 10).toLocaleString('vi-VN').replace(/,/g, '.');
                                         }
                                         el.value = val;
                                         $wire.set('min_price', val);
                                     }
                                 }"
-                                x-on:input="formatInput($el)"
-                                class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm font-medium shadow-sm"
-                                placeholder="0">
-                            @error('min_price') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
-                        </div>
+                                    x-on:input="formatInput($el)"
+                                    class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm font-medium shadow-sm"
+                                    placeholder="0">
+                                @error('min_price')
+                                    <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span>
+                                @enderror
+                            </div>
 
-                        <div>
-                            <label for="max_price" class="block text-sm font-semibold text-slate-700 mb-1.5">Giá tối đa (Tỷ VNĐ)</label>
-                            <input type="text" id="max_price" wire:model="max_price"
-                                x-data="{
+                            <div>
+                                <label for="max_price" class="block text-sm font-semibold text-slate-700 mb-1.5">Giá
+                                    tối đa (Tỷ VNĐ)</label>
+                                <input type="text" id="max_price" wire:model="max_price" x-data="{
                                     formatInput(el) {
                                         let val = el.value.replace(/[^0-9]/g, '');
-                                        if(val) {
+                                        if (val) {
                                             val = parseInt(val, 10).toLocaleString('vi-VN').replace(/,/g, '.');
                                         }
                                         el.value = val;
                                         $wire.set('max_price', val);
                                     }
                                 }"
-                                x-on:input="formatInput($el)"
-                                class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm font-medium placeholder-slate-400 shadow-sm"
-                                placeholder="Để trống nếu không giới hạn">
-                            @error('max_price') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
+                                    x-on:input="formatInput($el)"
+                                    class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm font-medium placeholder-slate-400 shadow-sm"
+                                    placeholder="Để trống nếu không giới hạn">
+                                @error('max_price')
+                                    <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span>
+                                @enderror
+                            </div>
                         </div>
-                    </div>
 
-                    <!-- Modal Footer -->
-                    <div class="mt-6 pt-5 border-t border-slate-100 flex justify-end gap-3">
-                        <button type="button" wire:click="closeModal" class="px-5 py-2.5 text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl font-semibold transition-colors">
-                            Hủy
-                        </button>
-                        <button type="submit" class="px-5 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-semibold shadow-sm flex items-center gap-2">
-                            <i class="fa-solid fa-cloud-arrow-up"></i>
-                            Lưu dữ liệu
-                        </button>
-                    </div>
-                </form>
+                        <!-- Modal Footer -->
+                        <div class="mt-6 pt-5 border-t border-slate-100 flex justify-end gap-3">
+                            <button type="button" wire:click="closeModal"
+                                class="px-5 py-2.5 text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl font-semibold transition-colors">
+                                Hủy
+                            </button>
+                            <button type="submit"
+                                class="px-5 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-semibold shadow-sm flex items-center gap-2">
+                                <i class="fa-solid fa-cloud-arrow-up"></i>
+                                Lưu dữ liệu
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
-    </div>
     @endif
 </div>

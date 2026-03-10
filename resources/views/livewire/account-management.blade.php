@@ -1,15 +1,17 @@
 <div class="h-full flex flex-col bg-slate-50 relative">
     <!-- Header -->
-    <div class="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between shrink-0">
-        <h1 class="text-2xl font-black text-slate-800 tracking-tight">Quản Lý Tài Khoản</h1>
+    <div
+        class="bg-white border-b border-gray-200 px-6 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shrink-0">
+        <h1 class="text-xl sm:text-2xl font-black text-slate-800 tracking-tight">Quản Lý Tài Khoản</h1>
         <button wire:click="openCreatePopup"
-            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 shadow-lg hover:shadow-xl transition-all">
+            class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-bold text-sm flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition-all">
             <i class="fa-solid fa-plus"></i> Thêm Tài Khoản
         </button>
     </div>
 
     <!-- Toolbar -->
-    <div class="bg-white border-b border-gray-200 px-6 py-3 flex items-center gap-4 shrink-0">
+    <div
+        class="bg-white border-b border-gray-200 px-6 py-3 flex items-center gap-4 shrink-0 overflow-x-auto no-scrollbar">
         <div class="relative w-full max-w-md">
             <input type="text" placeholder="Tìm kiếm theo tên hoặc SĐT..." wire:model.live.debounce.300ms="search"
                 class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm shadow-sm transition-shadow focus:shadow-md">
@@ -22,72 +24,76 @@
     </div>
 
     <!-- Content -->
-    <div class="flex-1 overflow-auto p-6">
+    <div class="flex-1 overflow-auto p-2 sm:p-6">
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            <table class="w-full text-left border-collapse">
-                <thead class="bg-gray-50 text-gray-500 text-xs uppercase font-bold tracking-wider">
-                    <tr>
-                        <th class="px-6 py-4">Họ và Tên</th>
-                        <th class="px-6 py-4">Số điện thoại</th>
-                        <th class="px-6 py-4">Mã code</th>
-                        <th class="px-6 py-4">Được mời bởi</th>
-                        <th class="px-6 py-4">Lượt dùng mã</th>
-                        <th class="px-6 py-4">Ngày tạo</th>
-                        <th class="px-6 py-4 text-right">Thao tác</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-100">
-                    @forelse ($users as $user)
-                        <tr class="hover:bg-blue-50/50 transition-colors group">
-                            <td class="px-6 py-4">
-                                <div class="flex items-center gap-3">
-                                    <div
-                                        class="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-600 text-white flex items-center justify-center font-bold text-xs ring-2 ring-white">
-                                        {{ substr($user->name, 0, 1) }}
-                                    </div>
-                                    <span class="font-semibold text-slate-800">{{ $user->name }}</span>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 font-mono text-slate-600">{{ $user->phone }}</td>
-                            <td class="px-6 py-4 font-mono text-slate-700">{{ $user->invite_code ?? '-' }}</td>
-                            <td class="px-6 py-4 text-sm text-gray-500">
-                                @if ($user->inviter)
-                                    <div>{{ $user->inviter->name }}</div>
-                                    <div class="font-mono text-xs text-gray-400">{{ $user->inviter->invite_code }}</div>
-                                @else
-                                    <span>-</span>
-                                @endif
-                            </td>
-                            <td class="px-6 py-4 text-sm text-gray-500">{{ $user->sent_invite_logs_count }}</td>
-                            <td class="px-6 py-4 text-sm text-gray-500">{{ $user->created_at->format('d/m/Y') }}</td>
-                            <td class="px-6 py-4 text-right">
-                                <div
-                                    class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button wire:click="editUser({{ $user->id }})"
-                                        class="w-8 h-8 flex items-center justify-center rounded-lg text-blue-600 hover:bg-blue-100 transition-colors"
-                                        title="Chỉnh sửa">
-                                        <i class="fa-solid fa-pen-to-square"></i>
-                                    </button>
-                                    <button wire:click="confirmDelete({{ $user->id }})"
-                                        class="w-8 h-8 flex items-center justify-center rounded-lg text-red-600 hover:bg-red-100 transition-colors"
-                                        title="Xóa">
-                                        <i class="fa-solid fa-trash-can"></i>
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                    @empty
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse min-w-[800px] sm:min-w-0">
+                    <thead class="bg-gray-50 text-gray-500 text-xs uppercase font-bold tracking-wider">
                         <tr>
-                            <td colspan="7" class="px-6 py-12 text-center text-gray-400">
-                                <div class="flex flex-col items-center gap-2">
-                                    <i class="fa-solid fa-users-slash text-4xl mb-2 text-gray-300"></i>
-                                    <p>Không tìm thấy tài khoản nào.</p>
-                                </div>
-                            </td>
+                            <th class="px-6 py-4">Họ và Tên</th>
+                            <th class="px-6 py-4">Số điện thoại</th>
+                            <th class="px-6 py-4">Mã code</th>
+                            <th class="px-6 py-4">Được mời bởi</th>
+                            <th class="px-4 py-4">Lượt dùng</th>
+                            <th class="px-4 py-4">Ngày tạo</th>
+                            <th class="px-6 py-4 text-right">Thao tác</th>
                         </tr>
-                    @endforelse
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        @forelse ($users as $user)
+                            <tr class="hover:bg-blue-50/50 transition-colors group">
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center gap-3">
+                                        <div
+                                            class="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-600 text-white flex items-center justify-center font-bold text-xs ring-2 ring-white">
+                                            {{ substr($user->name, 0, 1) }}
+                                        </div>
+                                        <span class="font-semibold text-slate-800">{{ $user->name }}</span>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 font-mono text-slate-600">{{ $user->phone }}</td>
+                                <td class="px-6 py-4 font-mono text-slate-700">{{ $user->invite_code ?? '-' }}</td>
+                                <td class="px-6 py-4 text-sm text-gray-500">
+                                    @if ($user->inviter)
+                                        <div>{{ $user->inviter->name }}</div>
+                                        <div class="font-mono text-xs text-gray-400">{{ $user->inviter->invite_code }}
+                                        </div>
+                                    @else
+                                        <span>-</span>
+                                    @endif
+                                </td>
+                                <td class="px-4 py-4 text-sm text-gray-500">{{ $user->sent_invite_logs_count }}</td>
+                                <td class="px-4 py-4 text-sm text-gray-500">{{ $user->created_at->format('d/m/Y') }}
+                                </td>
+                                <td class="px-6 py-4 text-right">
+                                    <div
+                                        class="flex items-center justify-end gap-2 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <button wire:click="editUser({{ $user->id }})"
+                                            class="w-9 h-9 flex items-center justify-center rounded-lg text-blue-600 hover:bg-blue-100 transition-colors bg-blue-50 md:bg-transparent"
+                                            title="Chỉnh sửa">
+                                            <i class="fa-solid fa-pen-to-square"></i>
+                                        </button>
+                                        <button wire:click="confirmDelete({{ $user->id }})"
+                                            class="w-9 h-9 flex items-center justify-center rounded-lg text-red-600 hover:bg-red-100 transition-colors bg-red-50 md:bg-transparent"
+                                            title="Xóa">
+                                            <i class="fa-solid fa-trash-can"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="7" class="px-6 py-12 text-center text-gray-400">
+                                    <div class="flex flex-col items-center gap-2">
+                                        <i class="fa-solid fa-users-slash text-4xl mb-2 text-gray-300"></i>
+                                        <p>Không tìm thấy tài khoản nào.</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
         </div>
         <div class="mt-4">
             {{ $users->links() }}
@@ -96,9 +102,10 @@
 
     <!-- Create/Edit Modal -->
     @if ($showCreatePopup)
-        <div class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+        <div class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4"
             x-transition.opacity>
-            <div class="bg-white w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col max-h-[calc(100vh-3rem)] animate-[scaleIn_0.2s_ease-out]">
+            <div
+                class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200">
                 <div
                     class="flex justify-between items-center px-6 py-4 border-b border-gray-200 bg-gray-50 rounded-t-2xl">
                     <h2 class="text-xl font-black text-gray-800 uppercase flex items-center gap-2">
@@ -138,17 +145,16 @@
                     @php
                         $selectedInviter = collect($inviters ?? [])->firstWhere('id', (int) $inviterUserId);
                     @endphp
-                    <div x-data
-                        x-init="$nextTick(() => {
-                            const boot = () => {
-                                if (window.initInviterSelect2) {
-                                    window.initInviterSelect2($refs.inviterSelect, @js($inviterUserId));
-                                    return;
-                                }
-                                setTimeout(boot, 50);
-                            };
-                            boot();
-                        })">
+                    <div x-data x-init="$nextTick(() => {
+                        const boot = () => {
+                            if (window.initInviterSelect2) {
+                                window.initInviterSelect2($refs.inviterSelect, @js($inviterUserId));
+                                return;
+                            }
+                            setTimeout(boot, 50);
+                        };
+                        boot();
+                    })">
                         <label class="block text-sm font-bold text-gray-700 mb-1">Người mời (nếu có)</label>
                         <div wire:ignore>
                             <select x-ref="inviterSelect" data-livewire-id="{{ $this->getId() }}"
@@ -167,7 +173,8 @@
 
                         @if ($selectedInviter)
                             <p class="text-xs text-gray-500 mt-1">Mã người mời: <span
-                                    class="font-mono font-bold">{{ $selectedInviter->invite_code ?: 'Chưa có mã' }}</span></p>
+                                    class="font-mono font-bold">{{ $selectedInviter->invite_code ?: 'Chưa có mã' }}</span>
+                            </p>
                         @endif
                     </div>
 
@@ -204,9 +211,11 @@
                             <i class="fa-solid fa-house-chimney text-blue-500 mr-1"></i>
                             Loại BĐS được phân công
                         </label>
-                        <div class="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-3 bg-gray-50">
+                        <div
+                            class="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-3 bg-gray-50">
                             @foreach ($propertyTypeOptions as $id => $name)
-                                <label class="flex items-center gap-2 text-sm cursor-pointer hover:bg-white p-2 rounded">
+                                <label
+                                    class="flex items-center gap-2 text-sm cursor-pointer hover:bg-white p-2 rounded">
                                     <input type="checkbox" wire:model="property_types" value="{{ $id }}"
                                         class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
                                     <span class="text-gray-700">{{ $name }}</span>
@@ -307,5 +316,3 @@
         </script>
     @endonce
 </div>
-
-

@@ -30,13 +30,20 @@
 
 <body class="antialiased text-gray-800 bg-white" x-data="{
     currentModule: new URLSearchParams(window.location.search).get('module') || 'listings',
-    sidebarOpen: true
+    sidebarOpen: true,
+    mobileMenuOpen: false
 }">
 
     <div class="flex h-screen overflow-hidden">
         <!-- Global Sidebar (Level 1) -->
-        <aside class="bg-slate-900 w-20 flex flex-col items-center py-6 shrink-0 z-50">
-            <!-- Brand -->
+        <div x-show="mobileMenuOpen" x-transition:enter="transition ease-out duration-300"
+            x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+            x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100"
+            x-transition:leave-end="opacity-0" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] lg:hidden"
+            @click="mobileMenuOpen = false" style="display: none;"></div>
+
+        <aside :class="mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
+            class="bg-slate-900 w-20 flex flex-col items-center py-6 shrink-0 z-[70] fixed lg:relative h-full transition-transform duration-300 ease-in-out">
             <!-- Brand -->
             <div
                 class="w-10 h-10 mb-8 cursor-pointer hover:bg-slate-800 rounded-xl flex items-center justify-center transition-colors">
@@ -56,37 +63,36 @@
                     <span class="text-[10px] font-bold text-center leading-none">Tin Đăng</span>
                 </a>
 
-                @if(auth()->user()->isAdmin())
-                <a href="{{ route('media') }}" wire:navigate
-                    class="flex flex-col items-center justify-center p-3 rounded-2xl transition-all group {{ request()->routeIs('media') ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-white hover:bg-slate-800' }}"
-                    title="Media Manager">
-                    <div
-                        class="w-8 h-8 flex items-center justify-center rounded-lg mb-1 {{ request()->routeIs('media') ? 'bg-white/20' : 'bg-slate-800 group-hover:bg-slate-700' }}">
-                        <i class="fa-solid fa-photo-film text-sm"></i>
-                    </div>
-                    <span class="text-[10px] font-bold text-center leading-none">Media</span>
-                </a>
+                @if (auth()->user() && auth()->user()->isAdmin())
+                    <a href="{{ route('media') }}" wire:navigate
+                        class="flex flex-col items-center justify-center p-3 rounded-2xl transition-all group {{ request()->routeIs('media') ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-white hover:bg-slate-800' }}"
+                        title="Media Manager">
+                        <div
+                            class="w-8 h-8 flex items-center justify-center rounded-lg mb-1 {{ request()->routeIs('media') ? 'bg-white/20' : 'bg-slate-800 group-hover:bg-slate-700' }}">
+                            <i class="fa-solid fa-photo-film text-sm"></i>
+                        </div>
+                        <span class="text-[10px] font-bold text-center leading-none">Media</span>
+                    </a>
 
-                <a href="{{ route('accounts') }}" wire:navigate
-                    class="flex flex-col items-center justify-center p-3 rounded-2xl transition-all group {{ request()->routeIs('accounts') ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-white hover:bg-slate-800' }}"
-                    title="Quản lý tài khoản">
-                    <div
-                        class="w-8 h-8 flex items-center justify-center rounded-lg mb-1 {{ request()->routeIs('accounts') ? 'bg-white/20' : 'bg-slate-800 group-hover:bg-slate-700' }}">
-                        <i class="fa-solid fa-users text-sm"></i>
-                    </div>
-                    <span class="text-[10px] font-bold text-center leading-none">Account</span>
-                </a>
+                    <a href="{{ route('accounts') }}" wire:navigate
+                        class="flex flex-col items-center justify-center p-3 rounded-2xl transition-all group {{ request()->routeIs('accounts') ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-white hover:bg-slate-800' }}"
+                        title="Quản lý tài khoản">
+                        <div
+                            class="w-8 h-8 flex items-center justify-center rounded-lg mb-1 {{ request()->routeIs('accounts') ? 'bg-white/20' : 'bg-slate-800 group-hover:bg-slate-700' }}">
+                            <i class="fa-solid fa-users text-sm"></i>
+                        </div>
+                        <span class="text-[10px] font-bold text-center leading-none">Account</span>
+                    </a>
 
-                <a href="{{ route('business') }}" wire:navigate
-                    class="flex flex-col items-center justify-center p-3 rounded-2xl transition-all group {{ request()->routeIs('business') ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-white hover:bg-slate-800' }}"
-                    title="Quản lý kinh doanh">
-                    <div
-                        class="w-8 h-8 flex items-center justify-center rounded-lg mb-1 {{ request()->routeIs('business') ? 'bg-white/20' : 'bg-slate-800 group-hover:bg-slate-700' }}">
-                        <i class="fa-solid fa-briefcase text-sm"></i>
-                    </div>
-                    <span class="text-[10px] font-bold text-center leading-none">Kinh Doanh</span>
-                </a>
-
+                    <a href="{{ route('business') }}" wire:navigate
+                        class="flex flex-col items-center justify-center p-3 rounded-2xl transition-all group {{ request()->routeIs('business') ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-white hover:bg-slate-800' }}"
+                        title="Quản lý kinh doanh">
+                        <div
+                            class="w-8 h-8 flex items-center justify-center rounded-lg mb-1 {{ request()->routeIs('business') ? 'bg-white/20' : 'bg-slate-800 group-hover:bg-slate-700' }}">
+                            <i class="fa-solid fa-briefcase text-sm"></i>
+                        </div>
+                        <span class="text-[10px] font-bold text-center leading-none">Kinh Doanh</span>
+                    </a>
                 @endif
 
                 <a href="{{ route('customers') }}" wire:navigate
@@ -102,7 +108,7 @@
 
             <!-- Bottom Actions -->
             <div class="mt-auto flex flex-col gap-4 relative" x-data="{ showSettings: false, showUserMenu: false }">
-                
+
                 <!-- Settings Dropdown -->
                 <div x-show="showSettings" @click.away="showSettings = false"
                     x-transition:enter="transition ease-out duration-200"
@@ -113,18 +119,19 @@
                     <div class="px-4 py-2 border-b border-slate-700/50 mb-2">
                         <h3 class="text-[11px] font-black text-slate-400 uppercase tracking-wider">Module Cấu Hình</h3>
                     </div>
-                    
-                    @if(auth()->user() && auth()->user()->isAdmin())
-                    <a href="{{ route('ctv.ranks') }}" wire:navigate
-                        class="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-300 hover:text-white hover:bg-slate-700/50 transition-colors {{ request()->routeIs('ctv.ranks') ? 'bg-slate-700/50 text-blue-400 font-bold border-l-2 border-blue-500' : 'border-l-2 border-transparent' }}">
-                        <div class="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center shrink-0">
-                            <i class="fa-solid fa-ranking-star"></i>
-                        </div>
-                        <div class="flex-1">
-                            <div class="leading-tight">Hạng CTV</div>
-                            <div class="text-[10px] text-slate-500 font-normal mt-0.5">Xếp hạng & hiển thị giá</div>
-                        </div>
-                    </a>
+
+                    @if (auth()->user() && auth()->user()->isAdmin())
+                        <a href="{{ route('ctv.ranks') }}" wire:navigate @click="mobileMenuOpen = false"
+                            class="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-300 hover:text-white hover:bg-slate-700/50 transition-colors {{ request()->routeIs('ctv.ranks') ? 'bg-slate-700/50 text-blue-400 font-bold border-l-2 border-blue-500' : 'border-l-2 border-transparent' }}">
+                            <div
+                                class="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center shrink-0">
+                                <i class="fa-solid fa-ranking-star"></i>
+                            </div>
+                            <div class="flex-1">
+                                <div class="leading-tight">Hạng CTV</div>
+                                <div class="text-[10px] text-slate-500 font-normal mt-0.5">Xếp hạng & hiển thị giá</div>
+                            </div>
+                        </a>
                     @endif
                 </div>
 
@@ -142,28 +149,31 @@
                     class="absolute bottom-0 left-14 w-52 bg-slate-800 rounded-2xl shadow-2xl border border-slate-700 overflow-hidden z-[60]"
                     style="display: none;">
                     <div class="p-2 border-b border-slate-700/50">
-                        <a href="{{ auth()->user()->isAdmin() ? route('business.detail', auth()->id()) : route('user.profile') }}"
+                        <a href="{{ auth()->user() && auth()->user()->isAdmin() ? route('business.detail', auth()->id()) : (auth()->user() ? route('user.profile') : '#') }}"
                             class="flex items-center gap-3 px-3 py-2 rounded-xl text-slate-300 hover:bg-blue-500/10 hover:text-white transition-all font-bold text-xs group">
-                            <div class="w-7 h-7 flex items-center justify-center rounded-lg bg-blue-500/10 group-hover:bg-blue-500/20 transition-colors">
+                            <div
+                                class="w-7 h-7 flex items-center justify-center rounded-lg bg-blue-500/10 group-hover:bg-blue-500/20 transition-colors">
                                 <i class="fa-solid fa-user-gear"></i>
                             </div>
                             Chi tiết cá nhân
                         </a>
-                        <a href="{{ route('landing.ctv') }}" wire:navigate
+                        <a href="{{ route('landing.ctv') }}" wire:navigate @click="mobileMenuOpen = false"
                             class="flex items-center gap-3 px-3 py-2 rounded-xl text-slate-300 hover:bg-emerald-500/10 hover:text-white transition-all font-bold text-xs group">
-                            <div class="w-7 h-7 flex items-center justify-center rounded-lg bg-emerald-500/10 group-hover:bg-emerald-500/20 transition-colors">
+                            <div
+                                class="w-7 h-7 flex items-center justify-center rounded-lg bg-emerald-500/10 group-hover:bg-emerald-500/20 transition-colors">
                                 <i class="fa-solid fa-link"></i>
                             </div>
                             Landing CTV
                         </a>
                     </div>
-                    
+
                     <div class="p-2">
                         <form action="{{ route('logout') }}" method="POST">
                             @csrf
-                            <button type="submit" 
+                            <button type="submit"
                                 class="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-all font-bold text-xs group">
-                                <div class="w-7 h-7 flex items-center justify-center rounded-lg bg-red-500/10 group-hover:bg-red-500/20 transition-colors">
+                                <div
+                                    class="w-7 h-7 flex items-center justify-center rounded-lg bg-red-500/10 group-hover:bg-red-500/20 transition-colors">
                                     <i class="fa-solid fa-right-from-bracket"></i>
                                 </div>
                                 Đăng xuất
@@ -181,6 +191,29 @@
 
         <!-- Module Content Area -->
         <main class="flex-1 flex flex-col h-full overflow-hidden bg-slate-50 relative">
+            <!-- Mobile Header (Visible only on mobile) -->
+            <header class="bg-slate-900 px-4 py-3 flex items-center justify-between lg:hidden shrink-0 z-40">
+                <div class="flex items-center gap-3">
+                    <button @click="mobileMenuOpen = true"
+                        class="text-white p-2 hover:bg-slate-800 rounded-lg transition-colors">
+                        <i class="fa-solid fa-bars-staggered text-xl"></i>
+                    </button>
+                    <div class="w-8 h-8 rounded-lg overflow-hidden bg-white/10 p-1">
+                        <img src="https://s3-hcm5-r1.longvan.net/phongland/2026/01/d13bf59afd35726b2b24.jpg"
+                            alt="Logo" class="w-full h-full object-contain">
+                    </div>
+                    <span class="text-white font-black text-sm tracking-tight">PHONG PHAT <span
+                            class="text-blue-500">LAND</span></span>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <button @click="showUserMenu = !showUserMenu"
+                        class="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-600 text-white flex items-center justify-center font-bold text-xs border border-white/20">
+                        {{ substr(auth()->user()->name ?? 'U', 0, 1) }}
+                    </button>
+                </div>
+            </header>
+
             {{ $slot }}
         </main>
     </div>

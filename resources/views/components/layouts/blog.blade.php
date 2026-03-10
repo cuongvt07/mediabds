@@ -28,85 +28,91 @@
                     <img src="https://s3-hcm5-r1.longvan.net/phongland/2026/01/d13bf59afd35726b2b24.jpg" alt="Logo"
                         class="h-10 w-auto object-contain shrink-0">
                     <div class="min-w-0">
-                        <h1 class="text-base sm:text-lg font-bold text-slate-800 tracking-tight leading-none truncate">PHONGPHATLAND</h1>
+                        <h1 class="text-base sm:text-lg font-bold text-slate-800 tracking-tight leading-none truncate">
+                            PHONGPHATLAND</h1>
                         <p class="hidden sm:block text-[11px] text-gray-500 font-medium">Quản lý tin đăng và dữ liệu</p>
                     </div>
                 </div>
 
                 <div class="flex items-center gap-2 sm:gap-4">
                     @auth
-                    @php($currentUser = auth()->user())
+                        @php($currentUser = auth()->user())
 
-                    @if($currentUser->isAdmin())
-                    <a href="{{ route('media') }}"
-                        class="hidden sm:flex items-center gap-2 px-4 py-2 text-sm font-bold text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all">
-                        <i class="fa-solid fa-photo-film"></i>
-                        <span>Media Manager</span>
-                    </a>
-                    @endif
+                        @if ($currentUser->isAdmin())
+                            <a href="{{ route('media') }}"
+                                class="hidden sm:flex items-center gap-2 px-4 py-2 text-sm font-bold text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all">
+                                <i class="fa-solid fa-photo-film"></i>
+                                <span>Media Manager</span>
+                            </a>
+                        @endif
 
-                    <div class="flex items-center gap-3 pl-3 sm:pl-4 border-l border-gray-100 relative" x-data="{ showUserMenu: false }">
-                        <div class="text-right hidden md:block">
-                            <div class="text-sm font-bold text-slate-700 leading-tight">{{ $currentUser->name }}</div>
-                            <div class="text-[10px] text-slate-500 uppercase font-bold tracking-wider tracking-[0.05em]">
-                                {{ $currentUser->isAdmin() ? 'Administrator' : 'User' }}
-                            </div>
-                        </div>
-
-                        <button @click="showUserMenu = !showUserMenu"
-                            class="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-600 text-white flex items-center justify-center font-bold text-sm shadow-md ring-2 ring-white transition-transform active:scale-90 hover:shadow-lg">
-                            {{ strtoupper(substr($currentUser->name, 0, 1)) }}
-                        </button>
-
-                        <div x-show="showUserMenu" @click.away="showUserMenu = false"
-                            x-transition:enter="transition ease-out duration-200"
-                            x-transition:enter-start="opacity-0 translate-y-2 scale-95"
-                            x-transition:enter-end="opacity-100 translate-y-0 scale-100"
-                            class="absolute top-12 right-0 w-52 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-[60]"
-                            style="display: none;">
-                            <div class="p-4 border-b border-gray-50 bg-slate-50/50">
-                                <div class="text-[10px] text-gray-400 uppercase font-black tracking-[0.1em] mb-1">Tài khoản</div>
-                                <div class="text-xs font-bold text-slate-800 truncate">{{ $currentUser->name }}</div>
-                                <div class="text-[9px] text-gray-500 font-mono mt-0.5">{{ $currentUser->phone }}</div>
+                        <div class="flex items-center gap-3 pl-3 sm:pl-4 border-l border-gray-100 relative"
+                            x-data="{ showUserMenu: false }">
+                            <div class="text-right hidden md:block">
+                                <div class="text-sm font-bold text-slate-700 leading-tight">{{ $currentUser->name }}</div>
+                                <div
+                                    class="text-[10px] text-slate-500 uppercase font-bold tracking-wider tracking-[0.05em]">
+                                    {{ $currentUser->isAdmin() ? 'Administrator' : 'User' }}
+                                </div>
                             </div>
 
-                            <div class="p-2 border-b border-gray-50">
-                                <a href="{{ $currentUser->isAdmin() ? route('business.detail', $currentUser->id) : route('user.profile') }}"
-                                    class="flex items-center gap-3 px-3 py-2 rounded-xl text-slate-600 hover:bg-blue-50 hover:text-blue-600 transition-all font-bold text-xs group">
-                                    <div class="w-7 h-7 flex items-center justify-center rounded-lg bg-blue-500/10 group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                                        <i class="fa-solid fa-user-gear"></i>
-                                    </div>
-                                    Chi tiết cá nhân
-                                </a>
-                            </div>
+                            <button @click="showUserMenu = !showUserMenu"
+                                class="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-600 text-white flex items-center justify-center font-bold text-sm shadow-md ring-2 ring-white transition-transform active:scale-90 hover:shadow-lg">
+                                {{ strtoupper(substr($currentUser->name, 0, 1)) }}
+                            </button>
 
-                            <div class="p-2">
-                                <form action="{{ route('logout') }}" method="POST">
-                                    @csrf
-                                    <button type="submit"
-                                        class="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-red-500 hover:bg-red-50 transition-all font-bold text-xs group">
-                                        <div class="w-7 h-7 flex items-center justify-center rounded-lg bg-red-500/10 group-hover:bg-red-500/20 transition-colors">
-                                            <i class="fa-solid fa-right-from-bracket"></i>
+                            <div x-show="showUserMenu" @click.away="showUserMenu = false"
+                                x-transition:enter="transition ease-out duration-200"
+                                x-transition:enter-start="opacity-0 translate-y-2 scale-95"
+                                x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+                                class="absolute top-12 right-0 w-52 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-[60]"
+                                style="display: none;">
+                                <div class="p-4 border-b border-gray-50 bg-slate-50/50">
+                                    <div class="text-[10px] text-gray-400 uppercase font-black tracking-[0.1em] mb-1">Tài
+                                        khoản</div>
+                                    <div class="text-xs font-bold text-slate-800 truncate">{{ $currentUser->name }}</div>
+                                    <div class="text-[9px] text-gray-500 font-mono mt-0.5">{{ $currentUser->phone }}</div>
+                                </div>
+
+                                <div class="p-2 border-b border-gray-50">
+                                    <a href="{{ $currentUser->isAdmin() ? route('business.detail', $currentUser->id) : route('user.profile') }}"
+                                        class="flex items-center gap-3 px-3 py-2 rounded-xl text-slate-600 hover:bg-blue-50 hover:text-blue-600 transition-all font-bold text-xs group">
+                                        <div
+                                            class="w-7 h-7 flex items-center justify-center rounded-lg bg-blue-500/10 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                                            <i class="fa-solid fa-user-gear"></i>
                                         </div>
-                                        Đăng xuất
-                                    </button>
-                                </form>
+                                        Chi tiết cá nhân
+                                    </a>
+                                </div>
+
+                                <div class="p-2">
+                                    <form action="{{ route('logout') }}" method="POST">
+                                        @csrf
+                                        <button type="submit"
+                                            class="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-red-500 hover:bg-red-50 transition-all font-bold text-xs group">
+                                            <div
+                                                class="w-7 h-7 flex items-center justify-center rounded-lg bg-red-500/10 group-hover:bg-red-500/20 transition-colors">
+                                                <i class="fa-solid fa-right-from-bracket"></i>
+                                            </div>
+                                            Đăng xuất
+                                        </button>
+                                    </form>
+                                </div>
                             </div>
                         </div>
-                    </div>
                     @else
-                    <a href="{{ route('login') }}"
-                        class="inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-white px-3 py-2 text-xs sm:text-sm font-bold text-blue-600 hover:bg-blue-50 transition-colors">
-                        <i class="fa-solid fa-right-to-bracket"></i>
-                        Đăng nhập
-                    </a>
+                        <a href="{{ route('login') }}"
+                            class="inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-white px-3 py-2 text-xs sm:text-sm font-bold text-blue-600 hover:bg-blue-50 transition-colors">
+                            <i class="fa-solid fa-right-to-bracket"></i>
+                            Đăng nhập
+                        </a>
                     @endauth
                 </div>
             </div>
         </div>
     </header>
 
-    <main class="flex-1 max-w-[95%] w-full mx-auto px-4 sm:px-6 lg:px-8 py-2">
+    <main class="flex-1 max-w-[95%] w-full mx-auto px-2 sm:px-6 lg:px-8 py-2">
         {{ $slot }}
     </main>
 
@@ -124,15 +130,14 @@
             this.messages = this.messages.filter(m => m.id !== id)
         }
     }"
-    @toast.window="
+        @toast.window="
         const id = Date.now();
         messages.push({ id, message: $event.detail[0].message, type: $event.detail[0].type });
         setTimeout(() => remove(id), 3000);
     "
-    class="fixed bottom-4 right-4 z-[9999] flex flex-col gap-2">
+        class="fixed bottom-4 right-4 z-[9999] flex flex-col gap-2">
         <template x-for="m in messages" :key="m.id">
-            <div x-show="true"
-                x-transition:enter="transition ease-out duration-300"
+            <div x-show="true" x-transition:enter="transition ease-out duration-300"
                 x-transition:enter-start="opacity-0 transform translate-x-8"
                 x-transition:enter-end="opacity-100 transform translate-x-0"
                 x-transition:leave="transition ease-in duration-200"
@@ -144,11 +149,12 @@
                     'bg-blue-600': m.type === 'info'
                 }"
                 class="text-white px-4 sm:px-6 py-3 rounded-xl shadow-2xl flex items-center gap-3 w-[calc(100vw-2rem)] sm:min-w-[300px] sm:w-auto">
-                <i :class="{
-                    'fa-solid fa-check-circle': m.type === 'success',
-                    'fa-solid fa-circle-exclamation': m.type === 'error',
-                    'fa-solid fa-circle-info': m.type === 'info'
-                }"></i>
+                <i
+                    :class="{
+                        'fa-solid fa-check-circle': m.type === 'success',
+                        'fa-solid fa-circle-exclamation': m.type === 'error',
+                        'fa-solid fa-circle-info': m.type === 'info'
+                    }"></i>
                 <span x-text="m.message" class="font-bold text-sm"></span>
             </div>
         </template>

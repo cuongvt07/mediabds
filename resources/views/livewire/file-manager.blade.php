@@ -320,11 +320,11 @@
                                     <span>ℹ️</span> Details
                                 </button>
                                 @if ($isAdmin)
-                                <button
-                                    @click.stop="open = false; $wire.requestDelete('folder', '{{ $folder->id }}')"
-                                    class="w-full text-left px-4 py-2 text-[13px] text-red-600 hover:bg-red-50 active:bg-red-100 active:scale-95 transition-all flex items-center gap-2 font-medium">
-                                    <span>🗑️</span> Delete
-                                </button>
+                                    <button
+                                        @click.stop="open = false; $wire.requestDelete('folder', '{{ $folder->id }}')"
+                                        class="w-full text-left px-4 py-2 text-[13px] text-red-600 hover:bg-red-50 active:bg-red-100 active:scale-95 transition-all flex items-center gap-2 font-medium">
+                                        <span>🗑️</span> Delete
+                                    </button>
                                 @endif
                             </div>
 
@@ -410,7 +410,7 @@
                                 @if (!$isModeSelect)
                                     <!-- Three Dots Button (Normal Mode) -->
                                     <div
-                                        class="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-all z-20">
+                                        class="absolute top-1 right-1 opacity-100 md:opacity-0 group-hover:opacity-100 transition-all z-20">
                                         <button x-ref="btn"
                                             @click.stop="open = !open; if(open) { $nextTick(() => { const r = $refs.btn.getBoundingClientRect(); alignRight = r.left > (window.innerWidth - r.right); }) }"
                                             class="p-2 bg-white/80 backdrop-blur shadow-sm rounded-xl text-slate-500 hover:text-blue-600 transition-colors">
@@ -438,10 +438,10 @@
                                             class="w-full text-left px-4 py-2.5 text-[13px] text-gray-700 hover:bg-gray-50 flex items-center gap-2"><span>⬇️</span>
                                             Download</button>
                                         @if ($isAdmin)
-                                        <button
-                                            @click.stop="open = false; $wire.requestDelete('file', '{{ $file->id }}')"
-                                            class="w-full text-left px-4 py-2.5 text-[13px] text-red-600 hover:bg-red-50 flex items-center gap-2 font-bold mt-1"><span>🗑️</span>
-                                            Delete</button>
+                                            <button
+                                                @click.stop="open = false; $wire.requestDelete('file', '{{ $file->id }}')"
+                                                class="w-full text-left px-4 py-2.5 text-[13px] text-red-600 hover:bg-red-50 flex items-center gap-2 font-bold mt-1"><span>🗑️</span>
+                                                Delete</button>
                                         @endif
                                     </div>
                                 @endif
@@ -505,7 +505,7 @@
         style="display: none;">
         @if ($selectedFileForDetails)
             <div
-                class="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-4xl overflow-hidden translate-y-10 transition-transform duration-300 flex flex-col md:flex-row max-h-[90vh]">
+                class="bg-white rounded-[2rem] md:rounded-[2.5rem] shadow-2xl w-full max-w-4xl overflow-hidden translate-y-10 transition-transform duration-300 flex flex-col md:flex-row max-h-[95vh] md:max-h-[90vh]">
                 <!-- Preview Section -->
                 <div
                     class="flex-1 bg-slate-100 flex items-center justify-center overflow-hidden min-h-[300px] relative">
