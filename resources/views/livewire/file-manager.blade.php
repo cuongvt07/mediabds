@@ -1,15 +1,21 @@
-<div class="flex h-full bg-white">
-    <!-- Sidebar component within the view -->
-    <aside class="w-64 border-r border-gray-100 flex flex-col hidden lg:flex shrink-0">
-        <div class="p-5">
-            <div wire:click="selectFolder(null)"
-                class="flex items-center gap-2 text-blue-600 font-bold text-[18px] tracking-tight cursor-pointer">
-                <svg class="w-8 h-8" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="20" cy="20" r="20" fill="#2563EB" />
-                    <path d="M12 20H28M20 12V28" stroke="white" stroke-width="3" stroke-linecap="round" />
-                </svg>
-                OPENFILES
+<div class="flex h-full bg-slate-50 relative overflow-hidden" x-data="{ mobileSidebarOpen: false }">
+    <!-- Sidebar component -->
+    <aside class="fixed inset-y-0 left-0 z-[150] w-72 bg-white border-r border-gray-100 flex flex-col transition-transform duration-300 lg:relative lg:translate-x-0"
+        :class="mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'">
+        <!-- Mobile Sidebar Overlay -->
+        <div x-show="mobileSidebarOpen" @click="mobileSidebarOpen = false" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm lg:hidden -z-10 tracking-widest uppercase"></div>
+        
+        <div class="p-6 flex items-center justify-between">
+            <div wire:click="selectFolder(null); mobileSidebarOpen = false"
+                class="flex items-center gap-3 text-blue-600 font-black text-xl tracking-tighter cursor-pointer uppercase">
+                <div class="w-10 h-10 bg-blue-600 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/20">
+                    <i class="fa-solid fa-folder-tree text-sm"></i>
+                </div>
+                <span>OPENFILES</span>
             </div>
+            <button @click="mobileSidebarOpen = false" class="lg:hidden p-2 text-slate-400 hover:text-red-500 transition-colors">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
         </div>
 
         <nav class="flex-1 px-4 space-y-1 overflow-y-auto">
@@ -51,18 +57,18 @@
                                     echo '<div class="w-2"></div>';
                                 }
 
-                                // Folder Link (Added Context Menu)
+                                // Folder Link (Added Context Context Menu)
                                 echo '<button wire:click="selectFolder(\'' .
                                     $folder->id .
-                                    '\')" @contextmenu.prevent="$dispatch(\'contextmenu-folder\', { x: $event.clientX, y: $event.clientY, id: \'' .
+                                    '\'); mobileSidebarOpen = false" @contextmenu.prevent="$dispatch(\'contextmenu-folder\', { x: $event.clientX, y: $event.clientY, id: \'' .
                                     $folder->id .
-                                    '\' });" class="flex-1 flex items-center gap-2 py-2 text-[14px] font-medium ' .
+                                    '\' });" class="flex-1 flex items-center gap-2 py-2 text-[14px] font-bold ' .
                                     ($isActive
-                                        ? 'text-blue-600 font-black'
+                                        ? 'text-blue-600'
                                         : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50 rounded-lg px-2 -ml-2') .
                                     ' transition-all">';
                                 echo '<span class="text-[16px]">' . ($isActive ? '📂' : '📁') . '</span>';
-                                echo '<span class="truncate">' . $folder->name . '</span>';
+                                echo '<span class="truncate uppercase tracking-tight">' . $folder->name . '</span>';
                                 echo '</button>';
                                 echo '</div>';
 
@@ -112,32 +118,18 @@
             <!-- Basic Loading Overlay Removed as per user request -->
             <!-- Quick Start Hero Section -->
             @if (!$isFlatView)
-                <div
-                    class="relative rounded-2xl p-4 md:p-5 text-center overflow-hidden bg-gradient-to-br from-blue-50 to-white border border-blue-50/50">
-                    <div
-                        class="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_top_right,rgba(59,130,246,0.05),transparent)] pointer-events-none">
-                    </div>
-                    <div class="relative z-10">
-                        <div class="flex flex-row sm:flex-row items-center justify-center gap-3 w-full sm:w-auto">
-                            <button onclick="openModal('createFolderModal')"
-                                class="flex-1 sm:flex-none w-1/2 sm:w-auto px-4 sm:px-8 py-3.5 bg-white text-slate-700 font-bold rounded-xl shadow-sm hover:shadow-md transition-all flex items-center justify-center gap-2 sm:gap-3 border border-gray-100 group">
-                                <svg class="w-6 h-6 text-gray-400 group-hover:text-blue-500 transition-colors"
-                                    fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z">
-                                    </path>
-                                </svg>
-                                <span class="truncate">Create Folder</span>
-                            </button>
-                            <button wire:click="showUploadModal"
-                                class="flex-1 sm:flex-none w-1/2 sm:w-auto px-4 sm:px-8 py-3.5 bg-blue-600 text-white font-bold rounded-xl shadow-lg shadow-blue-100 border-b-4 border-blue-700 hover:border-blue-600 hover:-translate-y-0.5 active:translate-y-0 active:border-b-0 transition-all flex items-center justify-center gap-2 sm:gap-3">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
-                                </svg>
-                                <span class="truncate">Upload Files</span>
-                            </button>
-                        </div>
+                <div class="relative p-6 md:p-8 text-center bg-white border-b border-gray-50 shrink-0">
+                    <div class="flex flex-row items-center justify-center gap-4">
+                        <button onclick="openModal('createFolderModal')"
+                            class="flex-1 md:flex-none px-6 py-4 bg-slate-50 text-slate-700 font-bold rounded-2xl border border-gray-100 hover:bg-white hover:shadow-lg transition-all flex items-center justify-center gap-3 group text-xs uppercase tracking-widest">
+                            <i class="fa-solid fa-folder-plus text-lg text-slate-400 group-hover:text-blue-500 transition-colors"></i>
+                            <span class="hidden sm:inline">New Folder</span>
+                        </button>
+                        <button wire:click="showUploadModal"
+                            class="flex-1 md:flex-none px-8 py-4 bg-blue-600 text-white font-black rounded-2xl shadow-lg shadow-blue-500/20 active:scale-95 transition-all flex items-center justify-center gap-3 text-xs uppercase tracking-widest">
+                            <i class="fa-solid fa-cloud-arrow-up text-lg"></i>
+                            <span>Upload Files</span>
+                        </button>
                     </div>
                 </div>
             @endif
@@ -177,49 +169,46 @@
                 </div>
 
                 <!-- Header -->
-                <div
-                    class="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-50 bg-white/90 backdrop-blur-md sticky top-0 z-10 transiton-all">
-                    <div class="flex flex-col gap-1 overflow-hidden">
-                        <nav
-                            class="flex items-center gap-2 text-[11px] font-bold text-gray-400 uppercase tracking-widest overflow-hidden">
-                            <button wire:click="selectFolder(null)"
-                                class="hover:text-blue-500 transition-colors shrink-0">Root</button>
-                            @foreach ($this->getBreadcrumbs() as $crumb)
-                                <span class="text-gray-300">/</span>
-                                <button wire:click="selectFolder('{{ $crumb['id'] }}')"
-                                    class="hover:text-blue-500 transition-colors truncate">{{ $crumb['name'] }}</button>
-                            @endforeach
-                        </nav>
-                        <h3 class="text-[17px] font-black text-slate-800 tracking-tight flex items-center gap-2">
+                <div class="p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-gray-50 bg-white/90 backdrop-blur-md sticky top-0 z-10">
+                    <div class="flex flex-col gap-2 min-w-0">
+                         <!-- Breadcrumbs or Hamburger -->
+                        <div class="flex items-center gap-4">
+                            <button @click="mobileSidebarOpen = true" class="lg:hidden w-10 h-10 flex items-center justify-center bg-slate-50 text-slate-800 rounded-xl active:bg-blue-600 active:text-white transition-all">
+                                <i class="fa-solid fa-bars-staggered"></i>
+                            </button>
+                            <nav class="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest overflow-hidden whitespace-nowrap">
+                                <button wire:click="selectFolder(null)" class="hover:text-blue-600 transition-colors shrink-0">Root</button>
+                                @foreach (array_slice($this->getBreadcrumbs(), -2) as $crumb)
+                                    <span class="text-slate-200"><i class="fa-solid fa-angle-right text-[8px]"></i></span>
+                                    <button wire:click="selectFolder('{{ $crumb['id'] }}')"
+                                        class="hover:text-blue-600 transition-colors truncate max-w-[80px] sm:max-w-none">{{ $crumb['name'] }}</button>
+                                @endforeach
+                            </nav>
+                        </div>
+                        <h3 class="text-lg font-black text-slate-800 tracking-tight flex items-center gap-3 uppercase">
                             @if ($isFlatView)
-                                <span class="p-1.5 bg-blue-50 rounded-lg text-blue-600 text-[12px]">📄</span> All System
-                                Files
+                                <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-xs"><i class="fa-solid fa-files"></i></div>
+                                <span>Tất cả file hệ thống</span>
                             @elseif($currentFolderId)
                                 @php $curr = \App\Models\Folder::find($currentFolderId); @endphp
-                                <span class="p-1.5 bg-blue-50 rounded-lg text-blue-600 text-[12px]">📂</span>
-                                {{ $curr?->name }}
+                                <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-xs"><i class="fa-solid fa-folder-open"></i></div>
+                                <span class="truncate">{{ $curr?->name }}</span>
                             @else
-                                <span class="p-1.5 bg-blue-50 rounded-lg text-blue-600 text-[12px]">✦</span> Recent
-                                Activities
+                                <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-xs"><i class="fa-solid fa-sparkles"></i></div>
+                                <span>Hoạt động gần đây</span>
                             @endif
                         </h3>
                     </div>
 
-                    <div class="flex items-center gap-3 w-full md:w-auto flex-1 justify-end">
-                        <div class="relative w-full md:max-w-md group flex-1">
-                            <span
-                                class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                                </svg>
-                            </span>
+                    <div class="flex items-center gap-3 w-full md:max-w-xs shrink-0">
+                        <div class="relative w-full group">
+                            <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-500 transition-colors"></i>
                             <input wire:model.live.debounce.300ms="search" type="text"
-                                class="w-full pl-11 pr-5 py-3 rounded-2xl border border-gray-100 bg-gray-50/50 focus:bg-white focus:ring-8 focus:ring-blue-50/50 focus:border-blue-200 outline-none shadow-inner transition-all text-[13px] text-gray-700 placeholder-gray-400"
-                                placeholder="search...">
+                                class="w-full pl-11 pr-5 py-3.5 rounded-2xl bg-slate-50 border border-gray-100 focus:bg-white focus:ring-4 focus:ring-blue-500/10 focus:border-blue-400 outline-none transition-all text-xs font-black uppercase tracking-tight text-slate-700 placeholder-slate-400"
+                                placeholder="TÌM KIẾM...">
                         </div>
-
-                        <!-- Mobile Profile Dropdown (visible only on small screens or always if cleaner?) -->
+                    </div>
+     <!-- Mobile Profile Dropdown (visible only on small screens or always if cleaner?) -->
                         <!-- Actually sidebar hides on mobile (lg:flex), so we need this on mobile -->
                         <div class="lg:hidden relative" x-data="{ open: false }">
                             <button @click="open = !open"
@@ -501,14 +490,13 @@
 
     <!-- File Details / Preview Modal -->
     <div id="fileDetailsModal"
-        class="fixed inset-0 bg-slate-900/80 backdrop-blur-xl hidden flex items-center justify-center z-[110] p-4 transition-all opacity-0 pointer-events-none"
+        class="fixed inset-0 z-[200] flex items-end md:items-center justify-center p-0 md:p-4 opacity-0 pointer-events-none transition-all duration-300"
         style="display: none;">
+        <div class="fixed inset-0 bg-slate-900/80 backdrop-blur-xl" onclick="closeModal('fileDetailsModal')"></div>
         @if ($selectedFileForDetails)
-            <div
-                class="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-4xl overflow-hidden translate-y-10 transition-transform duration-300 flex flex-col md:flex-row max-h-[90vh]">
+            <div class="relative bg-white rounded-t-[2.5rem] md:rounded-[2.5rem] shadow-2xl w-full max-w-4xl overflow-hidden translate-y-10 transition-transform duration-300 flex flex-col md:flex-row max-h-[95vh]">
                 <!-- Preview Section -->
-                <div
-                    class="flex-1 bg-slate-100 flex items-center justify-center overflow-hidden min-h-[300px] relative">
+                <div class="flex-1 bg-slate-100 flex items-center justify-center overflow-hidden min-h-[300px] md:min-h-[500px] relative">
                     @if (str_starts_with($selectedFileForDetails->mime_type, 'image/'))
                         <img src="{{ $selectedFileForDetails->metadata['public_url'] ?? '#' }}"
                             alt="{{ $selectedFileForDetails->name }}" class="w-full h-full object-contain">
@@ -516,79 +504,64 @@
                         <video controls class="w-full h-full">
                             <source src="{{ $selectedFileForDetails->metadata['public_url'] ?? '#' }}"
                                 type="{{ $selectedFileForDetails->mime_type }}">
-                            Your browser does not support the video tag.
                         </video>
                     @else
-                        <div class="flex flex-col items-center gap-4 text-slate-400">
-                            <div class="p-6 bg-white rounded-3xl shadow-sm">
-                                <svg class="w-20 h-20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
-                                    </path>
-                                </svg>
-                            </div>
-                            <p class="font-bold text-sm uppercase tracking-widest">Preview not available</p>
+                        <div class="flex flex-col items-center gap-6 text-slate-300">
+                            <i class="fa-solid fa-file-circle-exclamation text-7xl"></i>
+                            <p class="font-black text-[10px] uppercase tracking-[0.2em]">Không có bản xem trước</p>
                         </div>
                     @endif
 
-                    <!-- Quick Actions Over Preview -->
-                    <div class="absolute top-4 left-4 flex gap-2">
+                    <!-- Back Button Mobile -->
+                    <div class="absolute top-6 left-6 flex gap-2">
                         <button onclick="closeModal('fileDetailsModal')"
-                            class="p-3 bg-white/90 backdrop-blur hover:bg-white rounded-2xl shadow-sm text-slate-800 transition-all">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
-                                    d="M15 19l-7-7 7-7"></path>
-                            </svg>
+                            class="w-12 h-12 flex items-center justify-center bg-white/90 backdrop-blur hover:bg-white rounded-2xl shadow-xl text-slate-800 transition-all active:scale-90">
+                            <i class="fa-solid fa-chevron-left"></i>
                         </button>
                     </div>
                 </div>
 
                 <!-- Info Section -->
-                <div class="w-full md:w-80 flex flex-col bg-white border-l border-gray-100">
-                    <div class="p-5 pb-3 flex justify-between items-start">
-                        <div>
-                            <h3 class="text-xl font-black text-gray-800 tracking-tight break-all">
-                                {{ $selectedFileForDetails->name }}</h3>
-                            <p class="text-gray-400 text-[12px] mt-0.5">Metadata & Properties</p>
-                        </div>
+                <div class="w-full md:w-96 flex flex-col bg-white border-l border-gray-100">
+                    <div class="p-8 pb-4">
+                        <div class="inline-flex px-3 py-1 rounded-full bg-blue-50 text-blue-600 text-[10px] font-black uppercase tracking-widest mb-4">Thông tin tệp tin</div>
+                        <h3 class="text-xl font-black text-slate-800 tracking-tight break-all uppercase">
+                            {{ $selectedFileForDetails->name }}</h3>
                     </div>
 
-                    <div class="flex-1 overflow-y-auto px-5 py-3 space-y-6">
-                        <div class="grid grid-cols-1 gap-6">
-                            <div class="space-y-1.5 px-1">
-                                <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">File Size</p>
-                                <p
-                                    class="text-[14px] text-gray-700 font-bold bg-gray-50 p-2 rounded-xl inline-block border border-gray-100">
+                    <div class="flex-1 overflow-y-auto px-8 py-4 space-y-8 custom-scrollbar">
+                        <div class="grid grid-cols-1 gap-8">
+                            <div class="space-y-2">
+                                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Kích thước</p>
+                                <p class="text-sm text-slate-700 font-black uppercase tracking-tight bg-slate-50 px-4 py-2 rounded-xl border border-slate-100 inline-block">
                                     {{ number_format($selectedFileForDetails->size / 1024 / 1024, 2) }} MB</p>
                             </div>
-                            <div class="space-y-1.5 px-1">
-                                <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Mime Type</p>
-                                <p class="text-[13px] text-gray-700 font-semibold">
+                            <div class="space-y-2">
+                                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Định dạng</p>
+                                <p class="text-xs text-slate-700 font-black uppercase tracking-tight">
                                     {{ $selectedFileForDetails->mime_type }}</p>
                             </div>
-                            <div class="space-y-1.5 px-1">
-                                <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Uploaded On
-                                </p>
-                                <p class="text-[13px] text-gray-700 font-semibold">
-                                    {{ $selectedFileForDetails->created_at->format('M d, Y') }}</p>
-                                <p class="text-[11px] text-gray-400 font-medium">
-                                    {{ $selectedFileForDetails->created_at->format('H:i:s') }}</p>
+                            <div class="space-y-2">
+                                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Ngày tải lên</p>
+                                <div class="flex items-center gap-2">
+                                    <p class="text-xs text-slate-700 font-black uppercase tracking-tight">
+                                        {{ $selectedFileForDetails->created_at->format('d/m/Y') }}</p>
+                                    <span class="w-1 h-1 rounded-full bg-slate-300"></span>
+                                    <p class="text-[10px] text-slate-400 font-bold">
+                                        {{ $selectedFileForDetails->created_at->format('H:i') }}</p>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <div class="p-5 border-t border-gray-50 flex flex-col gap-3">
+                    <div class="p-8 border-t border-gray-50 flex flex-col gap-4">
                         <button wire:click="downloadFile('{{ $selectedFileForDetails->id }}')"
-                            class="w-full py-4 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-100 flex items-center justify-center gap-2">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
-                            </svg>
-                            Download
+                            class="w-full py-5 bg-blue-600 text-white font-black uppercase tracking-widest text-[10px] rounded-[2rem] hover:bg-blue-700 transition-all shadow-xl shadow-blue-500/20 flex items-center justify-center gap-3">
+                            <i class="fa-solid fa-download"></i>
+                            Tải xuống ngay
                         </button>
                         <button onclick="closeModal('fileDetailsModal')"
-                            class="w-full py-3 text-gray-500 font-bold rounded-2xl hover:bg-gray-50 transition-all">Close
-                            Editor</button>
+                            class="w-full py-4 text-slate-400 font-black uppercase tracking-widest text-[10px] hover:bg-slate-50 rounded-[2rem] transition-all">Đóng cửa sổ</button>
                     </div>
                 </div>
             </div>
@@ -597,80 +570,72 @@
 
     <!-- Create Folder Modal -->
     <div id="createFolderModal"
-        class="fixed inset-0 bg-slate-900/60 backdrop-blur-md hidden flex items-center justify-center z-[100] p-4 transition-all opacity-0 pointer-events-none"
+        class="fixed inset-0 z-[200] flex items-end md:items-center justify-center p-0 md:p-4 opacity-0 pointer-events-none transition-all duration-300"
         style="display: none;">
-        <div
-            class="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-lg overflow-hidden translate-y-10 transition-transform duration-300">
+        <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-md" onclick="closeModal('createFolderModal')"></div>
+        <div class="relative bg-white rounded-t-[2.5rem] md:rounded-[2.5rem] shadow-2xl w-full max-w-lg overflow-hidden translate-y-10 transition-transform duration-300">
             <div class="p-8 pb-4 flex justify-between items-center bg-blue-50/20">
                 <div>
-                    <h3 class="text-2xl font-black text-gray-800 tracking-tight">Create Folder</h3>
-                    <p class="text-gray-400 text-[14px] mt-1">Create a new folder to arrange & analyze your files</p>
+                    <h3 class="text-2xl font-black text-slate-800 tracking-tight uppercase">Tạo thư mục mới</h3>
+                    <p class="text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-2">Sắp xếp tài liệu của bạn khoa học hơn</p>
                 </div>
                 <button onclick="closeModal('createFolderModal')"
-                    class="p-3 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-2xl transition-all">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3"
-                            d="M6 18L18 6M6 6l12 12">
-                        </path>
-                    </svg>
+                    class="p-4 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-2xl transition-all">
+                    <i class="fa-solid fa-xmark text-xl"></i>
                 </button>
             </div>
-            <div class="p-5 pt-4 space-y-6">
-                <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-2">Folder Name</label>
+            
+            <div class="p-8 space-y-8">
+                <div class="space-y-3">
+                    <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest">Tên thư mục <span class="text-red-500">*</span></label>
                     <input type="text" wire:model="newFolderName" id="newFolderName"
-                        class="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white focus:ring-4 focus:ring-blue-50 focus:border-blue-500 outline-none font-bold text-slate-700 placeholder-slate-400 transition-all"
-                        placeholder="e.g. Work Documents" autofocus>
+                        class="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none font-black text-slate-700 placeholder-slate-400 transition-all uppercase text-sm tracking-tight"
+                        placeholder="VÍ DỤ: HÌNH ẢNH DỰ ÁN" autofocus>
                 </div>
 
-                <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-2">Parent Folder</label>
+                <div class="space-y-3">
+                    <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest">Thư mục cha</label>
                     <div class="relative" x-data="{ open: false, search: '' }">
-                        <!-- Custom Select Trigger -->
                         <button type="button" @click="open = !open"
-                            class="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white focus:ring-4 focus:ring-blue-50 focus:border-blue-500 outline-none font-bold text-slate-700 flex items-center justify-between transition-all hover:bg-white">
+                            class="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:ring-4 focus:ring-blue-500/10 focus:border-blue-400 outline-none font-black text-slate-700 flex items-center justify-between transition-all text-sm uppercase tracking-tight">
                             <span class="truncate">
                                 @if ($this->targetParentId)
                                     @php $p = $this->allFolders->firstWhere('id', $this->targetParentId); @endphp
-                                    {{ $p ? '📂 ' . $p->name : 'Root ( / )' }}
+                                    📂 {{ $p?->name }}
                                 @else
-                                    Root ( / )
+                                    🏠 THƯ MỤC GỐC ( / )
                                 @endif
                             </span>
-                            <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor"
-                                viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M19 9l-7 7-7-7">
-                                </path>
-                            </svg>
+                            <i class="fa-solid fa-chevron-down text-slate-300"></i>
                         </button>
 
                         <!-- Dropdown Menu -->
                         <div x-show="open" @click.away="open = false" style="display: none;"
-                            class="absolute z-50 mt-2 w-full bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden"
+                            class="absolute z-50 mt-2 w-full bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden animate-[scaleIn_0.15s_ease-out]"
                             x-transition:enter="transition ease-out duration-100"
                             x-transition:enter-start="opacity-0 scale-95"
                             x-transition:enter-end="opacity-100 scale-100">
 
-                            <!-- Search -->
-                            <div class="p-3 border-b border-gray-50 sticky top-0 bg-white z-10">
+                            <div class="p-4 border-b border-gray-50 sticky top-0 bg-white/90 backdrop-blur-md z-10">
                                 <input x-model="search" x-ref="searchInput"
                                     @keydown.window.prevent.slash="$refs.searchInput.focus()" type="text"
-                                    placeholder="Search folder..."
-                                    class="w-full px-4 py-2 bg-slate-50 rounded-xl text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-blue-100">
+                                    placeholder="Tìm thư mục..."
+                                    class="w-full px-4 py-3 bg-slate-50 rounded-xl text-xs font-black uppercase tracking-tight text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/10 border-none">
                             </div>
 
-                            <!-- List -->
-                            <div class="max-h-60 overflow-y-auto custom-scrollbar p-1">
+                            <div class="max-h-60 overflow-y-auto custom-scrollbar p-2">
                                 <div @click="$wire.set('targetParentId', null); open = false"
-                                    class="px-4 py-3 hover:bg-blue-50 rounded-xl cursor-pointer text-sm font-bold text-gray-700 flex items-center gap-2 transition-colors">
-                                    <span>Root ( / )</span>
+                                    class="px-5 py-4 hover:bg-blue-50 rounded-2xl cursor-pointer text-xs font-black uppercase tracking-tight text-slate-700 flex items-center gap-3 transition-colors">
+                                    <i class="fa-solid fa-house-chimney text-blue-500"></i>
+                                    <span>GỐC ( / )</span>
                                 </div>
                                 @foreach ($this->allFolders as $f)
                                     <div x-show="search === '' || '{{ strtolower($f->name) }}'.includes(search.toLowerCase())"
                                         @click="$wire.set('targetParentId', '{{ $f->id }}'); open = false"
-                                        class="px-4 py-3 hover:bg-blue-50 rounded-xl cursor-pointer text-sm font-bold text-gray-700 flex items-center gap-2 transition-colors truncate">
-                                        <span class="text-gray-300 font-mono text-xs">{!! $f->depth_name !!}</span>
+                                        class="px-5 py-4 hover:bg-blue-50 rounded-2xl cursor-pointer text-xs font-black uppercase tracking-tight text-slate-700 flex items-center gap-3 transition-colors truncate">
+                                        <span class="text-slate-200 font-mono text-[10px] break-keep">{!! str_replace('&nbsp;', '·', $f->depth_name) !!}</span>
+                                        <i class="fa-solid fa-folder text-blue-400"></i>
+                                        <span>{{ $f->name }}</span>
                                     </div>
                                 @endforeach
                             </div>
@@ -678,52 +643,24 @@
                     </div>
                 </div>
 
-                <div>
-                    <div class="flex items-center justify-between mb-2.5 px-1">
-                        <label class="block text-[14px] font-bold text-gray-700">Upload files</label>
-                        <button class="text-blue-600 text-[12px] font-bold hover:underline">+add more</button>
+                <div class="p-6 bg-slate-50 rounded-[2rem] border border-slate-100 flex items-center gap-4">
+                    <div class="w-12 h-12 bg-white rounded-2xl text-blue-500 shadow-sm flex items-center justify-center shrink-0">
+                        <i class="fa-solid fa-circle-info text-xl"></i>
                     </div>
-                    <div x-data="{ dragging: false }" @dragover.prevent.stop="dragging = true"
-                        @dragenter.prevent.stop="dragging = true" @dragleave.prevent.stop="dragging = false"
-                        @drop.prevent.stop="dragging = false; $dispatch('files-dropped', { files: $event.dataTransfer.files, context: 'create-folder' }); openModal('uploadModal')"
-                        :class="dragging ? 'border-blue-400 bg-blue-50 shadow-lg' : 'border-slate-100 bg-slate-50'"
-                        class="border-2 border-dashed rounded-[2rem] p-6 text-center transition-all cursor-pointer group relative">
-
-                        <div
-                            class="mx-auto w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                            <svg class="w-8 h-8 text-blue-400" fill="none" stroke="currentColor"
-                                viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
-                            </svg>
-                        </div>
-                        <p class="text-slate-800 font-bold mb-1">Drag and Drop your files here</p>
-                        <p class="text-gray-400 text-sm italic">or <span
-                                class="text-blue-600 underline font-black not-italic">click here</span> to select from
-                            computer</p>
-                        <input type="file" multiple class="absolute inset-0 opacity-0 cursor-pointer"
-                            @change="$dispatch('files-dropped', { files: $event.target.files, context: 'create-folder' }); openModal('uploadModal')">
-                    </div>
-                </div>
-
-                <div class="p-4 bg-orange-50 rounded-2xl border border-orange-100 flex items-center gap-3">
-                    <div class="p-2 bg-white rounded-lg text-orange-400 shadow-sm">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
-                                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                    </div>
-                    <p class="text-[12px] text-orange-800 font-bold leading-tight">No files have been selected, empty
-                        folder will be created. You can upload later.</p>
+                    <p class="text-[10px] text-slate-500 font-black uppercase tracking-widest leading-relaxed">Bạn đang tạo một thư mục trống. Bạn có thể tải file lên sau khi thư mục được tạo.</p>
                 </div>
             </div>
-            <div class="p-5 pt-0 flex gap-4">
+            
+            <div class="p-8 pt-0 flex flex-col sm:flex-row gap-4">
                 <button onclick="closeModal('createFolderModal')"
-                    class="flex-1 py-4 bg-white border border-slate-100 text-slate-500 font-bold rounded-2xl hover:bg-slate-50 transition-all">Discard</button>
+                    class="flex-1 order-2 sm:order-1 py-5 bg-white border border-slate-100 text-slate-400 font-black uppercase tracking-widest text-[10px] rounded-[2rem] hover:bg-slate-50 transition-all">Hủy bỏ</button>
                 <button wire:click="createFolder" wire:loading.attr="disabled"
-                    class="flex-1 py-4 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700 transition-all shadow-xl shadow-blue-100 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                    <span wire:loading.remove wire:target="createFolder">Create Folder</span>
-                    <span wire:loading wire:target="createFolder">Creating...</span>
+                    class="flex-1 order-1 sm:order-2 py-5 bg-blue-600 text-white font-black uppercase tracking-widest text-[10px] rounded-[2rem] hover:bg-blue-700 transition-all shadow-xl shadow-blue-500/20 flex items-center justify-center gap-3 disabled:opacity-50">
+                    <i class="fa-solid fa-save text-sm" wire:loading.remove wire:target="createFolder"></i>
+                    <div class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" wire:loading wire:target="createFolder"></div>
+                    <span wire:loading.remove wire:target="createFolder">Xác nhận tạo</span>
+                    <span wire:loading wire:target="createFolder">Đang xử lý...</span>
+                </button>
             </div>
         </div>
     </div>
@@ -750,11 +687,12 @@
         </button>
     </div>
 
-    <!-- Unified Upload Modal (Rich UX) -->
+    <!-- Unified Upload Modal -->
     <div id="uploadModal"
-        class="fixed inset-0 bg-slate-900/60 backdrop-blur-md hidden flex items-center justify-center z-[100] p-4 transition-all opacity-0 pointer-events-none"
+        class="fixed inset-0 z-[200] flex items-end md:items-center justify-center p-0 md:p-4 opacity-0 pointer-events-none transition-all duration-300"
         style="display: none;">
-        <div class="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-2xl overflow-hidden translate-y-10 transition-transform duration-300"
+        <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-md" onclick="closeModal('uploadModal')"></div>
+        <div class="relative bg-white rounded-t-[2.5rem] md:rounded-[2.5rem] shadow-2xl w-full max-w-2xl overflow-hidden translate-y-10 transition-transform duration-300"
             x-data="{
                 uploading: false,
                 files: [],
@@ -817,19 +755,14 @@
             }"
             @files-dropped.window="addFiles($event.detail.files); if($event.detail.context === 'create-folder') grouping = true; if($event.detail.autoStart) startUpload();">
 
-            <div class="p-8 pb-4 flex justify-between items-center bg-blue-50/20">
+            <div class="p-8 pb-4 flex justify-between items-center bg-blue-50/10">
                 <div>
-                    <h3 class="text-2xl font-black text-gray-800 tracking-tight">File upload</h3>
-                    <p class="text-gray-400 text-[14px] mt-1">Analyze individual files or group them together in a
-                        folder</p>
+                    <h3 class="text-2xl font-black text-slate-800 tracking-tight uppercase">Tải tệp tin lên</h3>
+                    <p class="text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-2">Dung lượng tối đa mỗi tệp: 50MB</p>
                 </div>
                 <button onclick="closeModal('uploadModal')"
-                    class="p-3 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-2xl transition-all">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3"
-                            d="M6 18L18 6M6 6l12 12">
-                        </path>
-                    </svg>
+                    class="p-4 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-2xl transition-all">
+                    <i class="fa-solid fa-xmark text-xl"></i>
                 </button>
             </div>
 
@@ -839,19 +772,13 @@
                     @dragenter.prevent.stop="dragging = true" @dragleave.prevent.stop="dragging = false"
                     @drop.prevent.stop="dragging = false; const df = Array.from($event.dataTransfer.files); if(df.length > 0) { addFiles(df); startUpload(); }"
                     :class="dragging ? 'border-blue-400 bg-blue-50 shadow-lg scale-[1.02]' : 'border-slate-100 bg-slate-50'"
-                    class="border-2 border-dashed rounded-[2rem] p-8 text-center transition-all cursor-pointer group relative mb-4">
+                    class="border-2 border-dashed rounded-[2.5rem] p-10 text-center transition-all cursor-pointer group relative mb-4">
                     <div
-                        class="mx-auto w-20 h-20 bg-white rounded-3xl shadow-sm flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                        <svg class="w-10 h-10 text-blue-500" fill="none" stroke="currentColor"
-                            viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12">
-                            </path>
-                        </svg>
+                        class="mx-auto w-24 h-24 bg-white rounded-3xl shadow-sm flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                        <i class="fa-solid fa-cloud-arrow-up text-4xl text-blue-500"></i>
                     </div>
-                    <p class="text-slate-800 text-xl font-black mb-2">Drag and Drop files</p>
-                    <p class="text-gray-400 font-medium">or <span class="text-blue-600 underline font-black">browse
-                            computer</span></p>
+                    <p class="text-slate-800 text-xl font-black uppercase mb-2 tracking-tight">Kéo thả tệp vào đây</p>
+                    <p class="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Hoặc <span class="text-blue-600 underline">chọn từ thiết bị</span></p>
                     <input type="file" multiple class="absolute inset-0 opacity-0 cursor-pointer"
                         @change="addFiles($event.target.files); startUpload();">
                 </div>
@@ -946,29 +873,24 @@
                     </div>
                 </div>
             </div>
-            <div class="p-5 pt-0 flex gap-4">
+            <div class="p-8 pt-0 flex flex-col sm:flex-row gap-4">
                 <button onclick="closeModal('uploadModal')" x-show="!uploading"
-                    class="flex-1 py-5 bg-white border border-slate-100 text-slate-500 font-bold rounded-2xl hover:bg-slate-50 transition-all">Discard</button>
+                    class="flex-1 order-2 sm:order-1 py-5 bg-white border border-slate-100 text-slate-400 font-black uppercase tracking-widest text-[10px] rounded-[2rem] hover:bg-slate-50 transition-all">Hủy bỏ</button>
                 <button @click="startUpload()"
                     :disabled="files.length === 0 || uploading || (grouping && !$wire.newGroupName)"
                     :class="files.length === 0 || uploading || (grouping && !$wire.newGroupName) ?
-                        'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700 shadow-xl shadow-blue-100'"
-                    class="flex-1 py-5 bg-blue-600 text-white font-black rounded-2xl transition-all flex items-center justify-center gap-3 text-lg">
+                        'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700 shadow-xl shadow-blue-500/20 active:scale-95'"
+                    class="flex-1 order-1 sm:order-2 py-5 bg-blue-600 text-white font-black uppercase tracking-widest text-[10px] rounded-[2rem] transition-all flex items-center justify-center gap-3">
                     <template x-if="!uploading">
                         <div class="flex items-center gap-3">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
-                                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
-                            </svg>
-                            <span>Upload <span x-text="files.length"></span> Files</span>
+                            <i class="fa-solid fa-upload"></i>
+                            <span>Bắt đầu tải <span x-text="files.length"></span> tệp</span>
                         </div>
                     </template>
                     <template x-if="uploading">
                         <div class="flex items-center gap-3">
-                            <div class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin">
-                            </div>
-                            <span>Processing... (<span x-text="currentUploadIndex + 1"></span>/<span
-                                    x-text="files.length"></span>)</span>
+                            <div class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                            <span>Đang xử lý... (<span x-text="currentUploadIndex + 1"></span>/<span x-text="files.length"></span>)</span>
                         </div>
                     </template>
                 </button>
@@ -993,19 +915,16 @@
         x-show="show" x-transition:enter="transition ease-out duration-300"
         x-transition:enter-start="translate-y-10 opacity-0" x-transition:enter-end="translate-y-0 opacity-100"
         x-transition:leave="transition ease-in duration-200" x-transition:leave-start="translate-y-0 opacity-100"
-        x-transition:leave-end="translate-y-10 opacity-0" class="fixed bottom-10 right-10 z-[200] pointer-events-none"
+        x-transition:leave-end="translate-y-10 opacity-0" class="fixed bottom-6 right-6 md:bottom-10 md:right-10 z-[300] pointer-events-none"
         style="display: none;">
         <div
-            class="bg-slate-900/90 backdrop-blur-md text-white px-6 py-4 rounded-3xl shadow-2xl flex items-center gap-4 min-w-[280px] border border-white/10">
-            <div class="w-10 h-10 rounded-2xl flex items-center justify-center bg-blue-500/20 text-blue-400">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7">
-                    </path>
-                </svg>
+            class="bg-slate-900/90 backdrop-blur-md text-white px-8 py-5 rounded-[2rem] shadow-2xl flex items-center gap-5 min-w-[300px] border border-white/10">
+            <div class="w-12 h-12 rounded-2xl flex items-center justify-center bg-blue-500/20 text-blue-400 shadow-lg">
+                 <i class="fa-solid fa-bell text-lg" :class="type === 'error' ? 'text-red-400' : 'text-blue-400'"></i>
             </div>
             <div>
-                <p class="text-[13px] font-bold tracking-tight" x-text="message"></p>
-                <p class="text-[10px] text-gray-400 font-medium uppercase tracking-widest mt-0.5">Notification</p>
+                <p class="text-xs font-black uppercase tracking-tight" x-text="message"></p>
+                <p class="text-[8px] text-slate-400 font-black uppercase tracking-[0.2em] mt-1">Thông báo hệ thống</p>
             </div>
         </div>
     </div>
@@ -1022,27 +941,22 @@
 
     <!-- Delete Confirmation Modal -->
     <div id="deleteConfirmationModal"
-        class="fixed inset-0 bg-slate-900/60 backdrop-blur-md hidden flex items-center justify-center z-[110] p-4 transition-all opacity-0 pointer-events-none"
+        class="fixed inset-0 z-[300] flex items-center justify-center p-6 opacity-0 pointer-events-none transition-all duration-300"
         style="display: none;">
-        <div
-            class="bg-white rounded-[2rem] shadow-2xl w-full max-w-sm overflow-hidden transform scale-95 transition-all duration-300">
-            <div class="p-6 text-center">
-                <div class="mx-auto w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mb-4">
-                    <svg class="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
-                        </path>
-                    </svg>
+        <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-md" onclick="closeModal('deleteConfirmationModal')"></div>
+        <div class="relative bg-white rounded-[2.5rem] shadow-2xl w-full max-w-sm overflow-hidden transform scale-95 transition-all duration-300">
+            <div class="p-10 text-center">
+                <div class="mx-auto w-20 h-20 bg-red-50 rounded-3xl flex items-center justify-center mb-6 text-red-500 shadow-xl shadow-red-500/10">
+                    <i class="fa-solid fa-trash-can text-3xl"></i>
                 </div>
-                <h3 class="text-xl font-black text-gray-900 mb-2">Delete Item?</h3>
-                <p class="text-gray-500 text-sm font-medium">Are you sure you want to delete this item? This action
-                    cannot be undone.</p>
+                <h3 class="text-2xl font-black text-slate-800 mb-2 uppercase tracking-tight">Xóa mục này?</h3>
+                <p class="text-slate-400 text-[10px] font-black uppercase tracking-widest leading-relaxed">Bạn có chắc chắn muốn xóa mục này? Hành động này không thể hoàn tác.</p>
             </div>
-            <div class="p-6 pt-0 flex gap-3">
+            <div class="p-10 pt-0 flex gap-4">
                 <button onclick="closeModal('deleteConfirmationModal')"
-                    class="flex-1 py-3 bg-gray-100 text-gray-600 font-bold rounded-xl hover:bg-gray-200 transition-all">Cancel</button>
+                    class="flex-1 py-5 bg-slate-50 text-slate-400 font-black uppercase tracking-widest text-[10px] rounded-2xl hover:bg-slate-100 transition-all">Hủy</button>
                 <button wire:click="performDelete"
-                    class="flex-1 py-3 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 shadow-lg shadow-red-200 transition-all">Delete</button>
+                    class="flex-1 py-5 bg-red-600 text-white font-black uppercase tracking-widest text-[10px] rounded-2xl hover:bg-red-700 shadow-xl shadow-red-500/20 active:scale-95 transition-all">Xác nhận</button>
             </div>
         </div>
     </div>

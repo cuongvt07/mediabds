@@ -30,73 +30,102 @@
 
 <body class="antialiased text-gray-800 bg-white" x-data="{
     currentModule: new URLSearchParams(window.location.search).get('module') || 'listings',
-    sidebarOpen: true
+    sidebarOpen: true,
+    mobileSidebarOpen: false
 }">
 
-    <div class="flex h-screen overflow-hidden">
+    <div class="flex flex-col lg:flex-row h-screen overflow-hidden">
+        <!-- Mobile Header -->
+        <header class="lg:hidden bg-slate-900 text-white px-4 py-3 flex items-center justify-between z-40 shrink-0 shadow-lg">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg overflow-hidden bg-slate-800 flex items-center justify-center p-1">
+                    <img src="https://s3-hcm5-r1.longvan.net/phongland/2026/01/d13bf59afd35726b2b24.jpg" alt="Logo" class="w-full h-full object-contain">
+                </div>
+                <span class="font-black text-xs tracking-[0.2em] text-blue-400 uppercase">Antigravity</span>
+            </div>
+            <button @click="mobileSidebarOpen = true" class="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-800 text-blue-400 hover:bg-slate-700 transition-colors">
+                <i class="fa-solid fa-bars-staggered"></i>
+            </button>
+        </header>
+
+        <!-- Mobile Sidebar Backdrop -->
+        <div x-show="mobileSidebarOpen" 
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="transition ease-in duration-200"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0"
+             @click="mobileSidebarOpen = false" 
+             class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[55] lg:hidden" style="display: none;"></div>
+
         <!-- Global Sidebar (Level 1) -->
-        <aside class="bg-slate-900 w-20 flex flex-col items-center py-6 shrink-0 z-50">
-            <!-- Brand -->
-            <!-- Brand -->
-            <div
-                class="w-10 h-10 mb-8 cursor-pointer hover:bg-slate-800 rounded-xl flex items-center justify-center transition-colors">
+        <aside :class="mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
+               class="bg-slate-900 w-20 flex flex-col items-center py-6 shrink-0 z-[60] fixed lg:static inset-y-0 left-0 transition-transform duration-300 ease-in-out shadow-2xl lg:shadow-none">
+            
+            <!-- Brand (Desktop) -->
+            <div class="w-10 h-10 mb-8 cursor-pointer hover:bg-slate-800 rounded-xl flex items-center justify-center transition-colors hidden lg:flex">
                 <img src="https://s3-hcm5-r1.longvan.net/phongland/2026/01/d13bf59afd35726b2b24.jpg" alt="Logo"
                     class="w-full h-full object-contain">
             </div>
 
+            <!-- Close Button (Mobile) -->
+            <button @click="mobileSidebarOpen = false" class="lg:hidden w-10 h-10 mb-8 rounded-xl bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center transition-colors">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
             <!-- Navigation Modules -->
-            <div class="flex flex-col gap-4 w-full px-2">
+            <div class="flex flex-col gap-4 w-full px-2 overflow-y-auto no-scrollbar">
                 <a href="{{ route('listings') }}" wire:navigate
-                    class="flex flex-col items-center justify-center p-3 rounded-2xl transition-all group {{ request()->routeIs('listings') ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-white hover:bg-slate-800' }}"
+                    class="flex flex-col items-center justify-center p-3 rounded-2xl transition-all group {{ request()->routeIs('listings') ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30' : 'text-slate-400 hover:text-white hover:bg-slate-800' }}"
                     title="Tin đăng BĐS">
                     <div
                         class="w-8 h-8 flex items-center justify-center rounded-lg mb-1 {{ request()->routeIs('listings') ? 'bg-white/20' : 'bg-slate-800 group-hover:bg-slate-700' }}">
                         <i class="fa-solid fa-newspaper text-sm"></i>
                     </div>
-                    <span class="text-[10px] font-bold text-center leading-none">Tin Đăng</span>
+                    <span class="text-[9px] font-black text-center leading-none uppercase tracking-tighter">Tin Đăng</span>
                 </a>
 
                 @if(auth()->user()->isAdmin())
                 <a href="{{ route('media') }}" wire:navigate
-                    class="flex flex-col items-center justify-center p-3 rounded-2xl transition-all group {{ request()->routeIs('media') ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-white hover:bg-slate-800' }}"
+                    class="flex flex-col items-center justify-center p-3 rounded-2xl transition-all group {{ request()->routeIs('media') ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30' : 'text-slate-400 hover:text-white hover:bg-slate-800' }}"
                     title="Media Manager">
                     <div
                         class="w-8 h-8 flex items-center justify-center rounded-lg mb-1 {{ request()->routeIs('media') ? 'bg-white/20' : 'bg-slate-800 group-hover:bg-slate-700' }}">
                         <i class="fa-solid fa-photo-film text-sm"></i>
                     </div>
-                    <span class="text-[10px] font-bold text-center leading-none">Media</span>
+                    <span class="text-[9px] font-black text-center leading-none uppercase tracking-tighter">Media</span>
                 </a>
 
                 <a href="{{ route('accounts') }}" wire:navigate
-                    class="flex flex-col items-center justify-center p-3 rounded-2xl transition-all group {{ request()->routeIs('accounts') ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-white hover:bg-slate-800' }}"
+                    class="flex flex-col items-center justify-center p-3 rounded-2xl transition-all group {{ request()->routeIs('accounts') ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30' : 'text-slate-400 hover:text-white hover:bg-slate-800' }}"
                     title="Quản lý tài khoản">
                     <div
                         class="w-8 h-8 flex items-center justify-center rounded-lg mb-1 {{ request()->routeIs('accounts') ? 'bg-white/20' : 'bg-slate-800 group-hover:bg-slate-700' }}">
                         <i class="fa-solid fa-users text-sm"></i>
                     </div>
-                    <span class="text-[10px] font-bold text-center leading-none">Account</span>
+                    <span class="text-[9px] font-black text-center leading-none uppercase tracking-tighter">Account</span>
                 </a>
 
                 <a href="{{ route('business') }}" wire:navigate
-                    class="flex flex-col items-center justify-center p-3 rounded-2xl transition-all group {{ request()->routeIs('business') ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-white hover:bg-slate-800' }}"
+                    class="flex flex-col items-center justify-center p-3 rounded-2xl transition-all group {{ request()->routeIs('business') ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30' : 'text-slate-400 hover:text-white hover:bg-slate-800' }}"
                     title="Quản lý kinh doanh">
                     <div
                         class="w-8 h-8 flex items-center justify-center rounded-lg mb-1 {{ request()->routeIs('business') ? 'bg-white/20' : 'bg-slate-800 group-hover:bg-slate-700' }}">
                         <i class="fa-solid fa-briefcase text-sm"></i>
                     </div>
-                    <span class="text-[10px] font-bold text-center leading-none">Kinh Doanh</span>
+                    <span class="text-[9px] font-black text-center leading-none uppercase tracking-tighter">Kinh Doanh</span>
                 </a>
-
                 @endif
 
                 <a href="{{ route('customers') }}" wire:navigate
-                    class="flex flex-col items-center justify-center p-3 rounded-2xl transition-all group {{ request()->routeIs('customers') ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-white hover:bg-slate-800' }}"
+                    class="flex flex-col items-center justify-center p-3 rounded-2xl transition-all group {{ request()->routeIs('customers') ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30' : 'text-slate-400 hover:text-white hover:bg-slate-800' }}"
                     title="Quản lý khách hàng">
                     <div
                         class="w-8 h-8 flex items-center justify-center rounded-lg mb-1 {{ request()->routeIs('customers') ? 'bg-white/20' : 'bg-slate-800 group-hover:bg-slate-700' }}">
                         <i class="fa-solid fa-user-group text-sm"></i>
                     </div>
-                    <span class="text-[10px] font-bold text-center leading-none">Khách Hàng</span>
+                    <span class="text-[9px] font-black text-center leading-none uppercase tracking-tighter text-balance">Khách Hàng</span>
                 </a>
             </div>
 
