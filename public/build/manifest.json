@@ -1,6 +1,10 @@
 {
   "resources/css/app.css": {
+<<<<<<< HEAD
     "file": "assets/app-CCaJ_Qcn.css",
+=======
+    "file": "assets/app-C8-bCsDl.css",
+>>>>>>> cdc78b0cf3ea7808bcb9d42230ea16571468e2b8
     "src": "resources/css/app.css",
     "isEntry": true,
     "name": "app",
