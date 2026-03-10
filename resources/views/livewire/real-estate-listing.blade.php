@@ -1,7 +1,7 @@
 <div class="h-full flex flex-col bg-slate-50 relative">
 
     <!-- Header/Topbar -->
-    <div class="bg-white/80 backdrop-blur-xl border-b border-slate-200 px-4 md:px-8 py-3 md:py-4 flex flex-col md:flex-row items-center justify-between gap-6 shrink-0 sticky top-0 z-50">
+    <div class="bg-white/90 backdrop-blur-2xl border-b border-slate-200 px-3 md:px-5 py-2 md:py-3 flex flex-col md:flex-row items-center justify-between gap-4 shrink-0 sticky top-0 z-40">
         <!-- Title & Search Group -->
         <div class="flex items-center gap-6 w-full md:w-auto flex-1">
             <div class="hidden xl:flex items-center gap-3">
@@ -173,8 +173,8 @@
     </div>
 
     <!-- Main Content: Scrollable Grid -->
-    <div class="flex-1 overflow-y-auto p-3 md:p-5 custom-scrollbar">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+    <div class="flex-1 overflow-y-auto p-2 md:p-3 custom-scrollbar">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             @foreach ($listings as $listing)
                 <div wire:key="{{ $listing['id'] }}-{{ $listing['updated_at'] }}"
                     wire:click="viewListingDetail({{ $listing['id'] }})"
@@ -240,19 +240,20 @@
 
                                     @if ($isAdmin)
                                         <button wire:click.stop="editListing({{ $listing['id'] }})"
-                                            class="w-10 h-10 flex items-center justify-center rounded-2xl text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-all active:scale-90"
+                                            class="w-8 h-8 flex items-center justify-center rounded-xl text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-all active:scale-90"
                                             title="Sửa tin">
-                                            <i class="fa-regular fa-pen-to-square text-lg"></i>
+                                            <i class="fa-regular fa-pen-to-square text-base"></i>
                                         </button>
                                         <button wire:click.stop="deleteListing({{ $listing['id'] }})"
                                             wire:confirm="Bạn có chắc chắn muốn xóa tin này không?"
-                                            class="w-10 h-10 flex items-center justify-center rounded-2xl text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all active:scale-90"
+                                            class="w-8 h-8 flex items-center justify-center rounded-xl text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all active:scale-90"
                                             title="Xóa tin">
-                                            <i class="fa-regular fa-trash-can text-lg"></i>
+                                            <i class="fa-regular fa-trash-can text-base"></i>
                                         </button>
                                     @endif
-                                    <button class="px-4 py-2 bg-blue-50 text-blue-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 hover:text-white transition-all">
-                                        Chi tiết
+                                    <button wire:click.stop="viewListingDetail({{ $listing['id'] }})"
+                                        class="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 shadow-md transition-all">
+                                        Xem chi tiết
                                     </button>
                                 </div>
                             </div>

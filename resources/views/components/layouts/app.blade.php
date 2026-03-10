@@ -86,6 +86,16 @@
                     <span class="text-[9px] font-black text-center leading-none uppercase tracking-tighter">Tin Đăng</span>
                 </a>
 
+                <a href="{{ route('landing.ctv') }}" wire:navigate
+                    class="flex flex-col items-center justify-center p-3 rounded-2xl transition-all group {{ request()->routeIs('landing.ctv') ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/30' : 'text-slate-400 hover:text-white hover:bg-slate-800' }}"
+                    title="Landing CTV">
+                    <div
+                        class="w-8 h-8 flex items-center justify-center rounded-lg mb-1 {{ request()->routeIs('landing.ctv') ? 'bg-white/20' : 'bg-slate-800 group-hover:bg-slate-700' }}">
+                        <i class="fa-solid fa-rocket text-sm text-emerald-400 group-hover:text-white"></i>
+                    </div>
+                    <span class="text-[9px] font-black text-center leading-none uppercase tracking-tighter">Landing CTV</span>
+                </a>
+
                 @if(auth()->user()->isAdmin())
                 <a href="{{ route('media') }}" wire:navigate
                     class="flex flex-col items-center justify-center p-3 rounded-2xl transition-all group {{ request()->routeIs('media') ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30' : 'text-slate-400 hover:text-white hover:bg-slate-800' }}"
@@ -126,16 +136,6 @@
                         <i class="fa-solid fa-user-group text-sm"></i>
                     </div>
                     <span class="text-[9px] font-black text-center leading-none uppercase tracking-tighter text-balance">Khách Hàng</span>
-                </a>
-
-                <a href="{{ route('landing.ctv') }}" wire:navigate
-                    class="flex flex-col items-center justify-center p-3 rounded-2xl transition-all group {{ request()->routeIs('landing.ctv') ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/30' : 'text-slate-400 hover:text-white hover:bg-slate-800' }}"
-                    title="Landing CTV">
-                    <div
-                        class="w-8 h-8 flex items-center justify-center rounded-lg mb-1 {{ request()->routeIs('landing.ctv') ? 'bg-white/20' : 'bg-slate-800 group-hover:bg-slate-700' }}">
-                        <i class="fa-solid fa-link text-sm"></i>
-                    </div>
-                    <span class="text-[9px] font-black text-center leading-none uppercase tracking-tighter">Landing CTV</span>
                 </a>
             </div>
 
@@ -178,7 +178,7 @@
                     x-transition:enter="transition ease-out duration-200"
                     x-transition:enter-start="opacity-0 translate-y-2 scale-95"
                     x-transition:enter-end="opacity-100 translate-y-0 scale-100"
-                    class="absolute bottom-0 left-14 w-52 bg-slate-800 rounded-2xl shadow-2xl border border-slate-700 overflow-hidden z-[60]"
+                    class="absolute bottom-0 left-14 w-52 bg-slate-800 rounded-2xl shadow-2xl border border-slate-700 overflow-hidden z-[9999]"
                     style="display: none;">
                     <div class="p-2 border-b border-slate-700/50">
                         <a href="{{ auth()->user()->isAdmin() ? route('business.detail', auth()->id()) : route('user.profile') }}"
