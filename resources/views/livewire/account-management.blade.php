@@ -25,6 +25,16 @@
 
     <!-- Content -->
     <div class="flex-1 overflow-auto p-2 sm:p-6">
+        <!-- Pagination (Moved to top) -->
+        <div class="mb-6 flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="hidden md:block text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                Hiển thị bản ghi {{ $users->firstItem() ?? 0 }} - {{ $users->lastItem() ?? 0 }} / {{ $users->total() }}
+            </div>
+            <div class="w-full md:w-auto flex justify-center">
+                {{ $users->links() }}
+            </div>
+        </div>
+
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse min-w-[800px] sm:min-w-0">
@@ -45,7 +55,7 @@
                                 <td class="px-6 py-4">
                                     <div class="flex items-center gap-3">
                                         <div
-                                            class="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-600 text-white flex items-center justify-center font-bold text-xs ring-2 ring-white">
+                                            class="w-8 h-8 shrink-0 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-600 text-white flex items-center justify-center font-bold text-xs ring-2 ring-white">
                                             {{ substr($user->name, 0, 1) }}
                                         </div>
                                         <span class="font-semibold text-slate-800">{{ $user->name }}</span>
@@ -95,9 +105,7 @@
                 </table>
             </div>
         </div>
-        <div class="mt-4">
-            {{ $users->links() }}
-        </div>
+
     </div>
 
     <!-- Create/Edit Modal -->
