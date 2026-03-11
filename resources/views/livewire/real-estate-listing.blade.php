@@ -241,6 +241,17 @@
 
     <!-- Main Content: Scrollable Grid -->
     <div class="flex-1 overflow-y-auto p-3">
+        <!-- Pagination (Moved to top) -->
+        <div class="mb-6 px-3 flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="hidden md:block text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                Hiển thị {{ $listings->firstItem() ?? 0 }} - {{ $listings->lastItem() ?? 0 }} /
+                {{ $listings->total() }}
+            </div>
+            <div class="w-full md:w-auto flex justify-center">
+                {{ $listings->links() }}
+            </div>
+        </div>
+
         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-6">
             <!-- Note: User asked for "1 dòng 1 item" but in a grid context.
                  If 3/7 split is item internal, maybe they want a list of items stacked?
@@ -413,9 +424,6 @@
             @endforeach
         </div>
 
-        <div class="mt-6">
-            {{ $listings->links() }}
-        </div>
     </div>
 
 

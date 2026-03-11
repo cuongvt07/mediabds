@@ -23,6 +23,16 @@
 
     <!-- Content -->
     <div class="flex-1 overflow-auto p-4 sm:p-6">
+        <!-- Pagination (Moved to top) -->
+        <div class="mb-6 flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="hidden md:block text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                Hiển thị bản ghi {{ $users->firstItem() ?? 0 }} - {{ $users->lastItem() ?? 0 }} / {{ $users->total() }}
+            </div>
+            <div class="w-full md:w-auto flex justify-center">
+                {{ $users->links() }}
+            </div>
+        </div>
+
         <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden overflow-x-auto">
             <div class="min-w-[800px]">
                 <table class="w-full text-left border-collapse">
@@ -89,15 +99,6 @@
                         @endforelse
                     </tbody>
                 </table>
-            </div>
-        </div>
-        <!-- Pagination -->
-        <div class="mt-6 flex flex-col md:flex-row items-center justify-between gap-4">
-            <div class="hidden md:block text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                Hiển thị bản ghi {{ $users->firstItem() ?? 0 }} - {{ $users->lastItem() ?? 0 }} / {{ $users->total() }}
-            </div>
-            <div class="w-full md:w-auto flex justify-center">
-                {{ $users->links() }}
             </div>
         </div>
     </div>

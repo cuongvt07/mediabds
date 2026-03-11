@@ -39,6 +39,16 @@
 
     <!-- Customer List -->
     <div class="flex-1 overflow-auto p-2 sm:p-4">
+        <!-- Pagination (Moved to top) -->
+        <div class="mb-6 flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="hidden md:block text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                Hiển thị {{ $customers->firstItem() ?? 0 }} - {{ $customers->lastItem() ?? 0 }} /
+                {{ $customers->total() }}
+            </div>
+            <div class="w-full md:w-auto flex justify-center">
+                {{ $customers->links() }}
+            </div>
+        </div>
         <div class="bg-white rounded-lg border overflow-hidden">
             <div class="overflow-x-auto">
                 <table class="w-full text-sm min-w-[800px] sm:min-w-0">
@@ -128,16 +138,6 @@
             </div>
         </div>
 
-        <!-- Pagination -->
-        <div class="mt-4 flex flex-col md:flex-row items-center justify-between gap-4">
-            <div class="hidden md:block text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                Hiển thị {{ $customers->firstItem() ?? 0 }} - {{ $customers->lastItem() ?? 0 }} /
-                {{ $customers->total() }}
-            </div>
-            <div class="w-full md:w-auto flex justify-center">
-                {{ $customers->links() }}
-            </div>
-        </div>
     </div>
 
     <!-- Create/Edit Modal -->

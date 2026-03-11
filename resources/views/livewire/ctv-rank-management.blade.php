@@ -48,6 +48,16 @@
         </div>
     </div>
 
+    <!-- Pagination (Moved to top) -->
+    <div class="mb-6 flex flex-col md:flex-row items-center justify-between gap-3">
+        <div class="hidden md:block text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">
+            Tổng số {{ $ranks->total() }} hạng mục
+        </div>
+        <div class="w-full md:w-auto flex justify-center">
+            {{ $ranks->links(data: ['scrollTo' => false]) }}
+        </div>
+    </div>
+
     <!-- Data Table -->
     <div
         class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex-1 flex flex-col relative before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-slate-200 before:to-transparent">
@@ -109,15 +119,6 @@
                     @endforelse
                 </tbody>
             </table>
-        </div>
-        <!-- Pagination -->
-        <div class="mt-auto border-t border-slate-200 bg-slate-50 px-5 py-4 flex flex-col md:flex-row items-center justify-between gap-3">
-            <div class="hidden md:block text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">
-                Tổng số {{ $ranks->total() }} hạng mục
-            </div>
-            <div class="w-full md:w-auto flex justify-center">
-                {{ $ranks->links(data: ['scrollTo' => false]) }}
-            </div>
         </div>
     </div>
 
