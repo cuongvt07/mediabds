@@ -129,12 +129,14 @@
         </div>
 
         <!-- Pagination -->
-        <div class="mt-4 flex items-center justify-between text-sm">
-            <span class="text-gray-500">
+        <div class="mt-4 flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="hidden md:block text-[10px] font-black text-slate-400 uppercase tracking-widest">
                 Hiển thị {{ $customers->firstItem() ?? 0 }} - {{ $customers->lastItem() ?? 0 }} /
                 {{ $customers->total() }}
-            </span>
-            {{ $customers->links() }}
+            </div>
+            <div class="w-full md:w-auto flex justify-center">
+                {{ $customers->links() }}
+            </div>
         </div>
     </div>
 

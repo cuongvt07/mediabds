@@ -110,8 +110,14 @@
                 </tbody>
             </table>
         </div>
-        <div class="mt-auto border-t border-slate-200 bg-slate-50 px-5 py-3">
-            {{ $ranks->links(data: ['scrollTo' => false]) }}
+        <!-- Pagination -->
+        <div class="mt-auto border-t border-slate-200 bg-slate-50 px-5 py-4 flex flex-col md:flex-row items-center justify-between gap-3">
+            <div class="hidden md:block text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">
+                Tổng số {{ $ranks->total() }} hạng mục
+            </div>
+            <div class="w-full md:w-auto flex justify-center">
+                {{ $ranks->links(data: ['scrollTo' => false]) }}
+            </div>
         </div>
     </div>
 

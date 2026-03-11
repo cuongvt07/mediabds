@@ -91,8 +91,14 @@
                 </table>
             </div>
         </div>
-        <div class="mt-4">
-            {{ $users->links() }}
+        <!-- Pagination -->
+        <div class="mt-6 flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="hidden md:block text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                Hiển thị bản ghi {{ $users->firstItem() ?? 0 }} - {{ $users->lastItem() ?? 0 }} / {{ $users->total() }}
+            </div>
+            <div class="w-full md:w-auto flex justify-center">
+                {{ $users->links() }}
+            </div>
         </div>
     </div>
 
