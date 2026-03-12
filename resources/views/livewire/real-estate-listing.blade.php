@@ -828,6 +828,17 @@
 
                         <div class="md:col-span-6">
                             <label class="block text-sm font-bold text-gray-700 mb-1"><i
+                                    class="fa-brands fa-tiktok text-pink-500 mr-1"></i>Link TikTok</label>
+                            <input wire:model="tiktok_link" type="url"
+                                placeholder="https://www.tiktok.com/@username..."
+                                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                            @error('tiktok_link')
+                                <span class="text-red-500 text-xs">{{ $message }}</span>
+                            @enderror
+                        </div>
+
+                        <div class="md:col-span-6">
+                            <label class="block text-sm font-bold text-gray-700 mb-1"><i
                                     class="fa-solid fa-map-location-dot text-green-600 mr-1"></i>Link Google
                                 Map</label>
                             <input wire:model="google_map_link" type="text"
@@ -1086,9 +1097,9 @@
                             </div>
                         </div>
 
-                        {{-- External Links (Facebook, YouTube & Google Map) --}}
-                        @if (!empty($selectedListing['facebook_link']) || !empty($selectedListing['google_map_link']) || !empty($selectedListing['youtube_link']))
-                            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                        {{-- External Links --}}
+                        @if (!empty($selectedListing['facebook_link']) || !empty($selectedListing['google_map_link']) || !empty($selectedListing['youtube_link']) || !empty($selectedListing['tiktok_link']))
+                            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                                 @if (!empty($selectedListing['facebook_link']))
                                     <a href="{{ $selectedListing['facebook_link'] }}" target="_blank"
                                         rel="noopener noreferrer"
@@ -1105,6 +1116,15 @@
                                         <div class="absolute inset-x-0 bottom-0 h-1 bg-white/20 transform translate-y-full group-hover:translate-y-0 transition-transform"></div>
                                         <i class="fa-brands fa-youtube text-lg"></i>
                                         <span>Video Review</span>
+                                    </a>
+                                @endif
+                                @if (!empty($selectedListing['tiktok_link']))
+                                    <a href="{{ $selectedListing['tiktok_link'] }}" target="_blank"
+                                        rel="noopener noreferrer"
+                                        class="bg-gradient-to-r from-pink-500 via-fuchsia-600 to-slate-900 hover:from-pink-600 hover:to-slate-900 text-white px-4 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition-all group overflow-hidden relative">
+                                        <div class="absolute inset-x-0 bottom-0 h-1 bg-white/20 transform translate-y-full group-hover:translate-y-0 transition-transform"></div>
+                                        <i class="fa-brands fa-tiktok text-lg"></i>
+                                        <span>Video TikTok</span>
                                     </a>
                                 @endif
                                 @if (!empty($selectedListing['google_map_link']))

@@ -109,6 +109,7 @@ class RealEstateListing extends Component
     public $youtube_link;
     public $facebook_link;
     public $google_map_link;
+    public $tiktok_link;
     public $description;
     public $images = []; // Array of URLs
     public $tempImages = []; // For new uploads
@@ -469,11 +470,14 @@ class RealEstateListing extends Component
             $this->facebook_link = null;
         if ($this->google_map_link === '')
             $this->google_map_link = null;
+        if ($this->tiktok_link === '')
+            $this->tiktok_link = null;
 
         $rules = [
             'title' => 'required',
             'facebook_link' => 'nullable|url|max:2000',
             'google_map_link' => 'nullable|url|max:2000',
+            'tiktok_link' => 'nullable|url|max:2000',
         ];
 
         if ($this->type !== 'Cần mua') {
@@ -558,6 +562,7 @@ class RealEstateListing extends Component
             'youtube_link' => $this->youtube_link,
             'facebook_link' => $this->facebook_link,
             'google_map_link' => $this->google_map_link,
+            'tiktok_link' => $this->tiktok_link,
             'description' => $this->description,
             'images' => $this->images,
             'avatar' => $this->avatar,
@@ -645,6 +650,7 @@ class RealEstateListing extends Component
         $this->youtube_link = $listing->youtube_link;
         $this->facebook_link = $listing->facebook_link;
         $this->google_map_link = $listing->google_map_link;
+        $this->tiktok_link = $listing->tiktok_link;
         $this->description = $listing->description;
         $this->images = $listing->images ?? [];
         $this->avatar = $listing->avatar;
@@ -714,7 +720,7 @@ class RealEstateListing extends Component
     public function resetForm()
     {
         $this->selectedListingId = null;
-        $this->reset(['title', 'type', 'contact_type', 'contact_phone', 'house_password', 'code', 'is_sold', 'address', 'area', 'price', 'description', 'floors', 'bedrooms', 'toilets', 'direction', 'front_width', 'road_width', 'youtube_link', 'facebook_link', 'google_map_link', 'images', 'province_id', 'district_id', 'ward_id', 'tempImages', 'avatar', 'tempAvatar']);
+        $this->reset(['title', 'type', 'contact_type', 'contact_phone', 'house_password', 'code', 'is_sold', 'address', 'area', 'price', 'description', 'floors', 'bedrooms', 'toilets', 'direction', 'front_width', 'road_width', 'youtube_link', 'facebook_link', 'google_map_link', 'tiktok_link', 'images', 'province_id', 'district_id', 'ward_id', 'tempImages', 'avatar', 'tempAvatar']);
         $this->is_sold = false;
         $this->districts = [];
         $this->wards = [];
