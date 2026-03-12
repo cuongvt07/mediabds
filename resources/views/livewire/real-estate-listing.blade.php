@@ -93,6 +93,8 @@
                     $filter_month ||
                     $filter_year ||
                     $filter_phone ||
+                    $filter_date_from ||
+                    $filter_date_to ||
                     $filter_is_sold !== null)
                 <button wire:click="clearFilters"
                     class="text-xs text-red-500 hover:text-red-700 font-semibold flex items-center gap-1">
@@ -197,7 +199,19 @@
                 </select>
             </div>
 
+            {{-- Date From Filter --}}
+            <div>
+                <label class="text-xs font-semibold text-gray-500 uppercase mb-1 block">Từ ngày</label>
+                <input type="date" wire:model.live="filter_date_from"
+                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+            </div>
 
+            {{-- Date To Filter --}}
+            <div>
+                <label class="text-xs font-semibold text-gray-500 uppercase mb-1 block">Đến ngày</label>
+                <input type="date" wire:model.live="filter_date_to"
+                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+            </div>
 
             {{-- Province Filter --}}
             <div>

@@ -113,13 +113,13 @@
         <div class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4"
             x-transition.opacity>
             <div
-                class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200">
+                class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90dvh]">
                 <div
-                    class="flex justify-between items-center px-6 py-4 border-b border-gray-200 bg-gray-50 rounded-t-2xl">
+                    class="flex justify-between items-center px-6 py-4 border-b border-gray-200 bg-gray-50 rounded-t-2xl shrink-0">
                     <h2 class="text-xl font-black text-gray-800 uppercase flex items-center gap-2">
                         <span class="bg-blue-100 text-blue-600 p-2 rounded-lg"><i
                                 class="fa-solid fa-user-gear"></i></span>
-                        {{ $selectedUserId ? 'Cập Nhật Tài Khoản' : 'Thêm Tài Khoản Mới' }}
+                        {{ $selectedUserId ? 'Cập Nhật' : 'Thêm' }} <span class="hidden xs:inline">Tài Khoản</span>
                     </h2>
                     <button wire:click="closeCreatePopup"
                         class="text-gray-400 hover:text-red-500 transition-colors w-8 h-8 flex items-center justify-center rounded-full hover:bg-red-50">
@@ -127,7 +127,7 @@
                     </button>
                 </div>
 
-                <div class="p-6 space-y-4 overflow-y-auto">
+                <div class="p-6 space-y-4 overflow-y-auto flex-1 min-h-0 custom-scrollbar">
                     <div>
                         <label class="block text-sm font-bold text-gray-700 mb-1">Họ và Tên <span
                                 class="text-red-500">*</span></label>
@@ -238,7 +238,7 @@
 
                 </div>
 
-                <div class="p-4 border-t border-gray-200 flex justify-end space-x-3 bg-gray-50 rounded-b-2xl">
+                <div class="p-4 border-t border-gray-200 flex justify-end space-x-3 bg-gray-50 rounded-b-2xl shrink-0">
                     <button wire:click="closeCreatePopup"
                         class="px-5 py-2.5 rounded-xl text-gray-600 hover:bg-gray-200 font-bold transition-colors">Hủy
                         bỏ</button>
