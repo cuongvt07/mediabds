@@ -4,6 +4,7 @@ namespace App\Exports;
 
 use App\Models\RealEstateListing;
 use App\Models\CtvRank;
+use Carbon\Carbon;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
@@ -18,6 +19,22 @@ use PhpOffice\PhpSpreadsheet\Style\Border;
 class ListingsExport implements FromCollection, WithHeadings, WithMapping, WithStyles, ShouldAutoSize, WithTitle
 {
     protected $filters;
+
+    private const PROPERTY_TYPES = [
+        110 => 'Bất động sản khác',
+        102 => 'Biệt thự',
+        103 => 'Căn hộ – chung cư',
+        104 => 'Đất',
+        105 => 'Đất nền dự án',
+        106 => 'Mặt tiền',
+        107 => 'Nhà mặt phố',
+        111 => 'Nhà mặt phố (LG 4M-5M)',
+        108 => 'Nhà riêng',
+        109 => 'Trang trại',
+        112 => 'Khách sạn',
+        113 => 'Nhà nghỉ',
+        114 => 'Homestay',
+    ];
 
     public function __construct(array $filters)
     {
@@ -116,9 +133,35 @@ class ListingsExport implements FromCollection, WithHeadings, WithMapping, WithS
             ['BÁO CÁO TỔNG HỢP TIN ĐĂNG'], // Row 1: Title
             [
                 'Mã tin',
+                'Tiêu đề',
+                'Loại tin',
+                'Loại bất động sản',
+                'Tỉnh',
+                'Quận',
+                'Phường',
                 'Địa chỉ',
+                'Diện tích (m²)',
                 'Giá tiền',
+                'Đơn vị giá',
+                'Số tầng',
+                'Phòng ngủ',
+                'Toilet',
+                'Hướng',
+                'Mặt tiền (m)',
+                'Đường (m)',
+                'Chủ/Môi giới',
                 'Số điện thoại',
+                'Mã mở khoá',
+                'Link YouTube',
+                'Link Facebook',
+                'Link TikTok',
+                'Link Google Map',
+                'Ảnh đại diện',
+                'Danh sách ảnh',
+                'Trạng thái',
+                'Ngày tin',
+                'Ngày cập nhật',
+                'Người tạo (ID)',
             ] // Row 2: Headers
         ];
     }
@@ -128,21 +171,76 @@ class ListingsExport implements FromCollection, WithHeadings, WithMapping, WithS
         $addressParts = array_filter([$listing->address, $listing->ward_name, $listing->district_name, $listing->province_name]);
         $fullAddress = implode(', ', $addressParts);
 
-        $priceStr = number_format($listing->price, 0, ',', '.') . ' ' .
-            ($listing->price_unit == 1 ? 'VNĐ' : ($listing->price_unit == 2 ? 'VNĐ/tháng' : 'VNĐ/m2'));
+        $priceStr = '';
+        if ($listing->price !== null && is_numeric($listing->price)) {
+            $priceStr = number_format((float) $listing->price, 0, ',', '.');
+        }
+
+        $formatDecimal = function ($value) {
+            if ($value === null || $value === '') {
+                return '';
+            }
+            if (!is_numeric($value)) {
+                return (string) $value;
+            }
+            return number_format((float) $value, 2, ',', '.');
+        };
+
+        $propertyTypeLabel = self::PROPERTY_TYPES[$listing->property_type] ?? 'Khác';
+
+        $images = $listing->images;
+        if (is_string($images)) {
+            $decoded = json_decode($images, true);
+            $images = $decoded ?: [];
+        }
+        if (!is_array($images)) {
+            $images = [];
+        }
+        $imageList = implode(' | ', array_filter($images));
+
+        $publishedAt = Carbon::parse($listing->created_at)->format('d/m/Y H:i');
+        $updatedAt = Carbon::parse($listing->updated_at)->format('d/m/Y H:i');
+
+        $status = $listing->is_sold ? 'Đã bán' : 'Chưa bán';
 
         return [
             $listing->code,
-            $fullAddress,
+            $listing->title,
+            $listing->type,
+            $propertyTypeLabel,
+            $listing->province_name,
+            $listing->district_name,
+            $listing->ward_name,
+            $listing->address,
+            $formatDecimal($listing->area),
             $priceStr,
+            $listing->price_unit,
+            $listing->floors,
+            $listing->bedrooms,
+            $listing->toilets,
+            $listing->direction,
+            $formatDecimal($listing->front_width),
+            $formatDecimal($listing->road_width),
+            $listing->contact_type,
             $listing->contact_phone,
+            $listing->house_password,
+            $listing->youtube_link,
+            $listing->facebook_link,
+            $listing->tiktok_link,
+            $listing->google_map_link,
+            $listing->avatar,
+            $imageList,
+            $status,
+            $publishedAt,
+            $updatedAt,
+            $listing->user_id,
         ];
     }
 
     public function styles(Worksheet $sheet)
     {
         // Merge title cells
-        $sheet->mergeCells('A1:D1');
+        $sheet->mergeCells('A1:AD1');
 
         $styleArray = [
             // Style for Title (Row 1)
