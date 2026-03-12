@@ -872,7 +872,7 @@
         <div class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-2 md:p-4"
             x-transition.opacity>
             <div
-                class="bg-white w-full max-w-4xl rounded-2xl shadow-2xl flex flex-col max-h-[95vh] animate-[scaleIn_0.2s_ease-out] overflow-hidden">
+                class="bg-white w-full max-w-4xl rounded-2xl shadow-2xl flex flex-col h-[calc(100dvh-1rem)] md:h-auto md:max-h-[95vh] animate-[scaleIn_0.2s_ease-out] overflow-hidden">
 
                 {{-- Header --}}
                 <div
@@ -889,7 +889,7 @@
                 </div>
 
                 {{-- Content --}}
-                <div class="flex-1 overflow-y-auto p-6 custom-scrollbar">
+                <div class="flex-1 overflow-y-auto p-4 md:p-6 custom-scrollbar">
                     {{-- Image Gallery --}}
                     <div class="mb-6" x-data="{
                         mainImage: {{ \Illuminate\Support\Js::from(!empty($selectedListing['images']) && count($selectedListing['images']) > 0 ? $selectedListing['images'][0] : 'https://placehold.co/800x600?text=No+Image') }},
@@ -1072,23 +1072,34 @@
                             </div>
                         </div>
 
-                        {{-- External Links (Facebook & Google Map) --}}
-                        @if (!empty($selectedListing['facebook_link']) || !empty($selectedListing['google_map_link']))
-                            <div class="flex flex-wrap gap-3">
+                        {{-- External Links (Facebook, YouTube & Google Map) --}}
+                        @if (!empty($selectedListing['facebook_link']) || !empty($selectedListing['google_map_link']) || !empty($selectedListing['youtube_link']))
+                            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                                 @if (!empty($selectedListing['facebook_link']))
                                     <a href="{{ $selectedListing['facebook_link'] }}" target="_blank"
                                         rel="noopener noreferrer"
-                                        class="flex-1 min-w-[140px] bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-4 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition-all">
+                                        class="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-4 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition-all group overflow-hidden relative">
+                                        <div class="absolute inset-x-0 bottom-0 h-1 bg-white/20 transform translate-y-full group-hover:translate-y-0 transition-transform"></div>
                                         <i class="fa-brands fa-facebook text-lg"></i>
-                                        Xem Bài viết
+                                        <span>Bài viết Facebook</span>
+                                    </a>
+                                @endif
+                                @if (!empty($selectedListing['youtube_link']))
+                                    <a href="{{ $selectedListing['youtube_link'] }}" target="_blank"
+                                        rel="noopener noreferrer"
+                                        class="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white px-4 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition-all group overflow-hidden relative">
+                                        <div class="absolute inset-x-0 bottom-0 h-1 bg-white/20 transform translate-y-full group-hover:translate-y-0 transition-transform"></div>
+                                        <i class="fa-brands fa-youtube text-lg"></i>
+                                        <span>Video Review</span>
                                     </a>
                                 @endif
                                 @if (!empty($selectedListing['google_map_link']))
                                     <a href="{{ $selectedListing['google_map_link'] }}" target="_blank"
                                         rel="noopener noreferrer"
-                                        class="flex-1 min-w-[140px] bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-4 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition-all">
+                                        class="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-4 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition-all group overflow-hidden relative">
+                                        <div class="absolute inset-x-0 bottom-0 h-1 bg-white/20 transform translate-y-full group-hover:translate-y-0 transition-transform"></div>
                                         <i class="fa-solid fa-map-location-dot text-lg"></i>
-                                        Xem Google Map
+                                        <span>Google Map</span>
                                     </a>
                                 @endif
                             </div>
@@ -1234,17 +1245,17 @@
                 </div>
 
                 {{-- Footer Actions --}}
-                <div class="p-3 md:p-4 border-t border-gray-200 grid grid-cols-2 md:flex md:justify-end gap-2 md:gap-3 bg-gray-50 shrink-0"
+                <div class="p-4 border-t border-gray-200 grid grid-cols-2 sm:flex sm:justify-end gap-3 bg-slate-50/80 backdrop-blur-md shrink-0 sticky bottom-0 z-20"
                     x-data="{ copied: false }">
                     @if ($selectedListing['contact_phone'])
                         <a href="tel:{{ $selectedListing['contact_phone'] }}"
-                            class="px-3 py-2 md:px-5 md:py-2.5 rounded-lg md:rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white text-sm md:text-base font-bold transition-all flex items-center justify-center gap-2 shadow-sm md:shadow-lg focus:outline-none ring-2 md:ring-4 ring-green-200">
-                            <i class="fa-solid fa-phone-volume"></i>
+                            class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white text-sm md:text-base font-bold transition-all flex items-center justify-center gap-2 shadow-lg hover:shadow-emerald-500/20 active:scale-95">
+                            <i class="fa-solid fa-phone-volume animate-pulse"></i>
                             <span>Gọi Ngay</span>
                         </a>
                     @endif
                     <button wire:click.stop="toggleSold({{ $selectedListing['id'] }})"
-                        class="px-3 py-2 md:px-5 md:py-2.5 rounded-lg md:rounded-xl {{ $selectedListing['is_sold'] ? 'bg-gray-600 hover:bg-gray-700' : 'bg-green-600 hover:bg-green-700' }} text-white text-xs md:text-base font-bold transition-all flex items-center justify-center gap-1 md:gap-2 shadow-sm md:shadow-lg">
+                        class="px-4 py-2.5 rounded-xl {{ $selectedListing['is_sold'] ? 'bg-slate-600 hover:bg-slate-700' : 'bg-blue-600 hover:bg-blue-700' }} text-white text-sm md:text-base font-bold transition-all flex items-center justify-center gap-2 shadow-lg active:scale-95">
                         <i
                             class="fa-solid {{ $selectedListing['is_sold'] ? 'fa-rotate-left' : 'fa-check-circle' }}"></i>
                         <span>{{ $selectedListing['is_sold'] ? 'Chưa bán' : 'Đã bán' }}</span>
@@ -1256,15 +1267,15 @@
                             copied = true;
                             setTimeout(() => copied = false, 2000);
                         "
-                        class="px-3 py-2 md:px-5 md:py-2.5 rounded-lg md:rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs md:text-base font-bold transition-all flex items-center justify-center gap-1 md:gap-2 shadow-sm md:shadow-lg">
+                        class="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm md:text-base font-bold transition-all flex items-center justify-center gap-2 shadow-lg active:scale-95">
                         <i class="fa-regular fa-copy" x-show="!copied"></i>
                         <i class="fa-solid fa-check" x-show="copied" style="display: none;"></i>
                         <span x-text="copied ? 'Đã Copy' : 'Copy QC'"></span>
                     </button>
                     <button wire:click="editFromDetail"
-                        class="px-3 py-2 md:px-5 md:py-2.5 rounded-lg md:rounded-xl bg-orange-600 hover:bg-orange-700 text-white text-xs md:text-base font-bold transition-all flex items-center justify-center gap-1 md:gap-2 shadow-sm md:shadow-lg">
+                        class="px-4 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-sm md:text-base font-bold transition-all flex items-center justify-center gap-2 shadow-lg active:scale-95">
                         <i class="fa-solid fa-pen-to-square"></i>
-                        Chỉnh Sửa
+                        <span>Chỉnh Sửa</span>
                     </button>
                 </div>
 
