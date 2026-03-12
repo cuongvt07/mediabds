@@ -36,6 +36,8 @@ class RealEstateListing extends Component
     public $filter_phone; // Filter by contact phone
     public $filter_month; // Filter by month
     public $filter_year; // Filter by year
+    public $filter_date_from;
+    public $filter_date_to;
     public $filter_districts = [];
     public $filter_wards = [];
 
@@ -291,6 +293,8 @@ class RealEstateListing extends Component
         $this->filter_month = null;
         $this->filter_year = null;
         $this->filter_phone = null;
+        $this->filter_date_from = null;
+        $this->filter_date_to = null;
         $this->filter_districts = [];
         $this->filter_wards = [];
     }
@@ -1005,6 +1009,8 @@ class RealEstateListing extends Component
             'is_sold' => $this->filter_is_sold,
             'month' => $this->filter_month,
             'year' => $this->filter_year,
+            'date_from' => $this->filter_date_from,
+            'date_to' => $this->filter_date_to,
             'page' => $this->getPage(),
             'version' => $this->getCacheVersion(), // Include version in key
         ];
@@ -1086,6 +1092,14 @@ class RealEstateListing extends Component
                 $query->whereYear('created_at', $this->filter_year);
             }
 
+            // Date Range Filters
+            if (!empty($this->filter_date_from)) {
+                $query->whereDate('created_at', '>=', $this->filter_date_from);
+            }
+            if (!empty($this->filter_date_to)) {
+                $query->whereDate('created_at', '<=', $this->filter_date_to);
+            }
+
             // Phone Filter (for customer listings) - support multiple comma-separated phones
             if (!empty($this->filter_phone)) {
                 $phones = array_filter(explode(',', $this->filter_phone));
@@ -1146,6 +1160,8 @@ class RealEstateListing extends Component
             'month' => $this->filter_month,
             'year' => $this->filter_year,
             'phone' => $this->filter_phone,
+            'date_from' => $this->filter_date_from,
+            'date_to' => $this->filter_date_to,
         ];
 
         return Excel::download(new ListingsExport($filters), 'tong-hop-tin-dang-' . date('Y-m-d') . '.xlsx');
