@@ -124,7 +124,7 @@ class ListingsExport implements FromCollection, WithHeadings, WithMapping, WithS
             }
         }
 
-        return $query->get();
+        return $query->with('user:id,name')->get();
     }
 
     public function headings(): array
@@ -160,8 +160,8 @@ class ListingsExport implements FromCollection, WithHeadings, WithMapping, WithS
                 'Danh sách ảnh',
                 'Trạng thái',
                 'Ngày tin',
-                'Ngày cập nhật',
                 'Người tạo (ID)',
+                'Người tạo',
             ] // Row 2: Headers
         ];
     }
@@ -198,8 +198,7 @@ class ListingsExport implements FromCollection, WithHeadings, WithMapping, WithS
         }
         $imageList = implode(' | ', array_filter($images));
 
-        $publishedAt = Carbon::parse($listing->created_at)->format('d/m/Y H:i');
-        $updatedAt = Carbon::parse($listing->updated_at)->format('d/m/Y H:i');
+        $publishedAt = Carbon::parse($listing->created_at)->format('d/m/Y');
 
         $status = $listing->is_sold ? 'Đã bán' : 'Chưa bán';
 
@@ -232,8 +231,8 @@ class ListingsExport implements FromCollection, WithHeadings, WithMapping, WithS
             $imageList,
             $status,
             $publishedAt,
-            $updatedAt,
             $listing->user_id,
+            optional($listing->user)->name,
         ];
     }
 
