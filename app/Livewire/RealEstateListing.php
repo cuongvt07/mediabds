@@ -1273,4 +1273,15 @@ class RealEstateListing extends Component
 
         return Excel::download(new ListingsExport($filters), 'tong-hop-tin-dang-' . date('Y-m-d') . '.xlsx');
     }
+
+    protected function normalizeCurrency($value)
+    {
+        if ($value === null || $value === '')
+            return null;
+        // Remove spaces and dots (thousand separators)
+        $clean = str_replace(['.', ' '], '', $value);
+        // Replace comma with dot for decimal
+        $clean = str_replace(',', '.', $clean);
+        return (float) $clean;
+    }
 }
