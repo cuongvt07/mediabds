@@ -560,7 +560,7 @@ class RealEstateListing extends Component
 
             'address' => $this->address,
             'area' => $this->area,
-            'price' => $this->price,
+            'price' => $this->normalizeCurrency($this->price),
             'price_unit' => $this->price_unit,
             'floors' => $this->floors,
             'bedrooms' => $this->bedrooms,

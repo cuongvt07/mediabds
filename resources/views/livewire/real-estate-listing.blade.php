@@ -443,10 +443,9 @@
 
     <!-- Create Listing Popup (User Provided HTML adapted) -->
     @if ($showCreatePopup)
-        <div class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-2 md:p-4"
-            x-transition.opacity>
+        <div class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end md:items-center justify-center z-50 p-0 md:p-4 transition-all duration-300 overflow-hidden">
             <div
-                class="bg-white w-full max-w-5xl rounded-2xl shadow-2xl flex flex-col max-h-[95vh] animate-[scaleIn_0.2s_ease-out]">
+                class="bg-white rounded-t-[2.5rem] md:rounded-2xl shadow-2xl w-full max-w-5xl flex flex-col max-h-[85dvh] md:max-h-[90dvh] animate-[slideUp_0.4s_cubic-bezier(0.16,1,0.3,1)] overflow-hidden">
 
                 <div
                     class="flex justify-between items-center px-6 py-4 border-b border-gray-200 bg-gray-50 rounded-t-2xl">
@@ -492,35 +491,40 @@
                             </select>
                         </div>
                         <div class="md:col-span-6 border-b pb-4 mb-2">
-                            <label class="block text-sm font-bold text-gray-700 mb-2">Thông tin liên hệ</label>
-                            <div class="flex items-center gap-4 mb-4">
-                                <label class="flex items-center gap-2 cursor-pointer group">
-                                    <input type="radio" wire:model.live="customer_selection_mode" value="existing" class="w-4 h-4 text-blue-600 focus:ring-blue-500">
-                                    <span class="text-sm font-bold text-gray-700 group-hover:text-blue-600">Khách sẵn</span>
-                                </label>
-                                <label class="flex items-center gap-2 cursor-pointer group">
-                                    <input type="radio" wire:model.live="customer_selection_mode" value="new" class="w-4 h-4 text-blue-600 focus:ring-blue-500">
-                                    <span class="text-sm font-bold text-gray-700 group-hover:text-blue-600">Khách mới</span>
-                                </label>
+                            <div class="flex items-center justify-between mb-3">
+                                <label class="text-sm font-bold text-gray-700">Thông tin khách hàng</label>
+                                @if($customer_selection_mode === 'existing')
+                                    <button type="button" wire:click="$set('customer_selection_mode', 'new')"
+                                        class="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 transition-colors">
+                                        <i class="fa-solid fa-user-plus"></i> Tạo khách mới
+                                    </button>
+                                @else
+                                    <button type="button" wire:click="$set('customer_selection_mode', 'existing')"
+                                        class="text-xs font-bold text-gray-500 hover:text-gray-700 flex items-center gap-1 transition-colors">
+                                        <i class="fa-solid fa-search"></i> Tìm khách sẵn
+                                    </button>
+                                @endif
                             </div>
 
                             @if($customer_selection_mode === 'new')
-                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-blue-50 rounded-xl border border-blue-100 animate-[fadeIn_0.3s]">
-                                    <div>
-                                        <label class="block text-xs font-bold text-blue-700 uppercase mb-1">Họ và Tên <span class="text-red-500">*</span></label>
-                                        <input wire:model="new_customer_name" type="text" placeholder="Nguyễn Văn A" 
-                                            class="w-full border border-blue-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
-                                        @error('new_customer_name') <span class="text-red-500 text-[10px]">{{ $message }}</span> @enderror
+                                <div class="space-y-3 p-4 bg-blue-50/50 rounded-2xl border border-blue-100 animate-[scaleIn_0.2s_ease-out]">
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                        <div>
+                                            <label class="block text-[10px] font-black text-blue-700 uppercase mb-1">Họ và Tên <span class="text-red-500">*</span></label>
+                                            <input wire:model="new_customer_name" type="text" placeholder="Nguyễn Văn A" 
+                                                class="w-full border border-blue-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+                                            @error('new_customer_name') <span class="text-red-500 text-[10px]">{{ $message }}</span> @enderror
+                                        </div>
+                                        <div>
+                                            <label class="block text-[10px] font-black text-blue-700 uppercase mb-1">Số điện thoại <span class="text-red-500">*</span></label>
+                                            <input wire:model="new_customer_phone" type="text" placeholder="090..." 
+                                                class="w-full border border-blue-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+                                            @error('new_customer_phone') <span class="text-red-500 text-[10px]">{{ $message }}</span> @enderror
+                                        </div>
                                     </div>
                                     <div>
-                                        <label class="block text-xs font-bold text-blue-700 uppercase mb-1">SĐT <span class="text-red-500">*</span></label>
-                                        <input wire:model="new_customer_phone" type="text" placeholder="090..." 
-                                            class="w-full border border-blue-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
-                                        @error('new_customer_phone') <span class="text-red-500 text-[10px]">{{ $message }}</span> @enderror
-                                    </div>
-                                    <div>
-                                        <label class="block text-xs font-bold text-blue-700 uppercase mb-1">Loại khách</label>
-                                        <select wire:model="new_customer_status" class="w-full border border-blue-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                                        <label class="block text-[10px] font-black text-blue-700 uppercase mb-1">Loại khách hàng</label>
+                                        <select wire:model="new_customer_status" class="w-full border border-blue-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white">
                                             @foreach(\App\Models\Customer::STATUS_LABELS as $key => $label)
                                                 <option value="{{ $key }}">{{ $label }}</option>
                                             @endforeach
@@ -538,10 +542,9 @@
                                     };
                                     boot();
                                 })">
-                                    <i class="fa-solid fa-phone absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 z-10"></i>
                                     <select x-ref="customerSelect" data-livewire-id="{{ $this->getId() }}"
-                                        class="w-full border border-gray-300 rounded-lg pl-9 pr-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-shadow shadow-sm">
-                                        <option value="">-- Chọn khách hàng sẵn --</option>
+                                        class="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all shadow-sm bg-white">
+                                        <option value="">-- Tìm kiếm SĐT / Tên khách hàng sẵn --</option>
                                         @foreach($allCustomers as $c)
                                             <option value="{{ $c->phone }}" @selected($contact_phone === $c->phone)>
                                                 {{ $c->phone }} - {{ $c->name }}
@@ -914,7 +917,7 @@
                     </form>
                 </div>
 
-                <div class="p-4 border-t border-gray-200 flex justify-end space-x-3 bg-gray-50 rounded-b-2xl">
+                <div class="p-6 pb-12 md:pb-6 border-t border-gray-200 flex justify-end space-x-3 bg-gray-50 rounded-b-2xl">
                     <button wire:click="closeCreatePopup"
                         class="px-5 py-2.5 rounded-xl text-gray-600 hover:bg-gray-200 font-bold transition-colors">Hủy
                         bỏ</button>
@@ -930,9 +933,9 @@
         </div>
     @endif
     @if ($showMediaPopup)
-        <div class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+        <div class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[100] flex items-end md:items-center justify-center p-0 md:p-4 transition-all duration-300 overflow-hidden">
             <div
-                class="bg-white w-full h-full max-w-6xl rounded-2xl shadow-2xl overflow-hidden flex flex-col relative animate-[scaleIn_0.2s_ease-out]">
+                class="bg-white w-full max-w-6xl rounded-t-[2.5rem] md:rounded-2xl shadow-2xl overflow-hidden flex flex-col relative animate-[slideUp_0.4s_cubic-bezier(0.16,1,0.3,1)] max-h-[85dvh] md:max-h-[90dvh]">
                 <!-- Header -->
                 <div class="flex justify-between items-center px-6 py-4 border-b border-gray-100">
                     <h3 class="text-xl font-black text-gray-800 flex items-center gap-2">
@@ -956,10 +959,9 @@
 
     {{-- Detail View Popup --}}
     @if ($showDetailPopup && $selectedListing)
-        <div class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-2 md:p-4"
-            x-transition.opacity>
+        <div class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-end md:items-center justify-center z-50 p-0 md:p-4 transition-all duration-300 overflow-hidden">
             <div
-                class="bg-white w-full max-w-4xl rounded-2xl shadow-2xl flex flex-col h-[calc(100dvh-1rem)] md:h-auto md:max-h-[95vh] animate-[scaleIn_0.2s_ease-out] overflow-hidden">
+                class="bg-white w-full max-w-4xl rounded-t-[2.5rem] md:rounded-2xl shadow-2xl flex flex-col max-h-[85dvh] md:max-h-[90vh] animate-[slideUp_0.4s_cubic-bezier(0.16,1,0.3,1)] overflow-hidden">
 
                 {{-- Header --}}
                 <div
@@ -1350,7 +1352,7 @@
                 </div>
 
                 {{-- Footer Actions --}}
-                <div class="p-4 border-t border-gray-200 grid grid-cols-2 sm:flex sm:justify-end gap-3 bg-slate-50/80 backdrop-blur-md shrink-0 sticky bottom-0 z-20"
+                <div class="p-4 pb-12 md:pb-4 border-t border-gray-200 grid grid-cols-2 sm:flex sm:justify-end gap-3 bg-slate-50/80 backdrop-blur-md shrink-0 sticky bottom-0 z-20"
                     x-data="{ copied: false }">
                     @if ($selectedListing['contact_phone'])
                         <a href="tel:{{ $selectedListing['contact_phone'] }}"
@@ -1389,8 +1391,8 @@
     @endif
 
     @if ($showSoldPopup)
-        <div class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[60] p-2 md:p-4">
-            <div class="bg-white w-full max-w-4xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[95vh] animate-[scaleIn_0.2s_ease-out]">
+        <div class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end md:items-center justify-center z-[60] p-0 md:p-4">
+            <div class="bg-white w-full max-w-4xl rounded-t-[2.5rem] md:rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85dvh] md:max-h-[90dvh] animate-[slideUp_0.4s_cubic-bezier(0.16,1,0.3,1)]">
                 <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gray-50 shrink-0">
                     <h3 class="text-xl font-black text-gray-800 uppercase flex items-center gap-2">
                         <span class="bg-green-100 text-green-700 p-2 rounded-lg"><i
@@ -1417,20 +1419,23 @@
                                 <div>
                                     <label class="block text-sm font-bold text-gray-700 mb-1">Giá Thực Tế</label>
                                     <input wire:model.live.debounce.500ms="saleActualPrice" type="text"
-                                        x-on:input="$el.value = $el.value.replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.')"
+                                        x-data="{ val: @entangle('saleActualPrice') }"
+                                        x-init="$watch('val', v => { if(v) val = v.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') })"
+                                        x-on:input="val = $el.value.replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.'); $wire.set('saleActualPrice', $el.value.replace(/[^0-9]/g, ''), true)"
                                         class="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-green-500 outline-none shadow-sm font-bold text-green-700">
                                 </div>
                                 <div>
                                     <label class="block text-sm font-bold text-gray-700 mb-1">% Doanh Thu</label>
-                                    <input wire:model.live.debounce.500ms="saleRevenuePercent" type="text"
+                                    <input wire:model.live.debounce.500ms="saleRevenuePercent" type="number"
                                         class="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-green-500 outline-none shadow-sm font-bold">
                                 </div>
                             </div>
-
                             <div>
                                 <label class="block text-sm font-bold text-gray-700 mb-1">Thưởng Thêm</label>
                                 <input wire:model.live.debounce.500ms="saleBonusAmount" type="text"
-                                    x-on:input="$el.value = $el.value.replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.')"
+                                    x-data="{ val: @entangle('saleBonusAmount') }"
+                                    x-init="$watch('val', v => { if(v) val = v.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') })"
+                                    x-on:input="val = $el.value.replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.'); $wire.set('saleBonusAmount', $el.value.replace(/[^0-9]/g, ''), true)"
                                     class="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-green-500 outline-none shadow-sm font-bold text-orange-600">
                             </div>
                         </div>
@@ -1484,10 +1489,17 @@
                             </button>
                         </div>
 
-                        <div class="space-y-3">
+                        <div class="space-y-2">
+                            {{-- Header --}}
+                            <div class="hidden md:flex gap-3 px-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                                <div class="flex-1">Thành viên</div>
+                                <div class="w-64">Số tiền nhận (VNĐ)</div>
+                                <div class="w-11"></div>
+                            </div>
+
                             @foreach ($sale_members as $index => $member)
-                                <div class="flex flex-col md:flex-row gap-3 p-4 bg-gray-50 rounded-2xl border border-gray-100 relative group animate-[fadeIn_0.2s]">
-                                    <div class="flex-1" wire:ignore x-data x-init="$nextTick(() => {
+                                <div class="flex flex-col md:flex-row items-center gap-3 p-2 md:p-3 bg-white rounded-2xl border border-gray-100 shadow-sm group animate-[scaleIn_0.1s_ease-out]">
+                                    <div class="flex-1 w-full" wire:ignore x-data x-init="$nextTick(() => {
                                         const boot = () => {
                                             if (window.initSelect2) {
                                                 window.initSelect2($refs.userSelect, 'sale_members.{{ $index }}.user_id', @js($member['user_id']));
@@ -1497,9 +1509,8 @@
                                         };
                                         boot();
                                     })">
-                                        <label class="block text-[10px] font-black text-gray-400 uppercase mb-1">Chọn Thành Viên</label>
                                         <select x-ref="userSelect" data-livewire-id="{{ $this->getId() }}"
-                                            class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none bg-white shadow-sm">
+                                            class="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50/50">
                                             <option value="">-- Chọn nhân viên --</option>
                                             @foreach ($salesUsers as $u)
                                                 <option value="{{ $u->id }}" @selected($member['user_id'] == $u->id)>{{ $u->name }} ({{ $u->phone }})</option>
@@ -1507,18 +1518,19 @@
                                         </select>
                                     </div>
                                     <div class="w-full md:w-64">
-                                        <label class="block text-[10px] font-black text-gray-400 uppercase mb-1">Số Tiền Nhận</label>
-                                        <div class="relative">
-                                            <input wire:model.live.debounce.500ms="sale_members.{{ $index }}.received_amount" type="number" 
-                                                class="w-full border border-gray-300 rounded-xl pl-4 pr-12 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none bg-white shadow-sm font-bold text-blue-700"
+                                        <div class="relative" x-data="{ val: @entangle('sale_members.'.$index.'.received_amount') }"
+                                            x-init="$watch('val', v => { if(v) val = v.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') })">
+                                            <input type="text" 
+                                                x-model="val"
+                                                x-on:input="val = $el.value.replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.'); $wire.set('sale_members.{{ $index }}.received_amount', $el.value.replace(/[^0-9]/g, ''), true)"
+                                                class="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50/50 font-bold text-blue-700"
                                                 placeholder="0">
-                                            <span class="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">VNĐ</span>
                                         </div>
                                     </div>
-                                    <div class="flex items-end">
+                                    <div class="shrink-0">
                                         <button type="button" wire:click="removeSaleMember({{ $index }})"
-                                            class="w-11 h-11 flex items-center justify-center rounded-xl bg-red-100 text-red-600 hover:bg-red-600 hover:text-white transition-all">
-                                            <i class="fa-solid fa-trash-can"></i>
+                                            class="w-10 h-10 flex items-center justify-center rounded-xl bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-all">
+                                            <i class="fa-solid fa-times"></i>
                                         </button>
                                     </div>
                                 </div>
@@ -1536,7 +1548,7 @@
                     </div>
                 </div>
 
-                <div class="px-6 py-4 border-t border-gray-200 bg-white flex justify-end gap-3 shrink-0">
+                <div class="px-6 py-4 pb-12 md:pb-4 border-t border-gray-200 bg-white flex justify-end gap-3 shrink-0">
                     <button wire:click="closeSoldPopup"
                         class="px-6 py-3 rounded-xl text-gray-600 hover:bg-gray-100 font-bold transition-colors">Đóng</button>
                     <button wire:click="saveSoldInformation"

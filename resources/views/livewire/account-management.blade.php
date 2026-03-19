@@ -1,4 +1,4 @@
-<div class="h-full flex flex-col bg-slate-50 relative">
+<div class="min-h-[100dvh] flex flex-col bg-slate-50 relative">
     <!-- Header -->
     <div
         class="bg-white border-b border-gray-200 px-6 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shrink-0">
@@ -113,7 +113,7 @@
         <div class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4"
             x-transition.opacity>
             <div
-                class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90dvh]">
+                class="bg-white rounded-t-[2rem] md:rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[85dvh] md:max-h-[90dvh]">
                 <div
                     class="flex justify-between items-center px-6 py-4 border-b border-gray-200 bg-gray-50 rounded-t-2xl shrink-0">
                     <h2 class="text-xl font-black text-gray-800 uppercase flex items-center gap-2">
@@ -238,7 +238,7 @@
 
                 </div>
 
-                <div class="p-4 border-t border-gray-200 flex justify-end space-x-3 bg-gray-50 rounded-b-2xl shrink-0">
+                <div class="p-6 pb-12 md:pb-6 border-t border-gray-200 flex justify-end space-x-3 bg-gray-50 rounded-b-2xl shrink-0">
                     <button wire:click="closeCreatePopup"
                         class="px-5 py-2.5 rounded-xl text-gray-600 hover:bg-gray-200 font-bold transition-colors">Hủy
                         bỏ</button>
@@ -253,9 +253,9 @@
 
     <!-- Delete Confirmation Modal -->
     @if ($confirmingUserDeletion)
-        <div class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end md:items-center justify-center z-40 p-0 md:p-4">
             <div
-                class="bg-white w-full max-w-sm rounded-2xl shadow-2xl p-6 text-center animate-[scaleIn_0.2s_ease-out]">
+                class="bg-white w-full max-w-sm rounded-t-[2.5rem] md:rounded-2xl shadow-2xl p-6 pb-12 md:pb-6 text-center animate-[slideUp_0.4s_cubic-bezier(0.16,1,0.3,1)]">
                 <div
                     class="w-16 h-16 bg-red-100 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
                     <i class="fa-solid fa-triangle-exclamation text-3xl"></i>

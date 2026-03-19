@@ -1,4 +1,4 @@
-<div class="h-full flex flex-col bg-gray-50">
+<div class="min-h-[100dvh] flex flex-col bg-gray-50">
     <!-- Header -->
     <div
         class="bg-white border-b px-4 py-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shrink-0">
@@ -143,7 +143,7 @@
     <!-- Create/Edit Modal -->
     @if ($showCreatePopup)
         <div class="fixed inset-0 bg-[#050505]/80 backdrop-blur-xl flex items-end md:items-center justify-center z-[100] p-0 md:p-4 transition-all duration-500 overflow-hidden">
-            <div class="bg-white w-full max-w-2xl rounded-t-[2.5rem] md:rounded-[2.5rem] shadow-2xl flex flex-col max-h-[95vh] md:max-h-[90vh] animate-[slideUp_0.4s_cubic-bezier(0.16,1,0.3,1)] overflow-hidden">
+            <div class="bg-white w-full max-w-2xl rounded-t-[2.5rem] md:rounded-[2.5rem] shadow-2xl flex flex-col max-h-[85dvh] md:max-h-[90dvh] animate-[slideUp_0.4s_cubic-bezier(0.16,1,0.3,1)] overflow-hidden">
                 <!-- Header -->
                 <div class="flex justify-between items-center px-8 py-6 border-b border-gray-100 bg-white shrink-0">
                     <div class="flex items-center gap-4">
@@ -323,7 +323,7 @@
                 </div>
 
                 <!-- Footer -->
-                <div class="px-8 py-6 border-t border-slate-50 bg-white flex flex-col md:flex-row justify-between items-center gap-4 shrink-0">
+                <div class="px-8 py-6 pb-12 md:pb-6 border-t border-slate-50 bg-white flex flex-col md:flex-row justify-between items-center gap-4 shrink-0">
                     <div class="w-full md:w-auto">
                         @if ($selectedCustomerId && $editFromDetailMode)
                             <button wire:click="backToDetail" class="w-full md:w-auto px-6 py-4 text-slate-400 hover:text-[#00D1FF] rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-3 transition-all hover:bg-slate-50">
@@ -347,7 +347,7 @@
     <!-- Customer Detail Modal -->
     @if ($showDetailPopup && $selectedCustomer)
         <div class="fixed inset-0 bg-[#050505]/80 backdrop-blur-xl flex items-end md:items-center justify-center z-[100] p-0 md:p-4 transition-all duration-500 overflow-hidden">
-            <div class="bg-white w-full max-w-4xl rounded-t-[2.5rem] md:rounded-[2.5rem] shadow-2xl flex flex-col max-h-[95vh] md:max-h-[90vh] animate-[slideUp_0.4s_cubic-bezier(0.16,1,0.3,1)] overflow-hidden">
+            <div class="bg-white w-full max-w-4xl rounded-t-[2.5rem] md:rounded-[2.5rem] shadow-2xl flex flex-col max-h-[85dvh] md:max-h-[90dvh] animate-[slideUp_0.4s_cubic-bezier(0.16,1,0.3,1)] overflow-hidden">
                 <!-- Header -->
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center px-8 py-6 border-b border-gray-100 bg-white shrink-0 gap-6">
                     <div class="flex items-center gap-5">
@@ -528,7 +528,7 @@
                 </div>
 
                 <!-- Footer -->
-                <div class="px-8 py-6 border-t bg-white flex justify-end shrink-0">
+                <div class="px-8 py-6 pb-12 md:pb-6 border-t bg-white flex justify-end shrink-0">
                     <button wire:click="closeDetailPopup"
                         class="w-full md:w-auto px-10 py-4 bg-slate-50 text-slate-400 hover:text-slate-600 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all">
                         Đóng cửa sổ
@@ -551,7 +551,7 @@
                 <h3 class="font-black text-slate-800 text-2xl mb-3 tracking-tighter uppercase">Xóa khách hàng?</h3>
                 <p class="text-[13px] text-slate-400 mb-10 font-bold leading-relaxed px-6 uppercase tracking-widest">Dữ liệu sẽ bị xóa khỏi không gian hệ thống và không thể khôi phục.</p>
                 
-                <div class="flex flex-col gap-4">
+                <div class="flex flex-col gap-4 pb-12 md:pb-0">
                     <button wire:click="deleteCustomer" class="w-full py-5 bg-red-600 text-white hover:bg-red-700 rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] shadow-2xl shadow-red-500/20 active:scale-95 transition-all">
                         Xác nhận xóa ngay
                     </button>
