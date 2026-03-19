@@ -141,9 +141,13 @@ class RealEstateListing extends Component
     public $districts = [];
     public $wards = [];
 
-    // Permissions
     public $isAdmin = false;
     public $userPropertyTypes = [];
+
+    public function toggleCustomerMode($mode)
+    {
+        $this->customer_selection_mode = $mode;
+    }
 
     public function handleMediaSelected($data)
     {
@@ -578,6 +582,7 @@ class RealEstateListing extends Component
             'avatar' => $this->avatar,
             'user_id' => auth()->id(),
             'reporter_id' => $this->reporter_id,
+            'contact_phone' => $this->contact_phone,
         ];
 
         // Handle Customer Integration
@@ -604,7 +609,6 @@ class RealEstateListing extends Component
                     $this->contact_phone = $customer->phone;
                 }
             }
-            $data['contact_phone'] = $this->contact_phone;
         }
 
         try {

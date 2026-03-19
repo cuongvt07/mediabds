@@ -283,6 +283,11 @@
                             <span class="bg-blue-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider shadow-sm">
                                 {{ $listing['type'] }}
                             </span>
+                            @if (!empty($listing['contact_type']))
+                                <span class="bg-emerald-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider shadow-sm">
+                                    {{ $listing['contact_type'] }}
+                                </span>
+                            @endif
                             @if (!empty($listing['code']))
                                 <span class="bg-slate-800 text-white text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider shadow-sm">
                                     {{ $listing['code'] }}
@@ -294,6 +299,15 @@
                                 </span>
                             @endif
                         </div>
+
+                        <!-- Video Overlay -->
+                        @if(!empty($listing['youtube_link']))
+                            <div class="absolute inset-0 flex items-center justify-center bg-black/10 group-hover:bg-black/20 transition-colors pointer-events-none">
+                                <div class="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white ring-1 ring-white/50">
+                                    <i class="fa-solid fa-play ml-0.5"></i>
+                                </div>
+                            </div>
+                        @endif
                     </div>
 
                     <!-- Right: Info (70%) -->
@@ -347,9 +361,12 @@
                                 <span class="bg-indigo-50 text-indigo-600 px-1.5 py-0.5 rounded font-bold uppercase transition-colors">
                                     {{ \App\Livewire\RealEstateListing::PROPERTY_TYPES[$listing['property_type']] ?? 'Khác' }}
                                 </span>
-                                @if($listing['floors']) <span><i class="fa-solid fa-layer-group text-gray-400 mr-1"></i>{{ $listing['floors'] }} Tầng</span> @endif
+                                @if($listing['floors']) <span><i class="fa-solid fa-layer-group text-gray-400 mr-1"></i>{{ $listing['floors'] }} T</span> @endif
                                 @if($listing['bedrooms']) <span><i class="fa-solid fa-bed text-gray-400 mr-1"></i>{{ $listing['bedrooms'] }} PN</span> @endif
+                                @if($listing['toilets']) <span><i class="fa-solid fa-restroom text-gray-400 mr-1"></i>{{ $listing['toilets'] }} WC</span> @endif
+                                @if($listing['direction']) <span><i class="fa-regular fa-compass text-gray-400 mr-1"></i>{{ \App\Livewire\RealEstateListing::DIRECTIONS[$listing['direction']] ?? 'N/A' }}</span> @endif
                                 @if($listing['front_width']) <span><i class="fa-solid fa-ruler-horizontal text-gray-400 mr-1"></i>MT: {{ floatval($listing['front_width']) }}m</span> @endif
+                                @if($listing['road_width']) <span><i class="fa-solid fa-road text-gray-400 mr-1"></i>Lộ: {{ floatval($listing['road_width']) }}m</span> @endif
                             </div>
                         </div>
 
@@ -448,23 +465,29 @@
                             </select>
                         </div>
                         <div class="md:col-span-6 border-b pb-4 mb-2">
-                            <div class="flex items-center justify-between mb-3">
+                            <div class="flex items-center justify-between mb-3" wire:key="customer-toggle-header">
                                 <label class="text-sm font-bold text-gray-700">Thông tin khách hàng</label>
                                 @if($customer_selection_mode === 'existing')
-                                    <button type="button" wire:click="$set('customer_selection_mode', 'new')"
-                                        class="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 transition-colors">
-                                        <i class="fa-solid fa-user-plus"></i> Tạo khách mới
+                                    <button type="button" wire:click="toggleCustomerMode('new')" wire:key="btn-new-cust"
+                                        wire:loading.attr="disabled"
+                                        class="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 transition-colors disabled:opacity-50">
+                                        <i class="fa-solid fa-user-plus" wire:loading.remove></i>
+                                        <i class="fa-solid fa-spinner fa-spin" wire:loading></i>
+                                        Tạo khách mới
                                     </button>
                                 @else
-                                    <button type="button" wire:click="$set('customer_selection_mode', 'existing')"
-                                        class="text-xs font-bold text-gray-500 hover:text-gray-700 flex items-center gap-1 transition-colors">
-                                        <i class="fa-solid fa-search"></i> Tìm khách sẵn
+                                    <button type="button" wire:click="toggleCustomerMode('existing')" wire:key="btn-existing-cust"
+                                        wire:loading.attr="disabled"
+                                        class="text-xs font-bold text-gray-500 hover:text-gray-700 flex items-center gap-1 transition-colors disabled:opacity-50">
+                                        <i class="fa-solid fa-search" wire:loading.remove></i>
+                                        <i class="fa-solid fa-spinner fa-spin" wire:loading></i>
+                                        Tìm khách sẵn
                                     </button>
                                 @endif
                             </div>
 
                             @if($customer_selection_mode === 'new')
-                                <div class="space-y-3 p-4 bg-blue-50/50 rounded-2xl border border-blue-100 animate-[scaleIn_0.2s_ease-out]">
+                                <div class="space-y-3 p-4 bg-blue-50/50 rounded-2xl border border-blue-100" wire:key="new-customer-form">
                                     <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                                         <div>
                                             <label class="block text-[10px] font-black text-blue-700 uppercase mb-1">Họ và Tên <span class="text-red-500">*</span></label>
@@ -489,7 +512,7 @@
                                     </div>
                                 </div>
                             @else
-                                <div class="relative group" wire:ignore x-data x-init="$nextTick(() => {
+                                <div class="relative group" wire:ignore wire:key="customer-select-container" x-data x-init="$nextTick(() => {
                                     const boot = () => {
                                         if (window.initSelect2) {
                                             window.initSelect2($refs.customerSelect, 'contact_phone', @js($contact_phone));
