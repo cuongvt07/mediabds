@@ -107,6 +107,7 @@ class RealEstateListing extends Component
     public $front_width;
     public $road_width;
     public $youtube_link;
+    public $youtube_link_short;
     public $facebook_link;
     public $google_map_link;
     public $tiktok_link;
@@ -126,6 +127,14 @@ class RealEstateListing extends Component
     public $saleBonusNumeric = 0;
     public $saleRevenueAmount = 0;
     public $saleNetAmount = 0;
+    public $sale_members = []; // Array of ['user_id' => null, 'received_amount' => 0]
+    public $saleRemainingAmount = 0;
+
+    // New Customer Integration
+    public $customer_selection_mode = 'existing';
+    public $new_customer_name;
+    public $new_customer_phone;
+    public $new_customer_status = 'khach_mua_o';
 
     // Dynamic Options
     public $districts = [];
@@ -560,6 +569,7 @@ class RealEstateListing extends Component
             'front_width' => $this->front_width,
             'road_width' => $this->road_width,
             'youtube_link' => $this->youtube_link,
+            'youtube_link_short' => $this->youtube_link_short,
             'facebook_link' => $this->facebook_link,
             'google_map_link' => $this->google_map_link,
             'tiktok_link' => $this->tiktok_link,
@@ -568,6 +578,33 @@ class RealEstateListing extends Component
             'avatar' => $this->avatar,
             'user_id' => auth()->id(),
         ];
+
+        // Handle Customer Integration
+        if ($this->customer_selection_mode === 'new') {
+            if (!empty($this->new_customer_phone)) {
+                // Check if customer exists
+                $existingCustomer = \App\Models\Customer::where('phone', $this->new_customer_phone)->first();
+                if ($existingCustomer) {
+                    $this->contact_phone = $existingCustomer->phone;
+                } else {
+                    $this->validate([
+                        'new_customer_name' => 'required',
+                        'new_customer_phone' => 'required',
+                        'new_customer_status' => 'required',
+                    ]);
+
+                    $customer = \App\Models\Customer::create([
+                        'code' => \App\Models\Customer::generateCode(),
+                        'name' => $this->new_customer_name,
+                        'phone' => $this->new_customer_phone,
+                        'status' => $this->new_customer_status,
+                        'assigned_user_id' => auth()->id(),
+                    ]);
+                    $this->contact_phone = $customer->phone;
+                }
+            }
+            $data['contact_phone'] = $this->contact_phone;
+        }
 
         try {
             if ($this->selectedListingId) {
@@ -648,6 +685,7 @@ class RealEstateListing extends Component
         $this->road_width = floatval($listing->road_width);
 
         $this->youtube_link = $listing->youtube_link;
+        $this->youtube_link_short = $listing->youtube_link_short;
         $this->facebook_link = $listing->facebook_link;
         $this->google_map_link = $listing->google_map_link;
         $this->tiktok_link = $listing->tiktok_link;
@@ -722,6 +760,9 @@ class RealEstateListing extends Component
         $this->selectedListingId = null;
         $this->reset(['title', 'type', 'contact_type', 'contact_phone', 'house_password', 'code', 'is_sold', 'address', 'area', 'price', 'description', 'floors', 'bedrooms', 'toilets', 'direction', 'front_width', 'road_width', 'youtube_link', 'facebook_link', 'google_map_link', 'tiktok_link', 'images', 'province_id', 'district_id', 'ward_id', 'tempImages', 'avatar', 'tempAvatar']);
         $this->is_sold = false;
+        $this->youtube_link_short = null;
+        $this->customer_selection_mode = 'existing';
+        $this->reset(['new_customer_name', 'new_customer_phone', 'new_customer_status']);
         $this->districts = [];
         $this->wards = [];
     }
@@ -786,6 +827,8 @@ class RealEstateListing extends Component
         $this->saleBonusNumeric = 0;
         $this->saleRevenueAmount = 0;
         $this->saleNetAmount = 0;
+        $this->sale_members = []; // Reset members
+        $this->saleRemainingAmount = 0;
         $this->resetValidation();
         $this->showSoldPopup = true;
     }
@@ -832,6 +875,36 @@ class RealEstateListing extends Component
         $this->saleBonusNumeric = round($bonus, 2);
         $this->saleRevenueAmount = round($revenue, 2);
         $this->saleNetAmount = round($net, 2);
+
+        $this->recalculateRemainingAmount();
+    }
+
+    public function recalculateRemainingAmount()
+    {
+        $totalProfit = $this->saleNetAmount;
+        $distributed = 0;
+        foreach ($this->sale_members as $member) {
+            $distributed += (float) ($member['received_amount'] ?? 0);
+        }
+        $this->saleRemainingAmount = round($totalProfit - $distributed, 2);
+    }
+
+    public function addSaleMember()
+    {
+        $this->sale_members[] = ['user_id' => null, 'received_amount' => 0];
+        $this->recalculateRemainingAmount();
+    }
+
+    public function removeSaleMember($index)
+    {
+        unset($this->sale_members[$index]);
+        $this->sale_members = array_values($this->sale_members);
+        $this->recalculateRemainingAmount();
+    }
+
+    public function updatedSaleMembers($value, $key)
+    {
+        $this->recalculateRemainingAmount();
     }
 
     protected function normalizeCurrencyInput($value): ?float
@@ -910,14 +983,29 @@ class RealEstateListing extends Component
         $revenueAmount = round(($actualPrice * $percent) / 100, 2);
         $netAmount = round($revenueAmount + $bonus, 2);
 
+        // Validate members
+        $distributedAmount = 0;
+        foreach ($this->sale_members as $member) {
+            if (empty($member['user_id'])) {
+                $this->dispatch('toast', ['message' => 'Vui lòng chọn thành viên!', 'type' => 'error']);
+                return;
+            }
+            $distributedAmount += (float) $member['received_amount'];
+        }
+
+        if ($distributedAmount > $netAmount + 0.01) { // Tiny buffer for float precision
+            $this->dispatch('toast', ['message' => 'Tổng tiền chi trả không được vượt quá tổng lợi nhuận!', 'type' => 'error']);
+            return;
+        }
+
         DB::transaction(function () use ($actualPrice, $percent, $bonus, $revenueAmount, $netAmount) {
             $listing = ListingModel::findOrFail($this->saleListingId);
             $listing->update(['is_sold' => true]);
 
-            RealEstateListingSale::updateOrCreate(
+            $sale = RealEstateListingSale::updateOrCreate(
                 ['listing_id' => $listing->id],
                 [
-                    'sold_by_user_id' => $this->saleUserId,
+                    'sold_by_user_id' => $this->saleUserId, // Keep for backward compatibility or primary seller
                     'project_name' => $this->saleProjectName,
                     'actual_price' => $actualPrice,
                     'revenue_percent' => $percent,
@@ -927,6 +1015,15 @@ class RealEstateListing extends Component
                     'sold_at' => now(),
                 ]
             );
+
+            // Sync members
+            $sale->members()->delete();
+            foreach ($this->sale_members as $member) {
+                $sale->members()->create([
+                    'user_id' => $member['user_id'],
+                    'received_amount' => $member['received_amount'],
+                ]);
+            }
         });
 
         $this->refreshCacheVersion();
@@ -1127,6 +1224,7 @@ class RealEstateListing extends Component
         return view('livewire.real-estate-listing', [
             'listings' => $listings,
             'salesUsers' => User::orderBy('name')->get(['id', 'name', 'phone']),
+            'allCustomers' => \App\Models\Customer::orderBy('name')->get(['id', 'name', 'phone']),
         ])->layout('components.layouts.blog');
     }
 

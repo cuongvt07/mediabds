@@ -19,6 +19,11 @@ class RealEstateListingSale extends Model
         'sold_at',
     ];
 
+    public function members(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(RealEstateListingSaleMember::class, 'sale_id');
+    }
+
     protected function casts(): array
     {
         return [
