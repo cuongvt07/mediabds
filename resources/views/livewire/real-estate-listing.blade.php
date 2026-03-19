@@ -1361,7 +1361,7 @@
                                 <div class="flex items-center gap-4 p-4 bg-blue-50/50 rounded-2xl border border-blue-100 shadow-sm group hover:shadow-md transition-all">
                                     <div class="relative shrink-0">
                                         @if (!empty($selectedListing['reporter']['avatar']))
-                                            <img src="{{ url('storage/' . $selectedListing['reporter']['avatar']) }}" 
+                                            <img src="{{ str_starts_with($selectedListing['reporter']['avatar'], 'http') ? $selectedListing['reporter']['avatar'] : url('storage/' . $selectedListing['reporter']['avatar']) }}" 
                                                  class="w-14 h-14 rounded-2xl object-cover ring-4 ring-white shadow-md">
                                         @else
                                             <div class="w-14 h-14 rounded-2xl bg-blue-600 text-white flex items-center justify-center text-xl font-black shadow-lg">
@@ -1376,7 +1376,7 @@
                                         <p class="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-0.5">Người đưa tin (Nguồn)</p>
                                         <h5 class="text-base font-bold text-slate-800 truncate">{{ $selectedListing['reporter']['name'] }}</h5>
                                         <p class="text-xs text-slate-500 flex items-center gap-1.5 mt-0.5">
-                                            <i class="fa-solid fa-circle-check text-blue-500"></i> Thành viên hệ thống
+                                            <i class="fa-solid fa-phone text-blue-500"></i> {{ $selectedListing['reporter']['phone'] ?? 'N/A' }}
                                         </p>
                                     </div>
                                 </div>
@@ -1386,7 +1386,7 @@
                                 <div class="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-200 shadow-sm group hover:shadow-md transition-all">
                                     <div class="relative shrink-0">
                                         @if (!empty($selectedListing['user']['avatar']))
-                                            <img src="{{ url('storage/' . $selectedListing['user']['avatar']) }}" 
+                                            <img src="{{ str_starts_with($selectedListing['user']['avatar'], 'http') ? $selectedListing['user']['avatar'] : url('storage/' . $selectedListing['user']['avatar']) }}" 
                                                  class="w-14 h-14 rounded-2xl object-cover ring-4 ring-white shadow-md">
                                         @else
                                             <div class="w-14 h-14 rounded-2xl bg-slate-600 text-white flex items-center justify-center text-xl font-black shadow-lg">
@@ -1400,9 +1400,14 @@
                                     <div class="flex-1 min-w-0">
                                         <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Người đăng tin</p>
                                         <h5 class="text-base font-bold text-slate-800 truncate">{{ $selectedListing['user']['name'] }}</h5>
-                                        <p class="text-xs text-slate-500 flex items-center gap-1.5 mt-0.5">
-                                            <i class="fa-solid fa-clock text-slate-400"></i> {{ \Carbon\Carbon::parse($selectedListing['created_at'])->format('d/m/Y H:i') }}
-                                        </p>
+                                        <div class="flex flex-col gap-0.5 mt-0.5">
+                                            <p class="text-xs text-slate-500 flex items-center gap-1.5">
+                                                <i class="fa-solid fa-phone text-slate-400"></i> {{ $selectedListing['user']['phone'] ?? 'N/A' }}
+                                            </p>
+                                            <p class="text-[10px] text-slate-400 flex items-center gap-1.5">
+                                                <i class="fa-solid fa-clock text-slate-300"></i> {{ \Carbon\Carbon::parse($selectedListing['created_at'])->format('d/m/Y H:i') }}
+                                            </p>
+                                        </div>
                                     </div>
                                 </div>
                             @endif
