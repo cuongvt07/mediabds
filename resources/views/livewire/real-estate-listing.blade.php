@@ -425,38 +425,37 @@
                             <!-- Description (New) -->
                             <p class="text-xs text-gray-500 line-clamp-2 leading-relaxed mb-4">
                                 {{ $listing['description'] }}
-                            </p>
-
-                            <!-- Footer -->
-                            <div
-                                class="mt-auto border-t border-gray-100 pt-3 flex justify-between items-center text-xs text-gray-400 font-medium">
-                                @if (!empty($listing['reporter']))
-                                    <div class="flex items-center gap-1.5 text-gray-700 font-bold">
-                                        <span class="text-[9px] text-gray-400 font-normal mr-0.5">Nguồn:</span>
-                                        @if (!empty($listing['reporter']['avatar']))
-                                            <img src="{{ url('storage/' . $listing['reporter']['avatar']) }}" class="w-5 h-5 rounded-full object-cover">
-                                        @else
-                                            <div class="w-5 h-5 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-[10px]">
-                                                {{ mb_substr($listing['reporter']['name'], 0, 1) }}
-                                            </div>
-                                        @endif
-                                        <span class="truncate max-w-[80px]">{{ $listing['reporter']['name'] }}</span>
-                                    </div>
-                                @elseif(!empty($listing['user']))
-                                     <div class="flex items-center gap-1.5 text-gray-700 font-bold">
-                                        <span class="text-[9px] text-gray-400 font-normal mr-0.5">Đăng:</span>
-                                         @if (!empty($listing['user']['avatar']))
-                                            <img src="{{ url('storage/' . $listing['user']['avatar']) }}" class="w-5 h-5 rounded-full object-cover">
-                                         @else
-                                            <div class="w-5 h-5 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center text-[10px]">
-                                                {{ mb_substr($listing['user']['name'], 0, 1) }}
-                                            </div>
-                                        @endif
-                                        <span class="truncate max-w-[80px]">{{ $listing['user']['name'] }}</span>
-                                    </div>
-                                @endif
-                                {{ \Carbon\Carbon::parse($listing['created_at'])->diffForHumans() }}
-                            </div>
+                             </p>
+ 
+                             <!-- Footer -->
+                        <div
+                            class="mt-auto border-t border-gray-100 pt-3 flex justify-between items-center text-xs text-gray-400 font-medium">
+                            @if (!empty($listing['reporter']))
+                                <div class="flex items-center gap-1.5 text-gray-700 font-bold">
+                                    <span class="text-[9px] text-gray-400 font-normal mr-0.5">Nguồn:</span>
+                                    @if (!empty($listing['reporter']['avatar']))
+                                        <img src="{{ url('storage/' . $listing['reporter']['avatar']) }}" class="w-5 h-5 rounded-full object-cover">
+                                    @else
+                                        <div class="w-5 h-5 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-[10px]">
+                                            {{ mb_substr($listing['reporter']['name'], 0, 1) }}
+                                        </div>
+                                    @endif
+                                    <span class="truncate max-w-[80px]">{{ $listing['reporter']['name'] }}</span>
+                                </div>
+                            @elseif(!empty($listing['user']))
+                                <div class="flex items-center gap-1.5 text-gray-700 font-bold">
+                                    <span class="text-[9px] text-gray-400 font-normal mr-0.5">Đăng:</span>
+                                    @if (!empty($listing['user']['avatar']))
+                                        <img src="{{ url('storage/' . $listing['user']['avatar']) }}" class="w-5 h-5 rounded-full object-cover">
+                                    @else
+                                        <div class="w-5 h-5 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center text-[10px]">
+                                            {{ mb_substr($listing['user']['name'], 0, 1) }}
+                                        </div>
+                                    @endif
+                                    <span class="truncate max-w-[80px]">{{ $listing['user']['name'] }}</span>
+                                </div>
+                            @endif
+                            {{ \Carbon\Carbon::parse($listing['created_at'])->diffForHumans() }}
                         </div>
                     </div>
                 </div>
@@ -536,13 +535,13 @@
                                     <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                                         <div>
                                             <label class="block text-[10px] font-black text-blue-700 uppercase mb-1">Họ và Tên <span class="text-red-500">*</span></label>
-                                            <input wire:model="new_customer_name" type="text" placeholder="Nguyễn Văn A" 
+                                            <input wire:model="new_customer_name" type="text" placeholder="Nguyễn Văn A"
                                                 class="w-full border border-blue-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white">
                                             @error('new_customer_name') <span class="text-red-500 text-[10px]">{{ $message }}</span> @enderror
                                         </div>
                                         <div>
                                             <label class="block text-[10px] font-black text-blue-700 uppercase mb-1">Số điện thoại <span class="text-red-500">*</span></label>
-                                            <input wire:model="new_customer_phone" type="text" placeholder="090..." 
+                                            <input wire:model="new_customer_phone" type="text" placeholder="090..."
                                                 class="w-full border border-blue-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white">
                                             @error('new_customer_phone') <span class="text-red-500 text-[10px]">{{ $message }}</span> @enderror
                                         </div>
@@ -1306,6 +1305,39 @@
                                             class="font-bold text-gray-800">{{ \App\Livewire\RealEstateListing::DIRECTIONS[$selectedListing['direction']] ?? $selectedListing['direction'] }}</span>
                                     </div>
                                 @endif
+
+                                @if (!empty($selectedListing['reporter_id']) && !empty($selectedListing['reporter']))
+                                    <div class="flex items-center gap-3 col-span-2 p-3 bg-blue-50/50 rounded-xl border border-blue-100">
+                                        <div class="shrink-0">
+                                            @if(!empty($selectedListing['reporter']['avatar']))
+                                                <img src="{{ url('storage/'.$selectedListing['reporter']['avatar']) }}" class="w-10 h-10 rounded-full object-cover shadow-sm border-2 border-white">
+                                            @else
+                                                <div class="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-bold shadow-sm">
+                                                    {{ mb_substr($selectedListing['reporter']['name'] ?? 'N', 0, 1) }}
+                                                </div>
+                                            @endif
+                                        </div>
+                                        <div class="flex-1">
+                                            <span class="block text-[10px] text-blue-600 font-black uppercase tracking-wider mb-0.5">Người đưa tin (Nguồn)</span>
+                                            <span class="block font-black text-blue-800 text-base leading-none">{{ $selectedListing['reporter']['name'] }}</span>
+                                        </div>
+                                    </div>
+                                @endif
+                                <div class="flex items-center gap-3 col-span-2 p-3 bg-slate-50/50 rounded-xl border border-slate-100 mt-1">
+                                    <div class="shrink-0">
+                                        @if(!empty($selectedListing['user']['avatar']))
+                                            <img src="{{ url('storage/'.$selectedListing['user']['avatar']) }}" class="w-10 h-10 rounded-full object-cover shadow-sm border-2 border-white">
+                                        @else
+                                            <div class="w-10 h-10 rounded-full bg-slate-600 text-white flex items-center justify-center text-sm font-bold shadow-sm">
+                                                {{ mb_substr($selectedListing['user']['name'] ?? 'A', 0, 1) }}
+                                            </div>
+                                        @endif
+                                    </div>
+                                    <div class="flex-1">
+                                        <span class="block text-[10px] text-slate-500 font-black uppercase tracking-wider mb-0.5">Người đăng tin</span>
+                                        <span class="block font-black text-slate-800 text-base leading-none">{{ $selectedListing['user']['name'] ?? 'N/A' }}</span>
+                                    </div>
+                                </div>
                                 @if ($selectedListing['front_width'])
                                     <div class="flex items-center gap-2">
                                         <span class="text-gray-500 font-semibold"><i

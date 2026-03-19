@@ -145,8 +145,6 @@ class RealEstateListing extends Component
     public $isAdmin = false;
     public $userPropertyTypes = [];
 
-    protected $listeners = ['media-selected' => 'handleMediaSelected'];
-
     public function handleMediaSelected($data)
     {
         $newImages = $data['images'] ?? [];
@@ -488,6 +486,7 @@ class RealEstateListing extends Component
             'facebook_link' => 'nullable|url|max:2000',
             'google_map_link' => 'nullable|url|max:2000',
             'tiktok_link' => 'nullable|url|max:2000',
+            'reporter_id' => 'nullable|exists:users,id',
         ];
 
         if ($this->type !== 'Cần mua') {
@@ -712,7 +711,13 @@ class RealEstateListing extends Component
     protected function prepareListingForDetail($listing)
     {
         if (!$listing->relationLoaded('sale')) {
-            $listing->load('sale.soldBy');
+            $listing->load(['sale.soldBy', 'user', 'reporter']);
+        }
+        if (!$listing->relationLoaded('reporter')) {
+            $listing->load('reporter');
+        }
+        if (!$listing->relationLoaded('user')) {
+            $listing->load('user');
         }
 
         $data = $listing->toArray();
