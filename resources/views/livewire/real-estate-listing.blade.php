@@ -415,7 +415,8 @@
                                         {{ $listing['house_password'] }}</span>
                                 @endif
 
-                        <span title="SĐT Liên hệ" class="text-green-600 font-bold"><i
+                                @if ($listing['contact_phone'])
+                                    <span title="SĐT Liên hệ" class="text-green-600 font-bold"><i
                                             class="fa-solid fa-phone mr-1"></i>
                                         {{ $listing['contact_phone'] }}</span>
                                 @endif
