@@ -25,4 +25,9 @@ class RealEstateListing extends Model
     {
         return $this->belongsTo(User::class);
     }
+    
+    public function reporter(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'reporter_id');
+    }
 }

@@ -116,6 +116,7 @@ class RealEstateListing extends Component
     public $tempImages = []; // For new uploads
     public $avatar;
     public $tempAvatar; // For avatar upload
+    public $reporter_id; // For 'Người đưa tin'
 
     public $selectedListingId = null;
     public $saleListingId = null;
@@ -577,6 +578,7 @@ class RealEstateListing extends Component
             'images' => $this->images,
             'avatar' => $this->avatar,
             'user_id' => auth()->id(),
+            'reporter_id' => $this->reporter_id,
         ];
 
         // Handle Customer Integration
@@ -692,6 +694,7 @@ class RealEstateListing extends Component
         $this->description = $listing->description;
         $this->images = $listing->images ?? [];
         $this->avatar = $listing->avatar;
+        $this->reporter_id = $listing->reporter_id;
 
         $this->showCreatePopup = true;
     }
@@ -758,7 +761,7 @@ class RealEstateListing extends Component
     public function resetForm()
     {
         $this->selectedListingId = null;
-        $this->reset(['title', 'type', 'contact_type', 'contact_phone', 'house_password', 'code', 'is_sold', 'address', 'area', 'price', 'description', 'floors', 'bedrooms', 'toilets', 'direction', 'front_width', 'road_width', 'youtube_link', 'facebook_link', 'google_map_link', 'tiktok_link', 'images', 'province_id', 'district_id', 'ward_id', 'tempImages', 'avatar', 'tempAvatar']);
+        $this->reset(['title', 'type', 'contact_type', 'contact_phone', 'house_password', 'code', 'is_sold', 'address', 'area', 'price', 'description', 'floors', 'bedrooms', 'toilets', 'direction', 'front_width', 'road_width', 'youtube_link', 'facebook_link', 'google_map_link', 'tiktok_link', 'images', 'province_id', 'district_id', 'ward_id', 'tempImages', 'avatar', 'tempAvatar', 'reporter_id']);
         $this->is_sold = false;
         $this->youtube_link_short = null;
         $this->customer_selection_mode = 'existing';
@@ -1124,7 +1127,7 @@ class RealEstateListing extends Component
         // Cache for 60 seconds (so even if version doesn't change, we still refresh occasionally)
         $listings = \Illuminate\Support\Facades\Cache::remember($cacheKey, 60, function () {
             // Use deterministic sorting: Created At DESC, then ID DESC
-            $query = ListingModel::orderBy('created_at', 'desc')->orderBy('id', 'desc');
+            $query = ListingModel::with(['user', 'reporter'])->orderBy('created_at', 'desc')->orderBy('id', 'desc');
 
             // Auto-filter by user's property types (if not admin)
             $user = auth()->user();

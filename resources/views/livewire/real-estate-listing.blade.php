@@ -415,8 +415,7 @@
                                         {{ $listing['house_password'] }}</span>
                                 @endif
 
-                                @if ($listing['contact_phone'])
-                                    <span title="SĐT Liên hệ" class="text-green-600 font-bold"><i
+                        <span title="SĐT Liên hệ" class="text-green-600 font-bold"><i
                                             class="fa-solid fa-phone mr-1"></i>
                                         {{ $listing['contact_phone'] }}</span>
                                 @endif
@@ -430,6 +429,31 @@
                             <!-- Footer -->
                             <div
                                 class="mt-auto border-t border-gray-100 pt-3 flex justify-between items-center text-xs text-gray-400 font-medium">
+                                @if (!empty($listing['reporter']))
+                                    <div class="flex items-center gap-1.5 text-gray-700 font-bold">
+                                        <span class="text-[9px] text-gray-400 font-normal mr-0.5">Nguồn:</span>
+                                        @if (!empty($listing['reporter']['avatar']))
+                                            <img src="{{ url('storage/' . $listing['reporter']['avatar']) }}" class="w-5 h-5 rounded-full object-cover">
+                                        @else
+                                            <div class="w-5 h-5 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-[10px]">
+                                                {{ mb_substr($listing['reporter']['name'], 0, 1) }}
+                                            </div>
+                                        @endif
+                                        <span class="truncate max-w-[80px]">{{ $listing['reporter']['name'] }}</span>
+                                    </div>
+                                @elseif(!empty($listing['user']))
+                                     <div class="flex items-center gap-1.5 text-gray-700 font-bold">
+                                        <span class="text-[9px] text-gray-400 font-normal mr-0.5">Đăng:</span>
+                                         @if (!empty($listing['user']['avatar']))
+                                            <img src="{{ url('storage/' . $listing['user']['avatar']) }}" class="w-5 h-5 rounded-full object-cover">
+                                         @else
+                                            <div class="w-5 h-5 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center text-[10px]">
+                                                {{ mb_substr($listing['user']['name'], 0, 1) }}
+                                            </div>
+                                        @endif
+                                        <span class="truncate max-w-[80px]">{{ $listing['user']['name'] }}</span>
+                                    </div>
+                                @endif
                                 {{ \Carbon\Carbon::parse($listing['created_at'])->diffForHumans() }}
                             </div>
                         </div>
@@ -553,6 +577,32 @@
                                     </select>
                                 </div>
                             @endif
+                        </div>
+
+                        <div class="md:col-span-12">
+                            <label class="block text-sm font-bold text-gray-700 mb-1">
+                                <i class="fa-solid fa-user-tie text-blue-600 mr-1"></i> Người đưa tin
+                            </label>
+                            <div class="relative group" wire:ignore x-data x-init="$nextTick(() => {
+                                const boot = () => {
+                                    if (window.initSelect2) {
+                                        window.initSelect2($refs.reporterSelect, 'reporter_id', @js($reporter_id));
+                                        return;
+                                    }
+                                    setTimeout(boot, 50);
+                                };
+                                boot();
+                            })">
+                                <select x-ref="reporterSelect" data-livewire-id="{{ $this->getId() }}"
+                                    class="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all shadow-sm bg-white">
+                                    <option value="">-- Chọn người đưa tin --</option>
+                                    @foreach($salesUsers as $u)
+                                        <option value="{{ $u->id }}" @selected($reporter_id == $u->id)>
+                                            {{ $u->name }} ({{ $u->phone }})
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
                         </div>
 
                         <div class="md:col-span-6">
