@@ -464,6 +464,14 @@
                                 <option value="Công ty">Công ty</option>
                             </select>
                         </div>
+                        <div class="md:col-span-3">
+                            <label class="block text-sm font-bold text-gray-700 mb-1">Số điện thoại liên hệ <span class="text-red-500">*</span></label>
+                            <input wire:model="contact_phone" type="text" placeholder="090..."
+                                class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow shadow-sm font-bold text-green-700">
+                            @error('contact_phone')
+                                <span class="text-red-500 text-xs">{{ $message }}</span>
+                            @enderror
+                        </div>
                         <div class="md:col-span-6 border-b pb-4 mb-2">
                             <div class="flex items-center justify-between mb-3" wire:key="customer-toggle-header">
                                 <label class="text-sm font-bold text-gray-700">Thông tin khách hàng</label>

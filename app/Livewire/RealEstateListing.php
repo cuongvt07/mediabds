@@ -16,8 +16,24 @@ use App\Exports\ListingsExport;
 class RealEstateListing extends Component
 {
     use WithPagination, WithFileUploads;
+    
+    protected $queryString = [
+        'search' => ['except' => ''],
+        'filter_phone' => ['except' => ''],
+    ];
 
     public $search = '';
+
+    public function updatedSearch()
+    {
+        $this->resetPage();
+    }
+
+    public function updatedFilterPhone()
+    {
+        $this->resetPage();
+    }
+
     public $showCreatePopup = false;
     public $showMediaPopup = false;
     public $showDetailPopup = false;
@@ -1126,6 +1142,7 @@ class RealEstateListing extends Component
             'year' => $this->filter_year,
             'date_from' => $this->filter_date_from,
             'date_to' => $this->filter_date_to,
+            'phone' => $this->filter_phone,
             'page' => $this->getPage(),
             'version' => $this->getCacheVersion(), // Include version in key
         ];
