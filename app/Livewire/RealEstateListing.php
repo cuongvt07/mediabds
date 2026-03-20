@@ -1247,7 +1247,7 @@ class RealEstateListing extends Component
                 }
             }
 
-            return $query->paginate(12)->onEachSide(1);
+            return $query->paginate(12)->onEachSide(0);
         });
 
         return view('livewire.real-estate-listing', [

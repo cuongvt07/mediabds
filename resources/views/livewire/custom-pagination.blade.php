@@ -33,12 +33,12 @@ $scrollIntoViewJsSnippet = ($scrollTo !== false)
                             {{-- Previous Page Link --}}
                             @if ($paginator->onFirstPage())
                                 <span aria-disabled="true" aria-label="{{ __('pagination.previous') }}">
-                                    <span class="relative inline-flex items-center px-3 py-2 text-sm font-medium text-gray-300 bg-gray-50 cursor-default leading-5 border-r border-gray-200 h-10 w-10 justify-center" aria-hidden="true">
-                                        <i class="fa-solid fa-chevron-left animate-pulse opacity-50"></i>
+                                    <span class="relative inline-flex items-center px-2 py-2 text-sm font-medium text-gray-300 bg-gray-50 cursor-default leading-5 border-r border-gray-200 h-8 w-8 md:h-10 md:w-10 justify-center" aria-hidden="true">
+                                        <i class="fa-solid fa-chevron-left opacity-30"></i>
                                     </span>
                                 </span>
                             @else
-                                <button type="button" wire:click="previousPage('{{ $paginator->getPageName() }}')" x-on:click="{{ $scrollIntoViewJsSnippet }}" class="relative inline-flex items-center px-3 py-2 text-sm font-medium text-gray-500 bg-white leading-5 hover:bg-blue-50 hover:text-blue-600 focus:z-10 focus:outline-none transition-all h-10 w-10 justify-center border-r border-gray-200" aria-label="{{ __('pagination.previous') }}">
+                                <button type="button" wire:click="previousPage('{{ $paginator->getPageName() }}')" x-on:click="{{ $scrollIntoViewJsSnippet }}" class="relative inline-flex items-center px-2 py-2 text-sm font-medium text-gray-500 bg-white leading-5 hover:bg-blue-50 hover:text-blue-600 focus:z-10 focus:outline-none transition-all h-8 w-8 md:h-10 md:w-10 justify-center border-r border-gray-200" aria-label="{{ __('pagination.previous') }}">
                                     <i class="fa-solid fa-chevron-left"></i>
                                 </button>
                             @endif
@@ -49,7 +49,7 @@ $scrollIntoViewJsSnippet = ($scrollTo !== false)
                             {{-- "Three Dots" Separator --}}
                             @if (is_string($element))
                                 <span aria-disabled="true">
-                                    <span class="relative inline-flex items-center px-3 py-2 text-sm font-medium text-gray-400 bg-gray-50 cursor-default leading-5 border-r border-gray-200 h-10">{{ $element }}</span>
+                                    <span class="relative inline-flex items-center px-2 py-2 text-sm font-medium text-gray-400 bg-gray-50 cursor-default leading-5 border-r border-gray-200 h-8 md:h-10">{{ $element }}</span>
                                 </span>
                             @endif
 
@@ -59,10 +59,12 @@ $scrollIntoViewJsSnippet = ($scrollTo !== false)
                                     <span wire:key="paginator-{{ $paginator->getPageName() }}-page{{ $page }}">
                                         @if ($page == $paginator->currentPage())
                                             <span aria-current="page">
-                                                <span class="relative inline-flex items-center px-4 py-2 text-sm font-black text-white bg-blue-600 cursor-default leading-5 border-r border-gray-200 h-10">{{ $page }}</span>
+                                                <span class="relative inline-flex items-center px-3 py-2 text-sm font-black text-white bg-blue-600 cursor-default leading-5 border-r border-gray-200 h-8 md:h-10">{{ $page }}</span>
                                             </span>
                                         @else
-                                            <button type="button" wire:click="gotoPage({{ $page }}, '{{ $paginator->getPageName() }}')" x-on:click="{{ $scrollIntoViewJsSnippet }}" class="relative inline-flex items-center px-4 py-2 text-sm font-medium text-gray-600 bg-white leading-5 hover:bg-blue-50 hover:text-blue-600 focus:z-10 focus:outline-none transition-all h-10 border-r border-gray-200" aria-label="{{ __('Go to page :page', ['page' => $page]) }}">
+                                            {{-- Hide middle pages on small mobile if not adjacent to current? 
+                                                 Actually, with onEachSide(0), we only have first, current, and last. --}}
+                                            <button type="button" wire:click="gotoPage({{ $page }}, '{{ $paginator->getPageName() }}')" x-on:click="{{ $scrollIntoViewJsSnippet }}" class="relative inline-flex items-center px-3 py-2 text-sm font-medium text-gray-600 bg-white leading-5 hover:bg-blue-50 hover:text-blue-600 focus:z-10 focus:outline-none transition-all h-8 md:h-10 border-r border-gray-200" aria-label="{{ __('Go to page :page', ['page' => $page]) }}">
                                                 {{ $page }}
                                             </button>
                                         @endif
@@ -74,13 +76,13 @@ $scrollIntoViewJsSnippet = ($scrollTo !== false)
                         <span>
                             {{-- Next Page Link --}}
                             @if ($paginator->hasMorePages())
-                                <button type="button" wire:click="nextPage('{{ $paginator->getPageName() }}')" x-on:click="{{ $scrollIntoViewJsSnippet }}" class="relative inline-flex items-center px-3 py-2 text-sm font-medium text-gray-500 bg-white leading-5 hover:bg-blue-50 hover:text-blue-600 focus:z-10 focus:outline-none transition-all h-10 w-10 justify-center" aria-label="{{ __('pagination.next') }}">
+                                <button type="button" wire:click="nextPage('{{ $paginator->getPageName() }}')" x-on:click="{{ $scrollIntoViewJsSnippet }}" class="relative inline-flex items-center px-2 py-2 text-sm font-medium text-gray-500 bg-white leading-5 hover:bg-blue-50 hover:text-blue-600 focus:z-10 focus:outline-none transition-all h-8 w-8 md:h-10 md:w-10 justify-center" aria-label="{{ __('pagination.next') }}">
                                     <i class="fa-solid fa-chevron-right"></i>
                                 </button>
                             @else
                                 <span aria-disabled="true" aria-label="{{ __('pagination.next') }}">
-                                    <span class="relative inline-flex items-center px-3 py-2 text-sm font-medium text-gray-300 bg-gray-50 cursor-default leading-5 h-10 w-10 justify-center" aria-hidden="true">
-                                        <i class="fa-solid fa-chevron-right opacity-50"></i>
+                                    <span class="relative inline-flex items-center px-2 py-2 text-sm font-medium text-gray-300 bg-gray-50 cursor-default leading-5 h-8 w-8 md:h-10 md:w-10 justify-center" aria-hidden="true">
+                                        <i class="fa-solid fa-chevron-right opacity-30"></i>
                                     </span>
                                 </span>
                             @endif
