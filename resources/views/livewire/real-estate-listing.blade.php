@@ -256,15 +256,9 @@
     <!-- Main Content: Scrollable Grid -->
     <div class="flex-1 overflow-y-auto p-3">
         <!-- Pagination (Moved to top) -->
-        <div class="mb-6 px-3 flex flex-col md:flex-row items-center justify-between gap-4">
-            <div class="hidden md:block text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                Hiển thị {{ $listings->firstItem() ?? 0 }} - {{ $listings->lastItem() ?? 0 }} /
-                {{ $listings->total() }}
+            <div class="w-full flex justify-center">
+                {{ $listings->links('livewire.custom-pagination') }}
             </div>
-            <div class="w-full md:w-auto flex justify-center">
-                {{ $listings->links() }}
-            </div>
-        </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pb-20">
             @foreach ($listings as $listing)
