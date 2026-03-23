@@ -95,6 +95,8 @@
                     $filter_phone ||
                     $filter_date_from ||
                     $filter_date_to ||
+                    $filter_area_min ||
+                    $filter_area_max ||
                     $filter_is_sold !== null)
                 <button wire:click="clearFilters"
                     class="text-xs text-red-500 hover:text-red-700 font-semibold flex items-center gap-1">
@@ -210,6 +212,22 @@
             <div>
                 <label class="text-xs font-semibold text-gray-500 uppercase mb-1 block">Đến ngày</label>
                 <input type="date" wire:model.live="filter_date_to"
+                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+            </div>
+
+            {{-- Area Min Filter --}}
+            <div x-data>
+                <label class="text-xs font-semibold text-gray-500 uppercase mb-1 block">Diện tích từ (m²)</label>
+                <input wire:model.live.debounce.500ms="filter_area_min" type="text" placeholder="VD: 50"
+                    x-on:input="$el.value = $el.value.replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.')"
+                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+            </div>
+
+            {{-- Area Max Filter --}}
+            <div x-data>
+                <label class="text-xs font-semibold text-gray-500 uppercase mb-1 block">Diện tích đến (m²)</label>
+                <input wire:model.live.debounce.500ms="filter_area_max" type="text" placeholder="VD: 100"
+                    x-on:input="$el.value = $el.value.replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.')"
                     class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
             </div>
 

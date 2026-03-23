@@ -54,6 +54,8 @@ class RealEstateListing extends Component
     public $filter_year; // Filter by year
     public $filter_date_from;
     public $filter_date_to;
+    public $filter_area_min;
+    public $filter_area_max;
     public $filter_districts = [];
     public $filter_wards = [];
 
@@ -324,6 +326,8 @@ class RealEstateListing extends Component
         $this->filter_phone = null;
         $this->filter_date_from = null;
         $this->filter_date_to = null;
+        $this->filter_area_min = null;
+        $this->filter_area_max = null;
         $this->filter_districts = [];
         $this->filter_wards = [];
     }
@@ -1143,6 +1147,8 @@ class RealEstateListing extends Component
             'date_from' => $this->filter_date_from,
             'date_to' => $this->filter_date_to,
             'phone' => $this->filter_phone,
+            'area_min' => $this->filter_area_min,
+            'area_max' => $this->filter_area_max,
             'page' => $this->getPage(),
             'version' => $this->getCacheVersion(), // Include version in key
         ];
@@ -1194,6 +1200,14 @@ class RealEstateListing extends Component
             }
             if (!empty($this->filter_price_max)) {
                 $query->where('price', '<=', str_replace('.', '', $this->filter_price_max));
+            }
+
+            // Area Filters
+            if (!empty($this->filter_area_min)) {
+                $query->where('area', '>=', str_replace('.', '', $this->filter_area_min));
+            }
+            if (!empty($this->filter_area_max)) {
+                $query->where('area', '<=', str_replace('.', '', $this->filter_area_max));
             }
 
             // Location Filters
@@ -1295,6 +1309,8 @@ class RealEstateListing extends Component
             'phone' => $this->filter_phone,
             'date_from' => $this->filter_date_from,
             'date_to' => $this->filter_date_to,
+            'area_min' => $this->filter_area_min,
+            'area_max' => $this->filter_area_max,
         ];
 
         return Excel::download(new ListingsExport($filters), 'tong-hop-tin-dang-' . date('Y-m-d') . '.xlsx');
