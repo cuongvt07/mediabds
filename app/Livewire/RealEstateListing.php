@@ -1273,8 +1273,8 @@ class RealEstateListing extends Component
             $isMobile = preg_match("/(android|avantgo|blackberry|bolt|boost|cricket|docomo|fone|hiptop|mini|mobi|palm|phone|pie|tablet|up\.browser|up\.link|webos|wos)/i", $_SERVER["HTTP_USER_AGENT"]);
             $perPage = $isMobile ? 20 : 15;
 
-            $listings = $query->paginate($perPage)
-->onEachSide(0);
+            return $query->paginate($perPage)
+                ->onEachSide(0);
         });
 
         return view('livewire.real-estate-listing', [
