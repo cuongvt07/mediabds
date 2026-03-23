@@ -1186,12 +1186,21 @@ class RealEstateListing extends Component
             }
 
             if (!empty($this->search)) {
-                $query->where(function ($q) {
-                    $q->where('title', 'like', '%' . $this->search . '%')
-                        ->orWhere('address', 'like', '%' . $this->search . '%')
-                        ->orWhere('code', 'like', '%' . $this->search . '%');
-                });
-            }
+            $query->where(function ($q) {
+                $term = trim($this->search);
+                
+                // If term looks like a code (e.g. ND123, CC123, D123), do exact match on code
+                // Code pattern: typically 1-3 letters followed by numbers
+                if (preg_match('/^[A-ZĐ]{1,3}\d+$/i', $term)) {
+                    $q->where('code', $term)
+                      ->orWhere('title', 'like', '%' . $term . '%');
+                } else {
+                    $q->where('title', 'like', '%' . $term . '%')
+                        ->orWhere('address', 'like', '%' . $term . '%')
+                        ->orWhere('code', 'like', '%' . $term . '%');
+                }
+            });
+        }
 
             // Price Filters
             if (!empty($this->filter_price_min)) {
@@ -1260,7 +1269,12 @@ class RealEstateListing extends Component
                 }
             }
 
-            return $query->paginate(12)->onEachSide(0);
+            // Mobile-aware pagination limit
+            $isMobile = preg_match("/(android|avantgo|blackberry|bolt|boost|cricket|docomo|fone|hiptop|mini|mobi|palm|phone|pie|tablet|up\.browser|up\.link|webos|wos)/i", $_SERVER["HTTP_USER_AGENT"]);
+            $perPage = $isMobile ? 20 : 15;
+
+            $listings = $query->paginate($perPage)
+->onEachSide(0);
         });
 
         return view('livewire.real-estate-listing', [

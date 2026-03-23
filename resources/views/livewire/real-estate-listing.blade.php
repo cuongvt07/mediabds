@@ -132,6 +132,14 @@
                     <option>Cần mua</option>
                 </select>
             </div>
+            {{-- Front Width Filter --}}
+            <div x-data>
+                <label class="text-xs font-semibold text-gray-500 uppercase mb-1 block">Mặt tiền (m)</label>
+                <input wire:model.live.debounce.500ms="filter_front_width" type="text" placeholder="VD: 5.5"
+                    x-on:input="$el.value = $el.value.replace(/[^0-9,.]/g, '')"
+                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+            </div>
+
             {{-- Price Min --}}
             <div x-data>
                 <label class="text-xs font-semibold text-gray-500 uppercase mb-1 block">Giá từ</label>
@@ -1698,4 +1706,21 @@
             };
         </script>
     @endonce
+    
+    {{-- Floating Scroll to Top Button --}}
+    <div x-data="{ show: false }" 
+         x-on:scroll.window="show = window.pageYOffset > 500"
+         x-show="show"
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0 translate-y-10"
+         x-transition:enter-end="opacity-100 translate-y-0"
+         x-transition:leave="transition ease-in duration-300"
+         x-transition:leave-start="opacity-100 translate-y-0"
+         x-transition:leave-end="opacity-0 translate-y-10"
+         class="fixed bottom-24 right-6 z-50">
+        <button @click="window.scrollTo({ top: 0, behavior: 'smooth' })"
+                class="w-12 h-12 bg-blue-600/80 backdrop-blur-md hover:bg-blue-600 text-white rounded-full shadow-2xl flex items-center justify-center transition-all hover:-translate-y-1 active:scale-95 group border border-white/20">
+            <i class="fa-solid fa-arrow-up text-lg group-hover:animate-bounce"></i>
+        </button>
+    </div>
 </div>
