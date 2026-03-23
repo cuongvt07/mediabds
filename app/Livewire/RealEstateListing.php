@@ -481,13 +481,7 @@ class RealEstateListing extends Component
         // Robust Sanitization for other numeric fields
         $numericFields = ['area', 'front_width', 'road_width'];
         foreach ($numericFields as $field) {
-            if ($this->$field === '' || $this->$field === null) {
-                $this->$field = null;
-            } else {
-                $cleanVal = preg_replace('/[^0-9,.]/', '', $this->$field);
-                $cleanVal = str_replace('.', '', $cleanVal);
-                $this->$field = str_replace(',', '.', $cleanVal);
-            }
+            $this->$field = $this->normalizeDecimal($this->$field);
         }
 
         $intFields = ['floors', 'bedrooms', 'toilets'];
@@ -812,6 +806,11 @@ class RealEstateListing extends Component
             $listing->delete();
             $this->refreshCacheVersion();
             $this->dispatch('toast', ['message' => 'Đã xóa tin đăng!', 'type' => 'success']);
+            
+            // Close detail popup if it was the one deleted
+            if ($this->selectedListing && $this->selectedListing['id'] == $id) {
+                $this->closeDetailPopup();
+            }
         }
     }
 
@@ -1204,10 +1203,10 @@ class RealEstateListing extends Component
 
             // Area Filters
             if (!empty($this->filter_area_min)) {
-                $query->where('area', '>=', str_replace('.', '', $this->filter_area_min));
+                $query->where('area', '>=', $this->normalizeDecimal($this->filter_area_min));
             }
             if (!empty($this->filter_area_max)) {
-                $query->where('area', '<=', str_replace('.', '', $this->filter_area_max));
+                $query->where('area', '<=', $this->normalizeDecimal($this->filter_area_max));
             }
 
             // Location Filters
@@ -1325,5 +1324,36 @@ class RealEstateListing extends Component
         // Replace comma with dot for decimal
         $clean = str_replace(',', '.', $clean);
         return (float) $clean;
+    }
+
+    protected function normalizeDecimal($value)
+    {
+        if ($value === '' || $value === null) {
+            return null;
+        }
+
+        // Handle string input (e.g., from UI text fields)
+        if (is_string($value)) {
+            // Remove any spaces
+            $cleanVal = str_replace(' ', '', $value);
+            
+            // If it contains both comma and dot, assume dot is thousand separator (VN style)
+            if (str_contains($cleanVal, ',') && str_contains($cleanVal, '.')) {
+                $cleanVal = str_replace('.', '', $cleanVal);
+                $cleanVal = str_replace(',', '.', $cleanVal);
+            } 
+            // If it contains only comma, assume it's the decimal separator
+            else if (str_contains($cleanVal, ',')) {
+                $cleanVal = str_replace(',', '.', $cleanVal);
+            }
+            // If it contains only dot, it might be a decimal separator or a thousand separator.
+            // For area fields (usually < 10,000 m2), a single dot is almost always a decimal.
+            // However, our previous logic was stripping it. Let's keep it as decimal.
+            
+            $cleanVal = preg_replace('/[^0-9.]/', '', $cleanVal);
+            return is_numeric($cleanVal) ? (float) $cleanVal : null;
+        }
+
+        return is_numeric($value) ? (float) $value : null;
     }
 }

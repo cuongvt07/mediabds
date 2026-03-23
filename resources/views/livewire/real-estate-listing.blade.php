@@ -218,16 +218,16 @@
             {{-- Area Min Filter --}}
             <div x-data>
                 <label class="text-xs font-semibold text-gray-500 uppercase mb-1 block">Diện tích từ (m²)</label>
-                <input wire:model.live.debounce.500ms="filter_area_min" type="text" placeholder="VD: 50"
-                    x-on:input="$el.value = $el.value.replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.')"
+                <input wire:model.live.debounce.500ms="filter_area_min" type="text" placeholder="VD: 50.5"
+                    x-on:input="$el.value = $el.value.replace(/[^0-9,.]/g, '')"
                     class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
             </div>
 
             {{-- Area Max Filter --}}
             <div x-data>
                 <label class="text-xs font-semibold text-gray-500 uppercase mb-1 block">Diện tích đến (m²)</label>
-                <input wire:model.live.debounce.500ms="filter_area_max" type="text" placeholder="VD: 100"
-                    x-on:input="$el.value = $el.value.replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.')"
+                <input wire:model.live.debounce.500ms="filter_area_max" type="text" placeholder="VD: 100.5"
+                    x-on:input="$el.value = $el.value.replace(/[^0-9,.]/g, '')"
                     class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
             </div>
 
@@ -347,6 +347,11 @@
                                         <button wire:click.stop="editListing({{ $listing['id'] }})"
                                             class="w-7 h-7 flex items-center justify-center rounded-lg text-blue-600 hover:bg-blue-50 transition-colors bg-gray-50 md:bg-transparent">
                                             <i class="fa-regular fa-pen-to-square"></i>
+                                        </button>
+                                        <button wire:click.stop="deleteListing({{ $listing['id'] }})"
+                                            wire:confirm="Bạn có chắc chắn muốn xóa tin đăng này? Thao tác này có thể hoàn tác bởi Admin."
+                                            class="w-7 h-7 flex items-center justify-center rounded-lg text-red-600 hover:bg-red-50 transition-colors bg-gray-50 md:bg-transparent">
+                                            <i class="fa-regular fa-trash-can"></i>
                                         </button>
                                     @endif
                                 </div>
@@ -691,9 +696,10 @@
                                 </p>
                             </div>
 
-                            <div class="md:col-span-4">
+                            <div class="md:col-span-4" x-data>
                                 <label class="block text-sm font-bold text-gray-700 mb-1">Diện tích (m²)</label>
-                                <input wire:model="area" type="number"
+                                <input wire:model="area" type="text"
+                                    x-on:input="$el.value = $el.value.replace(/[^0-9,.]/g, '')"
                                     class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none font-bold text-gray-800">
                             </div>
 
@@ -747,14 +753,16 @@
                                         <option value="8">Tây nam</option>
                                     </select>
                                 </div>
-                                <div>
+                                <div x-data>
                                     <label class="text-xs text-gray-500 uppercase font-semibold">Mặt tiền (m)</label>
-                                    <input wire:model="front_width" type="number"
+                                    <input wire:model="front_width" type="text"
+                                        x-on:input="$el.value = $el.value.replace(/[^0-9,.]/g, '')"
                                         class="w-full border border-gray-300 rounded-lg px-2 py-2 text-center focus:ring-2 focus:ring-blue-500 outline-none mt-1">
                                 </div>
-                                <div>
+                                <div x-data>
                                     <label class="text-xs text-gray-500 uppercase font-semibold">Lộ giới (m)</label>
-                                    <input wire:model="road_width" type="number"
+                                    <input wire:model="road_width" type="text"
+                                        x-on:input="$el.value = $el.value.replace(/[^0-9,.]/g, '')"
                                         class="w-full border border-gray-300 rounded-lg px-2 py-2 text-center focus:ring-2 focus:ring-blue-500 outline-none mt-1">
                                 </div>
                             </div>
@@ -1463,6 +1471,14 @@
                         <i class="fa-solid fa-check" x-show="copied" style="display: none;"></i>
                         <span x-text="copied ? 'Đã Copy' : 'Copy QC'"></span>
                     </button>
+                    @if ($isAdmin)
+                        <button wire:click.stop="deleteListing({{ $selectedListing['id'] }})"
+                            wire:confirm="Bạn có chắc chắn muốn xóa tin đăng này? Thao tác này có thể hoàn tác bởi Admin."
+                            class="px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm md:text-base font-bold transition-all flex items-center justify-center gap-2 shadow-lg active:scale-95">
+                            <i class="fa-regular fa-trash-can"></i>
+                            <span>Xóa Tin</span>
+                        </button>
+                    @endif
                     <button wire:click="editFromDetail"
                         class="px-4 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-sm md:text-base font-bold transition-all flex items-center justify-center gap-2 shadow-lg active:scale-95">
                         <i class="fa-solid fa-pen-to-square"></i>
