@@ -25,11 +25,11 @@
         <div class="max-w-[95%] mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-16">
                 <div class="flex items-center gap-3 min-w-0">
-                    <img src="https://s3-hcm5-r1.longvan.net/phongland/2026/01/d13bf59afd35726b2b24.jpg" alt="Logo"
+                    <img src="https://s3-hcm5-r1.longvan.net/postmedia/2026/03/logo11_1774458655_729a.png" alt="Logo"
                         class="h-10 w-auto object-contain shrink-0">
                     <div class="min-w-0">
                         <h1 class="text-base sm:text-lg font-bold text-slate-800 tracking-tight leading-none truncate">
-                            PHONGPHATLAND</h1>
+                            VM PHÚ THỊNH LAND</h1>
                         <p class="hidden sm:block text-[11px] text-gray-500 font-medium">Quản lý tin đăng và dữ liệu</p>
                     </div>
                 </div>

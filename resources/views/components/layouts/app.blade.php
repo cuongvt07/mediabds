@@ -47,7 +47,7 @@
             <!-- Brand -->
             <div
                 class="w-10 h-10 mb-8 cursor-pointer hover:bg-slate-800 rounded-xl flex items-center justify-center transition-colors">
-                <img src="https://s3-hcm5-r1.longvan.net/phongland/2026/01/d13bf59afd35726b2b24.jpg" alt="Logo"
+                <img src="https://s3-hcm5-r1.longvan.net/postmedia/2026/03/logo11_1774458655_729a.png" alt="Logo"
                     class="w-full h-full object-contain">
             </div>
 
@@ -199,7 +199,7 @@
                         <i class="fa-solid fa-bars-staggered text-xl"></i>
                     </button>
                     <div class="w-8 h-8 rounded-lg overflow-hidden bg-white/10 p-1">
-                        <img src="https://s3-hcm5-r1.longvan.net/phongland/2026/01/d13bf59afd35726b2b24.jpg"
+                        <img src="https://s3-hcm5-r1.longvan.net/postmedia/2026/03/logo11_1774458655_729a.png"
                             alt="Logo" class="w-full h-full object-contain">
                     </div>
                     <span class="text-white font-black text-sm tracking-tight">PHONG PHAT <span

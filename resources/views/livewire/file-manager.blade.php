@@ -8,7 +8,7 @@
                     <circle cx="20" cy="20" r="20" fill="#2563EB" />
                     <path d="M12 20H28M20 12V28" stroke="white" stroke-width="3" stroke-linecap="round" />
                 </svg>
-                OPENFILES
+                VM PHÚ THỊNH LAND
             </div>
         </div>
 

@@ -18,7 +18,7 @@
                 </h1>
 
                 <p class="mt-5 max-w-2xl text-sm leading-relaxed text-[#4a5872] sm:text-base">
-                    Gia nhập hệ thống CTV PhongPhatLand để khai thác nguồn hàng thật, quy trình rõ ràng,
+                    Gia nhập hệ thống CTV VM PHÚ THỊNH LAND để khai thác nguồn hàng thật, quy trình rõ ràng,
                     hoa hồng minh bạch và được huấn luyện bán hàng bài bản theo tiêu chuẩn đội ngũ chuyên nghiệp.
                 </p>
 
@@ -180,7 +180,7 @@
                 <p class="text-[10px] font-black uppercase tracking-[0.22em] text-[#8a692f]">Sẵn sàng tăng tốc</p>
                 <h2 class="mt-2 font-serif-luxury text-3xl leading-tight text-[#14233b] sm:text-4xl">
                     Trở thành CTV BĐS trong hệ thống
-                    <span class="text-[#9e7830]">PhongPhatLand</span>
+                    <span class="text-[#9e7830]">VM PHÚ THỊNH LAND</span>
                 </h2>
                 <p class="mt-3 text-sm text-[#4d5c76] sm:text-base">
                     Đăng ký tài khoản để nhận mã mời, bắt đầu tiếp cận nguồn hàng chất lượng và mở rộng doanh thu ngay từ tháng này.

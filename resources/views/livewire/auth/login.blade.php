@@ -2,10 +2,10 @@
     class="bg-slate-800 p-8 sm:p-10 rounded-3xl border border-slate-700 shadow-2xl ring-1 ring-white/10 animate-in fade-in slide-in-from-bottom-8 duration-700 w-full">
 
     <div class="text-center mb-10">
-        <img src="https://s3-hcm5-r1.longvan.net/phongland/2026/01/d13bf59afd35726b2b24.jpg" alt="OpenFiles"
+        <img src="https://s3-hcm5-r1.longvan.net/postmedia/2026/03/logo11_1774458655_729a.png" alt="OpenFiles"
             class="h-16 mx-auto mb-4 object-contain">
         <h2 class="text-2xl font-black text-white tracking-widest uppercase font-mono">
-            OpenFiles
+            VM PHÚ THỊNH LAND
         </h2>
         <p class="mt-2 text-slate-400 text-sm font-medium tracking-wide">
             SECURE CLOUD STORAGE

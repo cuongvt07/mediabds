@@ -29,7 +29,7 @@
                     x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
                     class="absolute left-0 mt-2 w-48 bg-white border border-gray-100 rounded-xl shadow-xl z-50 py-1 overflow-hidden"
                     style="display: none;">
-                    <a href="https://phongphatland.com/"
+                    <a href="https://VM PHÚ THỊNH LAND.com/"
                         class="flex items-center gap-3 px-4 py-3 text-sm text-slate-600 hover:bg-gray-50 transition-colors">
                         <i class="fa-solid fa-arrow-left w-4"></i> Về Trang Chủ
                     </a>
@@ -46,7 +46,7 @@
 
             <!-- Desktop Secondary Actions -->
             <div class="hidden md:flex items-center gap-2">
-                <a href="https://phongphatland.com/"
+                <a href="https://VM PHÚ THỊNH LAND.com/"
                     class="bg-white border border-gray-200 hover:bg-gray-50 text-slate-600 px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 shadow-sm transition-all whitespace-nowrap">
                     <i class="fa-solid fa-arrow-left"></i> <span>Về Trang Chủ</span>
                 </a>
