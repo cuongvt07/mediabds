@@ -13,9 +13,26 @@ use Livewire\WithPagination;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\ListingsExport;
 
+use Illuminate\Support\Facades\Storage;
+
 class RealEstateListing extends Component
 {
     use WithPagination, WithFileUploads;
+
+    public $locationData = null;
+
+    protected function getLocationData()
+    {
+        if ($this->locationData === null) {
+            $path = 'locations/all_vietnam.json';
+            if (Storage::disk('local')->exists($path)) {
+                $this->locationData = json_decode(Storage::disk('local')->get($path), true);
+            } else {
+                $this->locationData = [];
+            }
+        }
+        return $this->locationData;
+    }
     
     protected $queryString = [
         'search' => ['except' => ''],
@@ -354,65 +371,48 @@ class RealEstateListing extends Component
 
     protected function fetchDistricts($provinceId)
     {
-        try {
-            $response = Http::get('https://phongphatland.com/wp-admin/admin-ajax.php', [
-                'province' => $provinceId,
-                'action' => 'willgroup_get_districts'
-            ]);
-
-            if ($response->successful()) {
-                $this->districts = $this->parseOptions($response->body());
+        $data = $this->getLocationData();
+        $this->districts = [];
+        
+        if (isset($data[$provinceId]['districts'])) {
+            foreach ($data[$provinceId]['districts'] as $id => $district) {
+                $this->districts[$id] = $district['name'];
             }
-        } catch (\Exception $e) {
-            // Handle error silently or log
         }
     }
 
     protected function fetchWards($districtId)
     {
-        try {
-            $response = Http::get('https://phongphatland.com/wp-admin/admin-ajax.php', [
-                'district' => $districtId,
-                'action' => 'willgroup_get_wards'
-            ]);
-
-            if ($response->successful()) {
-                $this->wards = $this->parseOptions($response->body());
-            }
-        } catch (\Exception $e) {
-            // 
+        $data = $this->getLocationData();
+        $this->wards = [];
+        
+        // We need to find the district in the current province
+        $provinceId = $this->province_id;
+        if (isset($data[$provinceId]['districts'][$districtId]['wards'])) {
+            $this->wards = $data[$provinceId]['districts'][$districtId]['wards'];
         }
     }
 
     protected function fetchFilterDistricts($provinceId)
     {
-        try {
-            $response = Http::get('https://phongphatland.com/wp-admin/admin-ajax.php', [
-                'province' => $provinceId,
-                'action' => 'willgroup_get_districts'
-            ]);
-
-            if ($response->successful()) {
-                $this->filter_districts = $this->parseOptions($response->body());
+        $data = $this->getLocationData();
+        $this->filter_districts = [];
+        
+        if (isset($data[$provinceId]['districts'])) {
+            foreach ($data[$provinceId]['districts'] as $id => $district) {
+                $this->filter_districts[$id] = $district['name'];
             }
-        } catch (\Exception $e) {
-            // Handle error silently or log
         }
     }
 
     protected function fetchFilterWards($districtId)
     {
-        try {
-            $response = Http::get('https://phongphatland.com/wp-admin/admin-ajax.php', [
-                'district' => $districtId,
-                'action' => 'willgroup_get_wards'
-            ]);
-
-            if ($response->successful()) {
-                $this->filter_wards = $this->parseOptions($response->body());
-            }
-        } catch (\Exception $e) {
-            // 
+        $data = $this->getLocationData();
+        $this->filter_wards = [];
+        
+        $provinceId = $this->filter_province;
+        if (isset($data[$provinceId]['districts'][$districtId]['wards'])) {
+            $this->filter_wards = $data[$provinceId]['districts'][$districtId]['wards'];
         }
     }
 
@@ -442,19 +442,6 @@ class RealEstateListing extends Component
         return $prefix . str_pad(mt_rand(0, 999999), 6, '0', STR_PAD_LEFT);
     }
 
-    protected function parseOptions($html)
-    {
-        $options = [];
-        // Regex to extract value and text from <option value="val">Text</option>
-        preg_match_all('/<option\s+value="([^"]+)">([^<]+)<\/option>/i', $html, $matches, PREG_SET_ORDER);
-
-        foreach ($matches as $match) {
-            if ($match[1]) {
-                $options[$match[1]] = trim($match[2]);
-            }
-        }
-        return $options;
-    }
 
     public function saveListing()
     {
