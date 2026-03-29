@@ -179,7 +179,18 @@
                         <div class="md:col-span-4 flex items-center gap-5">
                             <div class="w-20 h-20 rounded-[2rem] border-4 border-white shadow-2xl overflow-hidden shrink-0 bg-slate-100 flex items-center justify-center relative group">
                                 @if ($avatar)
-                                    <img src="{{ $avatar->temporaryUrl() }}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
+                                    @php
+                                        $extension = strtolower($avatar->getClientOriginalExtension());
+                                        $isPreviewable = in_array($extension, ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp']);
+                                    @endphp
+                                    @if ($isPreviewable)
+                                        <img src="{{ $avatar->temporaryUrl() }}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
+                                    @else
+                                        <div class="w-full h-full flex flex-col items-center justify-center bg-[#050505] text-[#00D1FF] p-2 text-center transition-transform duration-500 group-hover:scale-110">
+                                            <i class="fa-solid fa-file-image text-2xl mb-1"></i>
+                                            <span class="text-[9px] font-black uppercase tracking-widest">{{ $extension }}</span>
+                                        </div>
+                                    @endif
                                 @elseif ($existingAvatar)
                                     <img src="{{ $existingAvatar }}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
                                 @else

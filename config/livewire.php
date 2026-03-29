@@ -24,6 +24,7 @@ return [
             'png', 'gif', 'bmp', 'svg', 'wav', 'mp4',
             'mov', 'avi', 'wmv', 'mp3', 'm4a',
             'jpg', 'jpeg', 'mpga', 'webp', 'wma',
+            'tif', 'tiff',
         ],
         'max_upload_time' => 60, // 60 minutes (optimized for large files)
         'max_file_size' => 102400, // 100MB preview limit (prevents browser crash)

@@ -806,8 +806,20 @@
                                     <div
                                         class="w-32 h-32 bg-gray-100 rounded-lg border border-gray-300 flex-shrink-0 relative overflow-hidden group">
                                         @if ($tempAvatar)
-                                            <img src="{{ $tempAvatar->temporaryUrl() }}"
-                                                class="w-full h-full object-cover">
+                                            @php
+                                                $extension = strtolower($tempAvatar->getClientOriginalExtension());
+                                                $isPreviewable = in_array($extension, ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp']);
+                                            @endphp
+                                            @if ($isPreviewable)
+                                                <img src="{{ $tempAvatar->temporaryUrl() }}"
+                                                    class="w-full h-full object-cover">
+                                            @else
+                                                <div class="w-full h-full flex flex-col items-center justify-center bg-slate-800 text-[#00D1FF] p-2 text-center">
+                                                    <i class="fa-solid fa-file-image fa-2x mb-1"></i>
+                                                    <span class="text-[10px] font-black uppercase tracking-tighter">{{ $extension }}</span>
+                                                    <span class="text-[8px] opacity-60 uppercase font-bold">No Preview</span>
+                                                </div>
+                                            @endif
                                             <button type="button" wire:click="$set('tempAvatar', null)"
                                                 class="absolute top-1 right-1 bg-red-500 text-white w-5 h-5 rounded-full text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                                                 <i class="fa-solid fa-times"></i>
@@ -892,11 +904,22 @@
 
                                         <!-- Temp Images -->
                                         @foreach ($tempImages as $index => $file)
+                                            @php
+                                                $extension = strtolower($file->getClientOriginalExtension());
+                                                $isPreviewable = in_array($extension, ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp']);
+                                            @endphp
                                             <div
                                                 class="relative aspect-square rounded-lg overflow-hidden border border-blue-200 ring-2 ring-blue-500 group">
                                                 <!-- Just display image without spinner if loaded, livewire handles tempUrl -->
-                                                <img src="{{ $file->temporaryUrl() }}"
-                                                    class="absolute inset-0 w-full h-full object-cover">
+                                                @if ($isPreviewable)
+                                                    <img src="{{ $file->temporaryUrl() }}"
+                                                        class="absolute inset-0 w-full h-full object-cover">
+                                                @else
+                                                    <div class="absolute inset-0 flex flex-col items-center justify-center bg-slate-800 text-[#00D1FF] p-2 text-center">
+                                                        <i class="fa-solid fa-file-image fa-xl mb-1"></i>
+                                                        <span class="text-[10px] font-black uppercase tracking-tighter">{{ $extension }}</span>
+                                                    </div>
+                                                @endif
                                                 <button type="button"
                                                     wire:click="removeTempImage({{ $index }})"
                                                     class="absolute top-1 right-1 bg-red-500 text-white w-6 h-6 rounded-full text-xs flex items-center justify-center opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity z-10">
