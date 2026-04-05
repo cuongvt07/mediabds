@@ -430,9 +430,21 @@
                                     <span class="text-slate-500 font-bold truncate max-w-[80px] leading-tight">{{ $listing['user']['name'] }}</span>
                                 </div>
                             @endif
-                            <span class="text-gray-400 italic">
-                                {{ \Carbon\Carbon::parse($listing['created_at'])->diffForHumans() }}
-                            </span>
+                            <div class="flex items-center gap-2">
+                                @if (!empty($listing['facebook_link']))
+                                    <a href="{{ $listing['facebook_link'] }}" target="_blank" class="text-blue-600 hover:text-blue-800 transition-colors" title="Facebook New">
+                                        <i class="fa-brands fa-facebook"></i>
+                                    </a>
+                                @endif
+                                @if (!empty($listing['facebook_video_link']))
+                                    <a href="{{ $listing['facebook_video_link'] }}" target="_blank" class="text-blue-400 hover:text-blue-600 transition-colors" title="Facebook Video">
+                                        <i class="fa-brands fa-facebook"></i>
+                                    </a>
+                                @endif
+                                <span class="text-gray-400 italic">
+                                    {{ \Carbon\Carbon::parse($listing['created_at'])->diffForHumans() }}
+                                </span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -948,10 +960,20 @@
 
                         <div class="md:col-span-6">
                             <label class="block text-sm font-bold text-gray-700 mb-1"><i
-                                    class="fa-brands fa-facebook text-blue-600 mr-1"></i>Link Facebook</label>
+                                    class="fa-brands fa-facebook text-blue-600 mr-1"></i>Link Facebook New</label>
                             <input wire:model="facebook_link" type="text" placeholder="https://facebook.com/..."
                                 class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
                             @error('facebook_link')
+                                <span class="text-red-500 text-xs">{{ $message }}</span>
+                            @enderror
+                        </div>
+
+                        <div class="md:col-span-6">
+                            <label class="block text-sm font-bold text-gray-700 mb-1"><i
+                                    class="fa-brands fa-facebook text-blue-400 mr-1"></i>Link Facebook Video</label>
+                            <input wire:model="facebook_video_link" type="text" placeholder="https://facebook.com/watch/..."
+                                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                            @error('facebook_video_link')
                                 <span class="text-red-500 text-xs">{{ $message }}</span>
                             @enderror
                         </div>
@@ -1227,7 +1249,7 @@
                         </div>
 
                         {{-- External Links --}}
-                        @if (!empty($selectedListing['facebook_link']) || !empty($selectedListing['google_map_link']) || !empty($selectedListing['youtube_link']) || !empty($selectedListing['tiktok_link']))
+                        @if (!empty($selectedListing['facebook_link']) || !empty($selectedListing['facebook_video_link']) || !empty($selectedListing['google_map_link']) || !empty($selectedListing['youtube_link']) || !empty($selectedListing['tiktok_link']))
                             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                                 @if (!empty($selectedListing['facebook_link']))
                                     <a href="{{ $selectedListing['facebook_link'] }}" target="_blank"
@@ -1235,7 +1257,16 @@
                                         class="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-4 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition-all group overflow-hidden relative">
                                         <div class="absolute inset-x-0 bottom-0 h-1 bg-white/20 transform translate-y-full group-hover:translate-y-0 transition-transform"></div>
                                         <i class="fa-brands fa-facebook text-lg"></i>
-                                        <span>Bài viết Facebook</span>
+                                        <span>Facebook New</span>
+                                    </a>
+                                @endif
+                                @if (!empty($selectedListing['facebook_video_link']))
+                                    <a href="{{ $selectedListing['facebook_video_link'] }}" target="_blank"
+                                        rel="noopener noreferrer"
+                                        class="bg-gradient-to-r from-blue-400 to-blue-500 hover:from-blue-500 hover:to-blue-600 text-white px-4 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition-all group overflow-hidden relative">
+                                        <div class="absolute inset-x-0 bottom-0 h-1 bg-white/20 transform translate-y-full group-hover:translate-y-0 transition-transform"></div>
+                                        <i class="fa-brands fa-facebook text-lg"></i>
+                                        <span>Facebook Video</span>
                                     </a>
                                 @endif
                                 @if (!empty($selectedListing['youtube_link']))
@@ -1348,8 +1379,16 @@
                                     <div class="flex items-center gap-2">
                                         <span class="text-gray-500 font-semibold"><i class="fa-solid fa-phone"></i>
                                             SĐT Liên hệ:</span>
-                                        <span
-                                            class="font-bold text-green-600">{{ $selectedListing['contact_phone'] }}</span>
+                                        @if($isAdmin || in_array($selectedListing['id'], $revealedPhones))
+                                            <span class="font-bold text-green-600">{{ $selectedListing['contact_phone'] }}</span>
+                                        @else
+                                            <div class="flex items-center gap-2">
+                                                <span class="font-bold text-gray-400 font-mono">{{ substr($selectedListing['contact_phone'], 0, 3) }}*******</span>
+                                                <button wire:click="openPinModal({{ $selectedListing['id'] }})" class="text-blue-500 hover:text-blue-700 transition-colors">
+                                                    <i class="fa-solid fa-eye"></i>
+                                                </button>
+                                            </div>
+                                        @endif
                                     </div>
                                 @endif
                             </div>
@@ -1435,7 +1474,15 @@
                                         <p class="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-0.5">Người đưa tin (Nguồn)</p>
                                         <h5 class="text-base font-bold text-slate-800 truncate">{{ $selectedListing['reporter']['name'] }}</h5>
                                         <p class="text-xs text-slate-500 flex items-center gap-1.5 mt-0.5">
-                                            <i class="fa-solid fa-phone text-blue-500"></i> {{ $selectedListing['reporter']['phone'] ?? 'N/A' }}
+                                            <i class="fa-solid fa-phone text-blue-500"></i>
+                                            @if($isAdmin || in_array($selectedListing['id'], $revealedPhones))
+                                                {{ $selectedListing['reporter']['phone'] ?? 'N/A' }}
+                                            @else
+                                                <span class="font-mono text-gray-400">{{ substr($selectedListing['reporter']['phone'] ?? '000', 0, 3) }}*******</span>
+                                                <button wire:click="openPinModal({{ $selectedListing['id'] }})" class="text-blue-500">
+                                                    <i class="fa-solid fa-eye text-[10px]"></i>
+                                                </button>
+                                            @endif
                                         </p>
                                     </div>
                                 </div>
@@ -1461,7 +1508,15 @@
                                         <h5 class="text-base font-bold text-slate-800 truncate">{{ $selectedListing['user']['name'] }}</h5>
                                         <div class="flex flex-col gap-0.5 mt-0.5">
                                             <p class="text-xs text-slate-500 flex items-center gap-1.5">
-                                                <i class="fa-solid fa-phone text-slate-400"></i> {{ $selectedListing['user']['phone'] ?? 'N/A' }}
+                                                <i class="fa-solid fa-phone text-slate-400"></i>
+                                                @if($isAdmin || in_array($selectedListing['id'], $revealedPhones))
+                                                    {{ $selectedListing['user']['phone'] ?? 'N/A' }}
+                                                @else
+                                                    <span class="font-mono text-gray-400">{{ substr($selectedListing['user']['phone'] ?? '000', 0, 3) }}*******</span>
+                                                    <button wire:click="openPinModal({{ $selectedListing['id'] }})" class="text-blue-500">
+                                                        <i class="fa-solid fa-eye text-[10px]"></i>
+                                                    </button>
+                                                @endif
                                             </p>
                                             <p class="text-[10px] text-slate-400 flex items-center gap-1.5">
                                                 <i class="fa-solid fa-clock text-slate-300"></i> {{ \Carbon\Carbon::parse($selectedListing['created_at'])->format('d/m/Y H:i') }}
@@ -1477,12 +1532,34 @@
                 {{-- Footer Actions --}}
                 <div class="p-4 pb-12 md:pb-4 border-t border-gray-200 grid grid-cols-2 sm:flex sm:justify-end gap-3 bg-slate-50/80 backdrop-blur-md shrink-0 sticky bottom-0 z-20"
                     x-data="{ copied: false }">
-                    @if ($selectedListing['contact_phone'])
-                        <a href="tel:{{ $selectedListing['contact_phone'] }}"
-                            class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white text-sm md:text-base font-bold transition-all flex items-center justify-center gap-2 shadow-lg hover:shadow-emerald-500/20 active:scale-95">
-                            <i class="fa-solid fa-phone-volume animate-pulse"></i>
-                            <span>Gọi Ngay</span>
+                    @if (!empty($selectedListing['facebook_link']))
+                        <a href="{{ $selectedListing['facebook_link'] }}" target="_blank"
+                            class="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm md:text-base font-bold transition-all flex items-center justify-center gap-2 shadow-lg active:scale-95">
+                            <i class="fa-brands fa-facebook"></i>
+                            <span>FB New</span>
                         </a>
+                    @endif
+                    @if (!empty($selectedListing['facebook_video_link']))
+                        <a href="{{ $selectedListing['facebook_video_link'] }}" target="_blank"
+                            class="px-4 py-2.5 rounded-xl bg-blue-400 hover:bg-blue-500 text-white text-sm md:text-base font-bold transition-all flex items-center justify-center gap-2 shadow-lg active:scale-95">
+                            <i class="fa-brands fa-facebook"></i>
+                            <span>FB Video</span>
+                        </a>
+                    @endif
+                    @if ($selectedListing['contact_phone'])
+                        @if($isAdmin || in_array($selectedListing['id'], $revealedPhones))
+                            <a href="tel:{{ $selectedListing['contact_phone'] }}"
+                                class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white text-sm md:text-base font-bold transition-all flex items-center justify-center gap-2 shadow-lg hover:shadow-emerald-500/20 active:scale-95">
+                                <i class="fa-solid fa-phone-volume animate-pulse"></i>
+                                <span>Gọi Ngay</span>
+                            </a>
+                        @else
+                            <button wire:click="openPinModal({{ $selectedListing['id'] }})"
+                                class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-gray-500 to-slate-600 hover:from-gray-600 hover:to-slate-700 text-white text-sm md:text-base font-bold transition-all flex items-center justify-center gap-2 shadow-lg active:scale-95">
+                                <i class="fa-solid fa-eye"></i>
+                                <span>Hiện SĐT</span>
+                            </button>
+                        @endif
                     @endif
                     <button wire:click.stop="toggleSold({{ $selectedListing['id'] }})"
                         class="px-4 py-2.5 rounded-xl {{ $selectedListing['is_sold'] ? 'bg-slate-600 hover:bg-slate-700' : 'bg-blue-600 hover:bg-blue-700' }} text-white text-sm md:text-base font-bold transition-all flex items-center justify-center gap-2 shadow-lg active:scale-95">
@@ -1629,7 +1706,7 @@
                             </div>
 
                             @foreach ($sale_members as $index => $member)
-                                <div class="flex flex-col md:flex-row items-center gap-3 p-2 md:p-3 bg-white rounded-2xl border border-gray-100 shadow-sm group animate-[scaleIn_0.1s_ease-out]">
+                                <div wire:key="sale-member-{{ $index }}" class="flex flex-col md:flex-row items-center gap-3 p-2 md:p-3 bg-white rounded-2xl border border-gray-100 shadow-sm group animate-[scaleIn_0.1s_ease-out]">
                                     <div class="flex-1 w-full" wire:ignore x-data x-init="$nextTick(() => {
                                         const boot = () => {
                                             if (window.initSelect2) {
@@ -1746,4 +1823,42 @@
             <i class="fa-solid fa-arrow-up text-lg group-hover:animate-bounce"></i>
         </button>
     </div>
+
+    {{-- PIN Verification Modal --}}
+    @if ($showPinModal)
+        <div class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4"
+            x-transition.opacity>
+            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200">
+                <div class="p-6 text-center">
+                    <div class="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fa-solid fa-lock text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-2">Nhập mã PIN xác thực</h3>
+                    <p class="text-sm text-gray-500 mb-6">Vui lòng nhập mã PIN của bạn để xem số điện thoại liên hệ.</p>
+                    
+                    <div class="mb-6">
+                        <input type="password" wire:model="viewPinInput" 
+                            class="w-full border-2 border-gray-100 rounded-xl px-4 py-3 text-center text-2xl tracking-[0.5em] font-black focus:border-blue-500 outline-none transition-all shadow-inner"
+                            placeholder="****"
+                            autofocus
+                            wire:keydown.enter="verifyPin">
+                        @error('viewPinInput')
+                            <p class="text-red-500 text-xs mt-2 font-bold">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div class="flex gap-3">
+                        <button wire:click="closePinModal"
+                            class="flex-1 px-4 py-3 rounded-xl text-gray-600 hover:bg-gray-100 font-bold transition-colors">
+                            Hủy
+                        </button>
+                        <button wire:click="verifyPin"
+                            class="flex-1 px-4 py-3 rounded-xl bg-blue-600 text-white font-bold shadow-lg hover:shadow-blue-500/30 transition-all active:scale-95">
+                            Xác nhận
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
 </div>

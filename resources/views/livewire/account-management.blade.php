@@ -139,15 +139,26 @@
                         @enderror
                     </div>
 
-                    <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-1">Số điện thoại <span
-                                class="text-red-500">*</span></label>
-                        <input wire:model="phone" type="text"
-                            class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none"
-                            placeholder="Nhập số điện thoại">
-                        @error('phone')
-                            <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
-                        @enderror
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-1">Số điện thoại <span
+                                    class="text-red-500">*</span></label>
+                            <input wire:model="phone" type="text"
+                                class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none"
+                                placeholder="Nhập số điện thoại">
+                            @error('phone')
+                                <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
+                            @enderror
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-1">Mã PIN xem SĐT</label>
+                            <input wire:model="view_phone_pin" type="text"
+                                class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none font-mono"
+                                placeholder="Ví dụ: 1234">
+                            @error('view_phone_pin')
+                                <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
+                            @enderror
+                        </div>
                     </div>
 
                     @php

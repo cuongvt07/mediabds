@@ -27,6 +27,7 @@ class AccountManagement extends Component
     public $inviterUserId = null;
     public $rootInviteCode = null;
     public $existingInviteCode = null;
+    public $view_phone_pin = '';
 
     protected function rules()
     {
@@ -45,6 +46,7 @@ class AccountManagement extends Component
                 'regex:/^[A-Z0-9]+$/',
                 Rule::unique('users', 'invite_code')->ignore($this->selectedUserId),
             ],
+            'view_phone_pin' => 'nullable|string|max:10',
         ];
 
         return $rules;
@@ -109,6 +111,7 @@ class AccountManagement extends Component
         $this->property_types = $user->property_types ?? [];
         $this->inviterUserId = $user->invited_by_user_id;
         $this->existingInviteCode = $user->invite_code;
+        $this->view_phone_pin = $user->view_phone_pin;
         $this->rootInviteCode = blank($user->invite_code) ? '' : $user->invite_code;
         $this->showCreatePopup = true;
     }
@@ -140,6 +143,7 @@ class AccountManagement extends Component
             'name' => $this->name,
             'phone' => $this->phone,
             'property_types' => $this->property_types,
+            'view_phone_pin' => $this->view_phone_pin,
         ];
 
         if ($this->selectedUserId) {
@@ -234,6 +238,7 @@ class AccountManagement extends Component
         $this->inviterUserId = null;
         $this->rootInviteCode = null;
         $this->existingInviteCode = null;
+        $this->view_phone_pin = '';
         $this->resetValidation();
     }
 }

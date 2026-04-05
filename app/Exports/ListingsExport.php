@@ -153,7 +153,8 @@ class ListingsExport implements FromCollection, WithHeadings, WithMapping, WithS
                 'Số điện thoại',
                 'Mã mở khoá',
                 'Link YouTube',
-                'Link Facebook',
+                'Link Facebook New',
+                'Link Facebook Video',
                 'Link TikTok',
                 'Link Google Map',
                 'Ảnh đại diện',
@@ -225,6 +226,7 @@ class ListingsExport implements FromCollection, WithHeadings, WithMapping, WithS
             $listing->house_password,
             $listing->youtube_link,
             $listing->facebook_link,
+            $listing->facebook_video_link,
             $listing->tiktok_link,
             $listing->google_map_link,
             $listing->avatar,
@@ -239,7 +241,7 @@ class ListingsExport implements FromCollection, WithHeadings, WithMapping, WithS
     public function styles(Worksheet $sheet)
     {
         // Merge title cells
-        $sheet->mergeCells('A1:AD1');
+        $sheet->mergeCells('A1:AE1');
 
         $styleArray = [
             // Style for Title (Row 1)

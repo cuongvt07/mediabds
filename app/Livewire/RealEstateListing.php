@@ -144,6 +144,7 @@ class RealEstateListing extends Component
     public $youtube_link;
     public $youtube_link_short;
     public $facebook_link;
+    public $facebook_video_link;
     public $google_map_link;
     public $tiktok_link;
     public $description;
@@ -165,6 +166,10 @@ class RealEstateListing extends Component
     public $saleNetAmount = 0;
     public $sale_members = []; // Array of ['user_id' => null, 'received_amount' => 0]
     public $saleRemainingAmount = 0;
+    public $revealedPhones = [];
+    public $showPinModal = false;
+    public $pinListingId = null;
+    public $viewPinInput = '';
 
     // New Customer Integration
     public $customer_selection_mode = 'existing';
@@ -481,6 +486,8 @@ class RealEstateListing extends Component
         // Sanitize Social Links
         if ($this->facebook_link === '')
             $this->facebook_link = null;
+        if ($this->facebook_video_link === '')
+            $this->facebook_video_link = null;
         if ($this->google_map_link === '')
             $this->google_map_link = null;
         if ($this->tiktok_link === '')
@@ -489,6 +496,7 @@ class RealEstateListing extends Component
         $rules = [
             'title' => 'required',
             'facebook_link' => 'nullable|url|max:2000',
+            'facebook_video_link' => 'nullable|url|max:2000',
             'google_map_link' => 'nullable|url|max:2000',
             'tiktok_link' => 'nullable|url|max:2000',
             'reporter_id' => 'nullable|exists:users,id',
@@ -576,6 +584,7 @@ class RealEstateListing extends Component
             'youtube_link' => $this->youtube_link,
             'youtube_link_short' => $this->youtube_link_short,
             'facebook_link' => $this->facebook_link,
+            'facebook_video_link' => $this->facebook_video_link,
             'google_map_link' => $this->google_map_link,
             'tiktok_link' => $this->tiktok_link,
             'description' => $this->description,
@@ -693,6 +702,7 @@ class RealEstateListing extends Component
         $this->youtube_link = $listing->youtube_link;
         $this->youtube_link_short = $listing->youtube_link_short;
         $this->facebook_link = $listing->facebook_link;
+        $this->facebook_video_link = $listing->facebook_video_link;
         $this->google_map_link = $listing->google_map_link;
         $this->tiktok_link = $listing->tiktok_link;
         $this->description = $listing->description;
@@ -771,7 +781,7 @@ class RealEstateListing extends Component
     public function resetForm()
     {
         $this->selectedListingId = null;
-        $this->reset(['title', 'type', 'contact_type', 'contact_phone', 'house_password', 'code', 'is_sold', 'address', 'area', 'price', 'description', 'floors', 'bedrooms', 'toilets', 'direction', 'front_width', 'road_width', 'youtube_link', 'facebook_link', 'google_map_link', 'tiktok_link', 'images', 'province_id', 'district_id', 'ward_id', 'tempImages', 'avatar', 'tempAvatar', 'reporter_id']);
+        $this->reset(['title', 'type', 'contact_type', 'contact_phone', 'house_password', 'code', 'is_sold', 'address', 'area', 'price', 'description', 'floors', 'bedrooms', 'toilets', 'direction', 'front_width', 'road_width', 'youtube_link', 'facebook_link', 'facebook_video_link', 'google_map_link', 'tiktok_link', 'images', 'province_id', 'district_id', 'ward_id', 'tempImages', 'avatar', 'tempAvatar', 'reporter_id']);
         $this->is_sold = false;
         $this->youtube_link_short = null;
         $this->customer_selection_mode = 'existing';
@@ -979,7 +989,7 @@ class RealEstateListing extends Component
 
         $this->validate([
             'saleListingId' => 'required|exists:real_estate_listings,id',
-            'saleUserId' => 'required|exists:users,id',
+            'saleUserId' => 'nullable|exists:users,id',
             'saleProjectName' => 'required|string|max:255',
         ]);
 
@@ -1020,10 +1030,16 @@ class RealEstateListing extends Component
             $listing = ListingModel::findOrFail($this->saleListingId);
             $listing->update(['is_sold' => true]);
 
+            // If no primary saleUserId is set, but we have members, use the first member as the primary seller
+            $finalSaleUserId = $this->saleUserId;
+            if (!$finalSaleUserId && !empty($this->sale_members)) {
+                $finalSaleUserId = $this->sale_members[0]['user_id'];
+            }
+
             $sale = RealEstateListingSale::updateOrCreate(
                 ['listing_id' => $listing->id],
                 [
-                    'sold_by_user_id' => $this->saleUserId, // Keep for backward compatibility or primary seller
+                    'sold_by_user_id' => $finalSaleUserId, // Keep for backward compatibility or primary seller
                     'project_name' => $this->saleProjectName,
                     'actual_price' => $actualPrice,
                     'revenue_percent' => $percent,
@@ -1356,5 +1372,48 @@ class RealEstateListing extends Component
         }
 
         return is_numeric($value) ? (float) $value : null;
+    }
+
+    public function openPinModal($listingId)
+    {
+        if ($this->isAdmin) {
+            $this->revealedPhones[] = $listingId;
+            return;
+        }
+        
+        $this->pinListingId = $listingId;
+        $this->viewPinInput = '';
+        $this->showPinModal = true;
+    }
+
+    public function closePinModal()
+    {
+        $this->showPinModal = false;
+        $this->pinListingId = null;
+        $this->viewPinInput = '';
+        $this->resetValidation();
+    }
+
+    public function verifyPin()
+    {
+        $user = auth()->user();
+        if (!$user) {
+            return;
+        }
+
+        if (blank($user->view_phone_pin)) {
+            $this->addError('viewPinInput', 'Tài khoản chưa được cấp mã PIN. Vui lòng liên hệ Admin.');
+            return;
+        }
+
+        if ($this->viewPinInput === $user->view_phone_pin) {
+            $this->revealedPhones[] = $this->pinListingId;
+            $this->showPinModal = false;
+            $this->pinListingId = null;
+            $this->viewPinInput = '';
+            $this->dispatch('toast', ['message' => 'Xác thực thành công!', 'type' => 'success']);
+        } else {
+            $this->addError('viewPinInput', 'Mã PIN không chính xác!');
+        }
     }
 }

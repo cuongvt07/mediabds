@@ -128,6 +128,7 @@ class User extends Authenticatable
         'property_types',
         'invite_code',
         'invited_by_user_id',
+        'view_phone_pin',
     ];
 
     /**
@@ -138,6 +139,7 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'view_phone_pin',
     ];
 
     /**
