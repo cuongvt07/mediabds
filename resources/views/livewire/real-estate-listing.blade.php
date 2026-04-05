@@ -1737,8 +1737,9 @@
                                                 },
                                                 updateFromInput(v) {
                                                     const clean = v.replace(/[^0-9]/g, '');
-                                                    this.val = clean !== '' ? parseInt(clean) : 0;
-                                                    this.display = this.format(this.val);
+                                                    const numeric = clean !== '' ? parseInt(clean) : 0;
+                                                    this.val = numeric;
+                                                    this.display = this.format(numeric);
                                                 }
                                             }"
                                             x-init="

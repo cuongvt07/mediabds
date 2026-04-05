@@ -1043,17 +1043,23 @@ class RealEstateListing extends Component
         $netAmount = round($revenueAmount + $bonus, 2);
 
         // Validate members
+        // Filter out completely empty rows (no user AND amount is 0/empty)
+        $this->sale_members = array_values(array_filter($this->sale_members, function($m) {
+            $amt = $this->normalizeCurrencyInput($m['received_amount'] ?? 0);
+            return !empty($m['user_id']) || $amt > 0;
+        }));
+
         $distributedAmount = 0;
         foreach ($this->sale_members as $index => $member) {
             $userId = $member['user_id'] ?? null;
             if (!$userId) {
-                $this->dispatch('toast', ['message' => 'Vui lòng chọn nhân viên cho tất cả các dòng phân chia!', 'type' => 'error']);
+                $this->dispatch('toast', ['message' => 'Dòng ' . ($index + 1) . ' chưa chọn nhân viên!', 'type' => 'error']);
                 return;
             }
 
             $normalizedAmount = $this->normalizeCurrencyInput($member['received_amount'] ?? 0);
             if ($normalizedAmount <= 0) {
-                $this->dispatch('toast', ['message' => 'Số tiền chia cho từng người phải lớn hơn 0!', 'type' => 'error']);
+                $this->dispatch('toast', ['message' => 'Dòng ' . ($index + 1) . ' (' . (optional(\App\Models\User::find($userId))->name ?? 'nhân viên') . ') chưa có số tiền chia!', 'type' => 'error']);
                 return;
             }
 
