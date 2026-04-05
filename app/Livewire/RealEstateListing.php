@@ -928,23 +928,7 @@ class RealEstateListing extends Component
 
     public function addSaleMember()
     {
-        // Default the new member's amount to the remaining profit for convenience
-        $amount = max(0, $this->saleRemainingAmount);
-        $this->sale_members[] = ['user_id' => null, 'received_amount' => $amount];
-        $this->recalculateRemainingAmount();
-    }
-
-    public function distributeProfitEvenly()
-    {
-        $count = count($this->sale_members);
-        if ($count === 0) return;
-
-        $each = floor($this->saleNetAmount / $count);
-        $remainder = $this->saleNetAmount % $count;
-
-        foreach ($this->sale_members as $index => $member) {
-            $this->sale_members[$index]['received_amount'] = $each + ($index === 0 ? $remainder : 0);
-        }
+        $this->sale_members[] = ['user_id' => null, 'received_amount' => 0];
         $this->recalculateRemainingAmount();
     }
 

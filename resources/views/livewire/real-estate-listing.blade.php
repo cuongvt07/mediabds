@@ -1729,23 +1729,12 @@
                                     <div class="w-full md:w-64">
                                         <div class="relative" 
                                             x-data="{ 
-                                                val: @entangle('sale_members.'.$index.'.received_amount'),
-                                                display: '',
-                                                format(v) {
-                                                    if (!v && v !== 0) return '';
-                                                    return v.toString().replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-                                                },
-                                                updateFromInput(v) {
-                                                    const clean = v.replace(/[^0-9]/g, '');
-                                                    const numeric = clean !== '' ? parseInt(clean) : 0;
-                                                    this.val = numeric;
-                                                    this.display = this.format(numeric);
+                                                display: '{{ number_format((float)($member['received_amount'] ?? 0), 0, ',', '.') }}',
+                                                update(v) {
+                                                    this.display = v.replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+                                                    $wire.set('sale_members.{{ $index }}.received_amount', this.display.replace(/[^0-9]/g, ''));
                                                 }
-                                            }"
-                                            x-init="
-                                                display = format(val);
-                                                $watch('val', v => { display = format(v) });
-                                            ">
+                                            }">
                                             <input type="text" 
                                                 x-model="display"
                                                 x-on:input="update($event.target.value)"
