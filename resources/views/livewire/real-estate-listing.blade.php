@@ -1706,7 +1706,8 @@
                             </div>
 
                             @foreach ($sale_members as $index => $member)
-                                <div wire:key="sale-member-{{ $index }}-{{ $member['user_id'] ?? 'new' }}" class="flex flex-col md:flex-row items-center gap-3 p-2 md:p-3 bg-white rounded-2xl border border-gray-100 shadow-sm group animate-[scaleIn_0.1s_ease-out]">
+                                <div wire:key="member-row-{{ $index }}-{{ $member['user_id'] ?? 'new' }}-{{ count($sale_members) }}" 
+                                    class="flex flex-col md:flex-row items-center gap-3 p-2 md:p-3 bg-white rounded-2xl border border-gray-100 shadow-sm group animate-[scaleIn_0.1s_ease-out]">
                                     <div class="flex-1 w-full" wire:ignore x-data x-init="$nextTick(() => {
                                         const boot = () => {
                                             if (window.initSelect2) {
@@ -1726,11 +1727,17 @@
                                         </select>
                                     </div>
                                     <div class="w-full md:w-64">
-                                        <div class="relative" x-data="{ val: @entangle('sale_members.'.$index.'.received_amount') }"
-                                            x-init="$watch('val', v => { if(v) val = v.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') })">
+                                        <div class="relative" 
+                                            x-data="{ 
+                                                display: '{{ number_format((float)($member['received_amount'] ?? 0), 0, ',', '.') }}',
+                                                update(val) {
+                                                    this.display = val.replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+                                                    $wire.set('sale_members.{{ $index }}.received_amount', val.replace(/[^0-9]/g, ''));
+                                                }
+                                            }">
                                             <input type="text" 
-                                                x-model="val"
-                                                x-on:input="val = $el.value.replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.'); $wire.set('sale_members.{{ $index }}.received_amount', $el.value.replace(/[^0-9]/g, ''))"
+                                                x-model="display"
+                                                x-on:input="update($event.target.value)"
                                                 class="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50/50 font-bold text-blue-700"
                                                 placeholder="0">
                                         </div>

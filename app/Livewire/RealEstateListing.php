@@ -928,7 +928,23 @@ class RealEstateListing extends Component
 
     public function addSaleMember()
     {
-        $this->sale_members[] = ['user_id' => null, 'received_amount' => 0];
+        // Default the new member's amount to the remaining profit for convenience
+        $amount = max(0, $this->saleRemainingAmount);
+        $this->sale_members[] = ['user_id' => null, 'received_amount' => $amount];
+        $this->recalculateRemainingAmount();
+    }
+
+    public function distributeProfitEvenly()
+    {
+        $count = count($this->sale_members);
+        if ($count === 0) return;
+
+        $each = floor($this->saleNetAmount / $count);
+        $remainder = $this->saleNetAmount % $count;
+
+        foreach ($this->sale_members as $index => $member) {
+            $this->sale_members[$index]['received_amount'] = $each + ($index === 0 ? $remainder : 0);
+        }
         $this->recalculateRemainingAmount();
     }
 
@@ -941,22 +957,28 @@ class RealEstateListing extends Component
 
     public function updatedSaleMembers($value, $key)
     {
+        // This handles updates to nested properties like 'sale_members.0.received_amount'
         $this->recalculateRemainingAmount();
     }
 
     protected function normalizeCurrencyInput($value): ?float
     {
-        if ($value === null || $value === '') {
-            return null;
+        if ($value === null || $value === '' || $value === false) {
+            return 0;
         }
 
-        // Currency fields are stored as VND-style whole numbers.
+        // If it's already a number, just return the float value
+        if (is_numeric($value)) {
+            return (float) $value;
+        }
+
+        // Otherwise, it's a formatted string like '1.000.500' or '1,000,500'
         $clean = preg_replace('/[^0-9]/', '', (string) $value);
         if ($clean === null || $clean === '') {
-            return null;
+            return 0;
         }
 
-        return is_numeric($clean) ? (float) $clean : null;
+        return (float) $clean;
     }
 
     protected function normalizePercentInput($value): ?float

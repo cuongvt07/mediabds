@@ -124,7 +124,7 @@ class ListingsExport implements FromCollection, WithHeadings, WithMapping, WithS
             }
         }
 
-        return $query->with('user:id,name')->get();
+        return $query->with(['user:id,name', 'sale.members.user:id,name'])->get();
     }
 
     public function headings(): array
@@ -161,6 +161,7 @@ class ListingsExport implements FromCollection, WithHeadings, WithMapping, WithS
                 'Danh sách ảnh',
                 'Trạng thái',
                 'Ngày tin',
+                'Chi trả hoa hồng',
                 'Người tạo (ID)',
                 'Người tạo',
             ] // Row 2: Headers
@@ -200,8 +201,18 @@ class ListingsExport implements FromCollection, WithHeadings, WithMapping, WithS
         $imageList = implode(' | ', array_filter($images));
 
         $publishedAt = Carbon::parse($listing->created_at)->format('d/m/Y');
-
         $status = $listing->is_sold ? 'Đã bán' : 'Chưa bán';
+
+        $distributionStr = '';
+        if ($listing->is_sold && $listing->sale && $listing->sale->members) {
+            $memberParts = [];
+            foreach ($listing->sale->members as $member) {
+                $name = optional($member->user)->name ?? 'N/A';
+                $amountFormatted = number_format((float) $member->received_amount, 0, ',', '.');
+                $memberParts[] = "{$name}: {$amountFormatted}";
+            }
+            $distributionStr = implode(' | ', $memberParts);
+        }
 
         return [
             $listing->code,
@@ -233,6 +244,7 @@ class ListingsExport implements FromCollection, WithHeadings, WithMapping, WithS
             $imageList,
             $status,
             $publishedAt,
+            $distributionStr,
             $listing->user_id,
             optional($listing->user)->name,
         ];
@@ -241,7 +253,7 @@ class ListingsExport implements FromCollection, WithHeadings, WithMapping, WithS
     public function styles(Worksheet $sheet)
     {
         // Merge title cells
-        $sheet->mergeCells('A1:AE1');
+        $sheet->mergeCells('A1:AF1');
 
         $styleArray = [
             // Style for Title (Row 1)

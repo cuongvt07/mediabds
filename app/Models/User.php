@@ -148,7 +148,16 @@ class User extends Authenticatable
     public function getRankAttribute()
     {
         $invitesCount = $this->invitees()->count();
-        $totalRevenue = RealEstateListingSale::where('sold_by_user_id', $this->id)->sum('revenue_amount');
+        
+        // Sum revenue from primary sales
+        $primaryRevenue = \App\Models\RealEstateListingSale::where('sold_by_user_id', $this->id)->sum('revenue_amount');
+        
+        // Sum revenue from split deals where they were a member
+        $splitRevenue = \DB::table('real_estate_listing_sale_members')
+            ->where('user_id', $this->id)
+            ->sum('received_amount');
+            
+        $totalRevenue = $primaryRevenue + $splitRevenue;
 
         return \App\Models\CtvRank::query()
             ->where('min_invites', '<=', $invitesCount)
