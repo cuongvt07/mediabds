@@ -1045,19 +1045,26 @@ class RealEstateListing extends Component
         // Validate members
         $distributedAmount = 0;
         foreach ($this->sale_members as $index => $member) {
-            if (empty($member['user_id'])) {
-                $this->dispatch('toast', ['message' => 'Vui lòng chọn thành viên!', 'type' => 'error']);
+            $userId = $member['user_id'] ?? null;
+            if (!$userId) {
+                $this->dispatch('toast', ['message' => 'Vui lòng chọn nhân viên cho tất cả các dòng phân chia!', 'type' => 'error']);
                 return;
             }
+
             $normalizedAmount = $this->normalizeCurrencyInput($member['received_amount'] ?? 0);
+            if ($normalizedAmount <= 0) {
+                $this->dispatch('toast', ['message' => 'Số tiền chia cho từng người phải lớn hơn 0!', 'type' => 'error']);
+                return;
+            }
+
             $this->sale_members[$index]['received_amount'] = $normalizedAmount;
             $distributedAmount += $normalizedAmount;
         }
 
-        if (abs($distributedAmount - $netAmount) > 0.1) { // Allowing for minor precision issues
-            $remaining = $netAmount - $distributedAmount;
+        $remaining = round($netAmount - $distributedAmount, 2);
+        if (abs($remaining) > 0.01) {
             if ($remaining > 0) {
-                $this->dispatch('toast', ['message' => 'Vui lòng phân bổ hết lợi nhuận (Thiếu ' . number_format($remaining, 0, ',', '.') . ' VNĐ)!', 'type' => 'error']);
+                $this->dispatch('toast', ['message' => 'Lợi nhuận còn lại phải bằng 0 (Còn dư ' . number_format($remaining, 0, ',', '.') . ' VNĐ)!', 'type' => 'error']);
             } else {
                 $this->dispatch('toast', ['message' => 'Tổng tiền chi trả vượt quá lợi nhuận (Dư ' . number_format(abs($remaining), 0, ',', '.') . ' VNĐ)!', 'type' => 'error']);
             }
