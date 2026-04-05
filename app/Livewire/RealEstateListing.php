@@ -858,6 +858,10 @@ class RealEstateListing extends Component
         $this->sale_members = []; // Reset members
         $this->saleRemainingAmount = 0;
         $this->resetValidation();
+        
+        // Calculate initial numbers based on defaults
+        $this->recalculateSaleNumbers();
+        
         $this->showSoldPopup = true;
     }
 
@@ -909,12 +913,17 @@ class RealEstateListing extends Component
 
     public function recalculateRemainingAmount()
     {
-        $totalProfit = $this->saleNetAmount;
+        // Always recalculate base numbers first to ensure net amount is fresh
+        $actualPrice = $this->normalizeCurrencyInput($this->saleActualPrice) ?? 0;
+        $percent = $this->normalizePercentInput($this->saleRevenuePercent) ?? 0;
+        $bonus = $this->normalizeCurrencyInput($this->saleBonusAmount) ?? 0;
+        $this->saleNetAmount = round((($actualPrice * $percent) / 100) + $bonus, 2);
+
         $distributed = 0;
         foreach ($this->sale_members as $member) {
             $distributed += $this->normalizeCurrencyInput($member['received_amount'] ?? 0);
         }
-        $this->saleRemainingAmount = round($totalProfit - $distributed, 2);
+        $this->saleRemainingAmount = round($this->saleNetAmount - $distributed, 2);
     }
 
     public function addSaleMember()
