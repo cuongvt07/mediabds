@@ -1629,7 +1629,7 @@
                                     <input wire:model.live.debounce.500ms="saleActualPrice" type="text"
                                         x-data="{ val: @entangle('saleActualPrice') }"
                                         x-init="$watch('val', v => { if(v) val = v.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') })"
-                                        x-on:input="val = $el.value.replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.'); $wire.set('saleActualPrice', $el.value.replace(/[^0-9]/g, ''), true)"
+                                        x-on:input="val = $el.value.replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.'); $wire.set('saleActualPrice', $el.value.replace(/[^0-9]/g, ''))"
                                         class="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-green-500 outline-none shadow-sm font-bold text-green-700">
                                 </div>
                                 <div>
@@ -1643,7 +1643,7 @@
                                 <input wire:model.live.debounce.500ms="saleBonusAmount" type="text"
                                     x-data="{ val: @entangle('saleBonusAmount') }"
                                     x-init="$watch('val', v => { if(v) val = v.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') })"
-                                    x-on:input="val = $el.value.replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.'); $wire.set('saleBonusAmount', $el.value.replace(/[^0-9]/g, ''), true)"
+                                    x-on:input="val = $el.value.replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.'); $wire.set('saleBonusAmount', $el.value.replace(/[^0-9]/g, ''))"
                                     class="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-green-500 outline-none shadow-sm font-bold text-orange-600">
                             </div>
                         </div>
