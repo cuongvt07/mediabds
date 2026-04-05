@@ -912,7 +912,7 @@ class RealEstateListing extends Component
         $totalProfit = $this->saleNetAmount;
         $distributed = 0;
         foreach ($this->sale_members as $member) {
-            $distributed += (float) ($member['received_amount'] ?? 0);
+            $distributed += $this->normalizeCurrencyInput($member['received_amount'] ?? 0);
         }
         $this->saleRemainingAmount = round($totalProfit - $distributed, 2);
     }
@@ -1013,16 +1013,23 @@ class RealEstateListing extends Component
 
         // Validate members
         $distributedAmount = 0;
-        foreach ($this->sale_members as $member) {
+        foreach ($this->sale_members as $index => $member) {
             if (empty($member['user_id'])) {
                 $this->dispatch('toast', ['message' => 'Vui lòng chọn thành viên!', 'type' => 'error']);
                 return;
             }
-            $distributedAmount += (float) $member['received_amount'];
+            $normalizedAmount = $this->normalizeCurrencyInput($member['received_amount'] ?? 0);
+            $this->sale_members[$index]['received_amount'] = $normalizedAmount;
+            $distributedAmount += $normalizedAmount;
         }
 
-        if ($distributedAmount > $netAmount + 0.01) { // Tiny buffer for float precision
-            $this->dispatch('toast', ['message' => 'Tổng tiền chi trả không được vượt quá tổng lợi nhuận!', 'type' => 'error']);
+        if (abs($distributedAmount - $netAmount) > 0.1) { // Allowing for minor precision issues
+            $remaining = $netAmount - $distributedAmount;
+            if ($remaining > 0) {
+                $this->dispatch('toast', ['message' => 'Vui lòng phân bổ hết lợi nhuận (Thiếu ' . number_format($remaining, 0, ',', '.') . ' VNĐ)!', 'type' => 'error']);
+            } else {
+                $this->dispatch('toast', ['message' => 'Tổng tiền chi trả vượt quá lợi nhuận (Dư ' . number_format(abs($remaining), 0, ',', '.') . ' VNĐ)!', 'type' => 'error']);
+            }
             return;
         }
 
