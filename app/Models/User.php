@@ -143,19 +143,16 @@ class User extends Authenticatable
     ];
 
     /**
-     * Get the user's current CTV rank.
+     * Get the user's total revenue (Centralized logic)
      */
-    public function getRankAttribute()
+    public function getTotalRevenueAttribute()
     {
-        $invitesCount = $this->invitees()->count();
-        
-        // Final Revenue Calculation: 
-        // 1. Sum 'received_amount' from all split members (This covers ALL new sales)
+        // 1. Sum 'received_amount' from all split members (New data/Multi-member)
         $splitRevenue = \DB::table('real_estate_listing_sale_members')
             ->where('user_id', $this->id)
             ->sum('received_amount');
             
-        // 2. Sum 'revenue_amount' from primary sales table ONLY for sales that DO NOT have any members (Backward compatibility for old data)
+        // 2. Sum 'revenue_amount' from primary sales table ONLY for sales that DO NOT have any members (Legacy data)
         $legacyRevenue = \App\Models\RealEstateListingSale::where('sold_by_user_id', $this->id)
             ->whereNotExists(function($query) {
                 $query->select(\DB::raw(1))
@@ -164,7 +161,16 @@ class User extends Authenticatable
             })
             ->sum('revenue_amount');
             
-        $totalRevenue = $splitRevenue + $legacyRevenue;
+        return (float) ($splitRevenue + $legacyRevenue);
+    }
+
+    /**
+     * Get the user's current CTV rank.
+     */
+    public function getRankAttribute()
+    {
+        $invitesCount = $this->invitees()->count();
+        $totalRevenue = $this->total_revenue;
 
         return \App\Models\CtvRank::query()
             ->where('min_invites', '<=', $invitesCount)

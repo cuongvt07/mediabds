@@ -897,6 +897,7 @@ class RealEstateListing extends Component
     public function updatedSaleActualPrice() { $this->syncSaleAmounts(); }
     public function updatedSaleRevenuePercent() { $this->syncSaleAmounts(); }
     public function updatedSaleBonusAmount() { $this->syncSaleAmounts(); }
+    public function updatedSaleMembers() { $this->syncSaleAmounts(); }
 
     public function saveSoldInformation()
     {
@@ -951,6 +952,15 @@ class RealEstateListing extends Component
                     $sale->members()->create([
                         'user_id' => $m['user_id'],
                         'received_amount' => $this->parseNumeric($m['received_amount']),
+                    ]);
+                }
+                
+                // If for some reason the array was empty (shouldn't happen due to JS/PHP validation), 
+                // create a default entry for the current admin as an audit safety measure.
+                if ($sale->members()->count() === 0) {
+                    $sale->members()->create([
+                        'user_id' => auth()->id(),
+                        'received_amount' => $this->saleNetAmount,
                     ]);
                 }
             });

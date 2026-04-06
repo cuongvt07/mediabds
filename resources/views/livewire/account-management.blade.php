@@ -78,6 +78,11 @@
                                 <td class="px-6 py-4 text-right">
                                     <div
                                         class="flex items-center justify-end gap-2 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <a href="{{ route('account.detail', $user->id) }}"
+                                            class="w-9 h-9 flex items-center justify-center rounded-lg text-indigo-600 hover:bg-indigo-100 transition-colors bg-indigo-50 md:bg-transparent"
+                                            title="Xem chi tiết hoạt động">
+                                            <i class="fa-solid fa-chart-simple"></i>
+                                        </a>
                                         <button wire:click="editUser({{ $user->id }})"
                                             class="w-9 h-9 flex items-center justify-center rounded-lg text-blue-600 hover:bg-blue-100 transition-colors bg-blue-50 md:bg-transparent"
                                             title="Chỉnh sửa">

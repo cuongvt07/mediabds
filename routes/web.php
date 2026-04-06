@@ -25,6 +25,7 @@ Route::get('/', function () {
 Route::get('/media', FileManager::class)->middleware(['auth', 'admin'])->name('media');
 Route::get('/listings', RealEstateListing::class)->middleware('auth')->name('listings');
 Route::get('/accounts', \App\Livewire\AccountManagement::class)->middleware(['auth', 'admin'])->name('accounts');
+Route::get('/accounts/detail/{id}', \App\Livewire\AccountDetail::class)->middleware(['auth', 'admin'])->name('account.detail');
 Route::get('/ctv-ranks', \App\Livewire\CtvRankManagement::class)->middleware(['auth', 'admin'])->name('ctv.ranks');
 Route::get('/business', \App\Livewire\BusinessManagement::class)->middleware(['auth', 'admin'])->name('business');
 Route::get('/customers', \App\Livewire\CustomerManagement::class)->middleware('auth')->name('customers');
