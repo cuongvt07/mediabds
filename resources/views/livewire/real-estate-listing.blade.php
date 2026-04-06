@@ -1406,10 +1406,33 @@
                                         <span
                                             class="font-bold text-gray-800">{{ $selectedListing['sale']['project_name'] ?? '-' }}</span>
                                     </div>
-                                    <div>
-                                        <span class="text-gray-500 font-semibold">Người bán:</span>
-                                        <span
-                                            class="font-bold text-gray-800">{{ data_get($selectedListing, 'sale.sold_by.name', '-') }}</span>
+                                    <div class="md:col-span-2 py-2 border-y border-gray-100 my-1">
+                                        <span class="text-xs font-black text-blue-600 uppercase tracking-widest mb-2 block">Thành viên tham gia chốt:</span>
+                                        <div class="space-y-2">
+                                            @php $saleMembers = data_get($selectedListing, 'sale.members', []); @endphp
+                                            @forelse($saleMembers as $member)
+                                                <div class="flex items-center justify-between bg-white p-2 rounded-lg border border-gray-100 shadow-sm">
+                                                    <div class="flex items-center gap-2">
+                                                        <div class="w-6 h-6 rounded-md bg-blue-100 text-blue-600 flex items-center justify-center text-[10px] font-black">
+                                                            {{ mb_substr(data_get($member, 'user.name', 'U'), 0, 1) }}
+                                                        </div>
+                                                        <span class="font-bold text-gray-800">{{ data_get($member, 'user.name', 'N/A') }}</span>
+                                                    </div>
+                                                    <span class="font-black text-blue-600">{{ number_format((float) data_get($member, 'received_amount', 0), 0, ',', '.') }} <span class="text-[9px] font-normal">VNĐ</span></span>
+                                                </div>
+                                            @empty
+                                                {{-- Fallback for legacy data with no members record --}}
+                                                <div class="flex items-center justify-between bg-white p-2 rounded-lg border border-gray-100 shadow-sm">
+                                                    <div class="flex items-center gap-2">
+                                                        <div class="w-6 h-6 rounded-md bg-gray-100 text-gray-600 flex items-center justify-center text-[10px] font-black">
+                                                            {{ mb_substr(data_get($selectedListing, 'sale.sold_by.name', 'U'), 0, 1) }}
+                                                        </div>
+                                                        <span class="font-bold text-gray-800">{{ data_get($selectedListing, 'sale.sold_by.name', '-') }}</span>
+                                                    </div>
+                                                    <span class="font-black text-gray-600">{{ number_format((float) data_get($selectedListing, 'sale.revenue_amount', 0), 0, ',', '.') }} <span class="text-[9px] font-normal">VNĐ</span></span>
+                                                </div>
+                                            @endforelse
+                                        </div>
                                     </div>
                                     <div>
                                         <span class="text-gray-500 font-semibold">Giá thực tế:</span>

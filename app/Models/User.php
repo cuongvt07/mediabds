@@ -149,15 +149,22 @@ class User extends Authenticatable
     {
         $invitesCount = $this->invitees()->count();
         
-        // Sum revenue from primary sales
-        $primaryRevenue = \App\Models\RealEstateListingSale::where('sold_by_user_id', $this->id)->sum('revenue_amount');
-        
-        // Sum revenue from split deals where they were a member
+        // Final Revenue Calculation: 
+        // 1. Sum 'received_amount' from all split members (This covers ALL new sales)
         $splitRevenue = \DB::table('real_estate_listing_sale_members')
             ->where('user_id', $this->id)
             ->sum('received_amount');
             
-        $totalRevenue = $primaryRevenue + $splitRevenue;
+        // 2. Sum 'revenue_amount' from primary sales table ONLY for sales that DO NOT have any members (Backward compatibility for old data)
+        $legacyRevenue = \App\Models\RealEstateListingSale::where('sold_by_user_id', $this->id)
+            ->whereNotExists(function($query) {
+                $query->select(\DB::raw(1))
+                    ->from('real_estate_listing_sale_members')
+                    ->whereColumn('real_estate_listing_sale_members.sale_id', 'real_estate_listing_sales.id');
+            })
+            ->sum('revenue_amount');
+            
+        $totalRevenue = $splitRevenue + $legacyRevenue;
 
         return \App\Models\CtvRank::query()
             ->where('min_invites', '<=', $invitesCount)
