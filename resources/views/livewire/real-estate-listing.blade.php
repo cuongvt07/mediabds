@@ -1395,69 +1395,68 @@
                         </div>
 
                         @if (!empty($selectedListing['sale']))
-                            <div class="bg-emerald-50 rounded-xl p-4 border border-emerald-200">
-                                <h4 class="text-sm font-bold text-emerald-700 uppercase mb-3 flex items-center gap-2">
-                                    <i class="fa-solid fa-handshake-angle"></i>
-                                    Thông Tin Giao Dịch Đã Bán
-                                </h4>
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                                    <div>
-                                        <span class="text-gray-500 font-semibold">Dự án:</span>
-                                        <span
-                                            class="font-bold text-gray-800">{{ $selectedListing['sale']['project_name'] ?? '-' }}</span>
+                            <div class="mt-6 bg-slate-50 rounded-2xl p-5 border border-slate-200 shadow-sm overflow-hidden relative group/sale">
+                                <div class="absolute top-0 right-0 p-3">
+                                    <div class="px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-600 text-[10px] font-black uppercase tracking-widest border border-emerald-500/20">
+                                        Đã giao dịch
                                     </div>
-                                    <div class="md:col-span-2 py-2 border-y border-gray-100 my-1">
-                                        <span class="text-xs font-black text-blue-600 uppercase tracking-widest mb-2 block">Thành viên tham gia chốt:</span>
+                                </div>
+                                
+                                <h4 class="text-xs font-black text-slate-500 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                                    <i class="fa-solid fa-handshake-angle text-blue-500"></i>
+                                    Thông Tin Giao Dịch
+                                </h4>
+
+                                <div class="space-y-4">
+                                    {{-- Project & Members --}}
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div class="space-y-1">
+                                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Dự án/Nội dung</p>
+                                            <p class="text-sm font-black text-slate-800">{{ $selectedListing['sale']['project_name'] ?? '-' }}</p>
+                                        </div>
                                         <div class="space-y-2">
-                                            @php $saleMembers = data_get($selectedListing, 'sale.members', []); @endphp
-                                            @forelse($saleMembers as $member)
-                                                <div class="flex items-center justify-between bg-white p-2 rounded-lg border border-gray-100 shadow-sm">
-                                                    <div class="flex items-center gap-2">
-                                                        <div class="w-6 h-6 rounded-md bg-blue-100 text-blue-600 flex items-center justify-center text-[10px] font-black">
+                                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Thành viên tham gia</p>
+                                            <div class="flex flex-wrap gap-2">
+                                                @php $saleMembers = data_get($selectedListing, 'sale.members', []); @endphp
+                                                @forelse($saleMembers as $member)
+                                                    <div class="flex items-center gap-2 px-2 py-1 bg-white border border-slate-200 rounded-lg shadow-sm">
+                                                        <div class="w-5 h-5 rounded-md bg-blue-600 text-white flex items-center justify-center text-[9px] font-black">
                                                             {{ mb_substr(data_get($member, 'user.name', 'U'), 0, 1) }}
                                                         </div>
-                                                        <span class="font-bold text-gray-800">{{ data_get($member, 'user.name', 'N/A') }}</span>
+                                                        <span class="text-xs font-bold text-slate-700">{{ data_get($member, 'user.name', 'N/A') }}</span>
+                                                        <span class="text-[10px] font-black text-blue-600 ml-1">{{ number_format((float) data_get($member, 'received_amount', 0), 0, ',', '.') }}đ</span>
                                                     </div>
-                                                    <span class="font-black text-blue-600">{{ number_format((float) data_get($member, 'received_amount', 0), 0, ',', '.') }} <span class="text-[9px] font-normal">VNĐ</span></span>
-                                                </div>
-                                            @empty
-                                                {{-- Fallback for legacy data with no members record --}}
-                                                <div class="flex items-center justify-between bg-white p-2 rounded-lg border border-gray-100 shadow-sm">
-                                                    <div class="flex items-center gap-2">
-                                                        <div class="w-6 h-6 rounded-md bg-gray-100 text-gray-600 flex items-center justify-center text-[10px] font-black">
+                                                @empty
+                                                    <div class="flex items-center gap-2 px-2 py-1 bg-white border border-slate-200 rounded-lg shadow-sm">
+                                                        <div class="w-5 h-5 rounded-md bg-slate-400 text-white flex items-center justify-center text-[9px] font-black">
                                                             {{ mb_substr(data_get($selectedListing, 'sale.sold_by.name', 'U'), 0, 1) }}
                                                         </div>
-                                                        <span class="font-bold text-gray-800">{{ data_get($selectedListing, 'sale.sold_by.name', '-') }}</span>
+                                                        <span class="text-xs font-bold text-slate-700">{{ data_get($selectedListing, 'sale.sold_by.name', '-') }}</span>
+                                                        <span class="text-[10px] font-black text-slate-600 ml-1">{{ number_format((float) data_get($selectedListing, 'sale.revenue_amount', 0), 0, ',', '.') }}đ</span>
                                                     </div>
-                                                    <span class="font-black text-gray-600">{{ number_format((float) data_get($selectedListing, 'sale.revenue_amount', 0), 0, ',', '.') }} <span class="text-[9px] font-normal">VNĐ</span></span>
-                                                </div>
-                                            @endforelse
+                                                @endforelse
+                                            </div>
                                         </div>
                                     </div>
-                                    <div>
-                                        <span class="text-gray-500 font-semibold">Giá thực tế:</span>
-                                        <span
-                                            class="font-bold text-gray-800">{{ number_format((float) data_get($selectedListing, 'sale.actual_price', 0), 0, ',', '.') }}</span>
-                                    </div>
-                                    <div>
-                                        <span class="text-gray-500 font-semibold">Doanh thu (%):</span>
-                                        <span
-                                            class="font-bold text-gray-800">{{ number_format((float) data_get($selectedListing, 'sale.revenue_percent', 0), 2, ',', '.') }}%</span>
-                                    </div>
-                                    <div>
-                                        <span class="text-gray-500 font-semibold">Doanh thu (tiền):</span>
-                                        <span
-                                            class="font-bold text-gray-800">{{ number_format((float) data_get($selectedListing, 'sale.revenue_amount', 0), 0, ',', '.') }}</span>
-                                    </div>
-                                    <div>
-                                        <span class="text-gray-500 font-semibold">Thưởng:</span>
-                                        <span
-                                            class="font-bold text-gray-800">{{ number_format((float) data_get($selectedListing, 'sale.bonus_amount', 0), 0, ',', '.') }}</span>
-                                    </div>
-                                    <div class="md:col-span-2">
-                                        <span class="text-gray-500 font-semibold">Thực nhận:</span>
-                                        <span
-                                            class="font-black text-emerald-700 text-base">{{ number_format((float) data_get($selectedListing, 'sale.net_received_amount', 0), 0, ',', '.') }}</span>
+
+                                    {{-- Financial Grid --}}
+                                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 pt-3 border-t border-slate-200">
+                                        <div class="bg-white/50 p-2 rounded-xl">
+                                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Giá thực tế</p>
+                                            <p class="text-sm font-black text-slate-700">{{ number_format((float) data_get($selectedListing, 'sale.actual_price', 0), 0, ',', '.') }}</p>
+                                        </div>
+                                        <div class="bg-white/50 p-2 rounded-xl">
+                                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Doanh thu (%)</p>
+                                            <p class="text-sm font-black text-slate-700">{{ number_format((float) data_get($selectedListing, 'sale.revenue_percent', 0), 2, ',', '.') }}%</p>
+                                        </div>
+                                        <div class="bg-white/50 p-2 rounded-xl">
+                                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Thưởng</p>
+                                            <p class="text-sm font-black text-slate-700">{{ number_format((float) data_get($selectedListing, 'sale.bonus_amount', 0), 0, ',', '.') }}</p>
+                                        </div>
+                                        <div class="bg-blue-600 p-2 rounded-xl">
+                                            <p class="text-[10px] font-bold text-blue-100 uppercase tracking-wider mb-1">Thực nhận</p>
+                                            <p class="text-base font-black text-white leading-none">{{ number_format((float) data_get($selectedListing, 'sale.net_received_amount', 0), 0, ',', '.') }} đ</p>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
