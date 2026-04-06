@@ -1621,117 +1621,176 @@
         </div>
     @endif
 
+    {{-- AG REBUILD: PREMIUM SOLD POPUP UI --}}
     @if ($showSoldPopup)
-        <div class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end md:items-center justify-center z-[60] p-0 md:p-4">
-            <div class="bg-white w-full max-w-4xl rounded-t-[2.5rem] md:rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85dvh] md:max-h-[90dvh] animate-[slideUp_0.4s_cubic-bezier(0.16,1,0.3,1)]">
-                <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gray-50 shrink-0">
-                    <h3 class="text-xl font-black text-gray-800 uppercase flex items-center gap-2">
-                        <span class="bg-green-100 text-green-700 p-2 rounded-lg"><i
-                                class="fa-solid fa-file-signature"></i></span>
-                        Xác Nhận Đã Bán & Chia Lợi Nhuận
-                    </h3>
-                    <button wire:click="closeSoldPopup" class="text-gray-400 hover:text-red-500 transition-colors w-10 h-10 flex items-center justify-center rounded-full hover:bg-red-50">
-                        <i class="fa-solid fa-times fa-lg"></i>
+        <div class="fixed inset-0 z-[100] flex items-end md:items-center justify-center p-0 md:p-6 overflow-hidden">
+            {{-- Backdrop --}}
+            <div class="absolute inset-0 bg-[#050505]/80 backdrop-blur-xl animate-in fade-in duration-500" wire:click="closeSoldPopup"></div>
+            
+            {{-- Popup Container --}}
+            <div class="relative w-full max-w-5xl bg-white rounded-t-[2.5rem] md:rounded-[2rem] shadow-[0_32px_64px_-12px_rgba(0,0,0,0.5)] flex flex-col max-h-[90dvh] md:max-h-[85vh] animate-in slide-in-from-bottom-[20%] duration-500 zoom-in-95 ease-out-expo overflow-hidden border border-white/20">
+                
+                {{-- Header --}}
+                <div class="px-8 py-6 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white flex justify-between items-center shrink-0 border-b border-white/10">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.2)]">
+                            <i class="fa-solid fa-file-invoice-dollar text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-black tracking-tight uppercase leading-none mb-1">Xác Nhận Giao Dịch</h3>
+                            <p class="text-slate-400 text-[10px] font-bold uppercase tracking-[0.2em] opacity-80">{{ $saleProjectName ?: 'Thông tin dự án' }}</p>
+                        </div>
+                    </div>
+                    <button wire:click="closeSoldPopup" class="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 hover:text-red-400 transition-all active:scale-90 border border-white/10 group">
+                        <i class="fa-solid fa-times text-lg transition-transform group-hover:rotate-90"></i>
                     </button>
                 </div>
 
-                <div class="p-6 overflow-y-auto flex-1 custom-scrollbar space-y-6">
-                    {{-- Project Info --}}
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div class="space-y-4">
-                            <div>
-                                <label class="block text-sm font-bold text-gray-700 mb-1">Tên Dự Án / Tin Đăng</label>
-                                <input wire:model="saleProjectName" type="text"
-                                    class="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-green-500 outline-none shadow-sm transition-all"
-                                    placeholder="Tên dự án...">
+                {{-- Content --}}
+                <div class="p-6 md:p-8 overflow-y-auto flex-1 custom-scrollbar space-y-8 bg-slate-50/30">
+                    
+                    {{-- Summary Dashboard --}}
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                        {{-- Left: Inputs --}}
+                        <div class="lg:col-span-7 space-y-6">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="space-y-1.5">
+                                    <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Tên Dự Án / Ghi Chú</label>
+                                    <div class="relative group">
+                                        <i class="fa-solid fa-signature absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors"></i>
+                                        <input wire:model="saleProjectName" type="text"
+                                            class="w-full bg-white border border-slate-200 rounded-2xl pl-11 pr-4 py-3.5 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none shadow-sm transition-all text-sm font-bold placeholder:text-slate-300"
+                                            placeholder="Nhập tên dự án/ghi chú...">
+                                    </div>
+                                </div>
+                                <div class="space-y-1.5">
+                                    <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Giá Bán Thực Tế</label>
+                                    <div class="relative group">
+                                        <i class="fa-solid fa-tag absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-500 transition-colors"></i>
+                                        <input wire:model.live.debounce.500ms="saleActualPrice" type="text"
+                                            x-data="{ val: @entangle('saleActualPrice') }"
+                                            x-init="$watch('val', v => { if(v) val = v.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') })"
+                                            x-on:input="val = $el.value.replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.'); $wire.set('saleActualPrice', $el.value.replace(/[^0-9]/g, ''))"
+                                            class="w-full bg-white border border-slate-200 rounded-2xl pl-11 pr-14 py-3.5 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none shadow-sm transition-all text-sm font-black text-emerald-600"
+                                            placeholder="0">
+                                        <span class="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-400">VNĐ</span>
+                                    </div>
+                                </div>
                             </div>
 
-                            <div class="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label class="block text-sm font-bold text-gray-700 mb-1">Giá Thực Tế</label>
-                                    <input wire:model.live.debounce.500ms="saleActualPrice" type="text"
-                                        x-data="{ val: @entangle('saleActualPrice') }"
-                                        x-init="$watch('val', v => { if(v) val = v.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') })"
-                                        x-on:input="val = $el.value.replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.'); $wire.set('saleActualPrice', $el.value.replace(/[^0-9]/g, ''))"
-                                        class="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-green-500 outline-none shadow-sm font-bold text-green-700">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="space-y-1.5">
+                                    <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">% Hoa Hồng</label>
+                                    <div class="relative group">
+                                        <i class="fa-solid fa-percent absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors"></i>
+                                        <input wire:model.live.debounce.500ms="saleRevenuePercent" type="number" step="0.01"
+                                            class="w-full bg-white border border-slate-200 rounded-2xl pl-11 pr-4 py-3.5 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none shadow-sm transition-all text-sm font-black"
+                                            placeholder="0.00">
+                                    </div>
                                 </div>
-                                <div>
-                                    <label class="block text-sm font-bold text-gray-700 mb-1">% Doanh Thu</label>
-                                    <input wire:model.live.debounce.500ms="saleRevenuePercent" type="number"
-                                        class="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-green-500 outline-none shadow-sm font-bold">
+                                <div class="space-y-1.5">
+                                    <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Tiền Thưởng Thêm</label>
+                                    <div class="relative group">
+                                        <i class="fa-solid fa-gift absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-orange-500 transition-colors"></i>
+                                        <input wire:model.live.debounce.500ms="saleBonusAmount" type="text"
+                                            x-data="{ val: @entangle('saleBonusAmount') }"
+                                            x-init="$watch('val', v => { if(v) val = v.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') })"
+                                            x-on:input="val = $el.value.replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.'); $wire.set('saleBonusAmount', $el.value.replace(/[^0-9]/g, ''))"
+                                            class="w-full bg-white border border-slate-200 rounded-2xl pl-11 pr-14 py-3.5 focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 outline-none shadow-sm transition-all text-sm font-black text-orange-600"
+                                            placeholder="0">
+                                        <span class="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-400">VNĐ</span>
+                                    </div>
                                 </div>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-bold text-gray-700 mb-1">Thưởng Thêm</label>
-                                <input wire:model.live.debounce.500ms="saleBonusAmount" type="text"
-                                    x-data="{ val: @entangle('saleBonusAmount') }"
-                                    x-init="$watch('val', v => { if(v) val = v.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') })"
-                                    x-on:input="val = $el.value.replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.'); $wire.set('saleBonusAmount', $el.value.replace(/[^0-9]/g, ''))"
-                                    class="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-green-500 outline-none shadow-sm font-bold text-orange-600">
                             </div>
                         </div>
 
-                        <div class="bg-slate-900 rounded-2xl p-6 text-white flex flex-col justify-center relative shadow-2xl overflow-hidden group">
-                            <div class="absolute top-0 right-0 p-8 opacity-10 transform translate-x-4 -translate-y-4">
-                                <i class="fa-solid fa-sack-dollar text-8xl"></i>
-                            </div>
-                            
-                            <div class="relative z-10 space-y-4">
-                                <div>
-                                    <p class="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Tổng Lợi Nhuận</p>
-                                    <p class="text-4xl font-black text-emerald-400">
-                                        {{ number_format((float) $saleNetAmount, 0, ',', '.') }} <span class="text-sm font-normal">VNĐ</span>
-                                    </p>
-                                </div>
+                        {{-- Right: Profit Visualization --}}
+                        <div class="lg:col-span-5">
+                            <div class="bg-[#050505] rounded-[2rem] p-8 text-white relative shadow-2xl overflow-hidden border border-white/5 h-full flex flex-col justify-center">
+                                {{-- Decor --}}
+                                <div class="absolute -top-12 -right-12 w-48 h-48 bg-[#00D1FF] rounded-full blur-[80px] opacity-10 animate-pulse"></div>
+                                <div class="absolute -bottom-12 -left-12 w-48 h-48 bg-emerald-500 rounded-full blur-[80px] opacity-10 animate-pulse"></div>
                                 
-                                <div class="grid grid-cols-2 gap-4 pt-4 border-t border-slate-700">
+                                <div class="relative z-10 space-y-6">
                                     <div>
-                                        <p class="text-slate-500 text-[10px] font-bold uppercase tracking-widest mb-1">Doanh Thu</p>
-                                        <p class="text-lg font-bold text-slate-200">{{ number_format((float) $saleRevenueAmount, 0, ',', '.') }}</p>
+                                        <div class="flex items-center gap-2 mb-2">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                                            <p class="text-slate-400 text-[10px] font-black uppercase tracking-[0.3em]">Tổng Lợi Nhuận Thực Nhận</p>
+                                        </div>
+                                        <p class="text-5xl font-black text-white tracking-tighter transition-all duration-300">
+                                            {{ number_format((float) $saleNetAmount, 0, ',', '.') }}<span class="text-sm font-normal text-slate-500 ml-2 tracking-normal">VNĐ</span>
+                                        </p>
                                     </div>
-                                    <div>
-                                        <p class="text-slate-500 text-[10px] font-bold uppercase tracking-widest mb-1">Thưởng</p>
-                                        <p class="text-lg font-bold text-slate-200">{{ number_format((float) $saleBonusNumeric, 0, ',', '.') }}</p>
-                                    </div>
-                                </div>
 
-                                <div class="mt-4 p-3 bg-white/5 rounded-xl border border-white/10">
-                                    <p class="text-slate-400 text-[10px] font-bold uppercase mb-1">Lợi Nhuận Còn Lại</p>
-                                    <p class="text-2xl font-black {{ $saleRemainingAmount < 0 ? 'text-red-400' : 'text-blue-400' }}">
-                                        {{ number_format((float) $saleRemainingAmount, 0, ',', '.') }}
-                                    </p>
+                                    <div class="grid grid-cols-2 gap-4 pb-6 border-b border-white/10">
+                                        <div class="space-y-1">
+                                            <p class="text-slate-500 text-[9px] font-black uppercase tracking-widest">Doanh Thu (%)</p>
+                                            <p class="text-lg font-bold text-slate-200">{{ number_format((float) $saleRevenueAmount, 0, ',', '.') }}</p>
+                                        </div>
+                                        <div class="space-y-1">
+                                            <p class="text-slate-500 text-[9px] font-black uppercase tracking-widest">Thưởng Nóng</p>
+                                            <p class="text-lg font-bold text-slate-200">{{ number_format((float) $saleBonusNumeric, 0, ',', '.') }}</p>
+                                        </div>
+                                    </div>
+
+                                    <div class="pt-2">
+                                        <div class="flex items-center justify-between mb-2">
+                                            <p class="text-slate-400 text-[10px] font-black uppercase tracking-widest">Trạng Thái Phân Bổ</p>
+                                            @if($saleRemainingAmount == 0)
+                                                <span class="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-[9px] font-black uppercase border border-emerald-500/20 flex items-center gap-1">
+                                                    <i class="fa-solid fa-check-circle"></i> Đã Cân Bằng
+                                                </span>
+                                            @else
+                                                <span class="px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 text-[9px] font-black uppercase border border-red-500/20 flex items-center gap-1">
+                                                    <i class="fa-solid fa-circle-exclamation"></i> Chưa Khớp
+                                                </span>
+                                            @endif
+                                        </div>
+                                        <div class="w-full h-2 bg-white/5 rounded-full overflow-hidden border border-white/5 p-0.5">
+                                            @php 
+                                                $allocated = (float) $saleNetAmount - (float) $saleRemainingAmount;
+                                                $percent = $saleNetAmount > 0 ? min(100, max(0, ($allocated / $saleNetAmount) * 100)) : 0;
+                                            @endphp
+                                            <div class="h-full rounded-full transition-all duration-700 ease-out-expo shadow-[0_0_15px_rgba(0,209,255,0.4)]"
+                                                style="width: {{ $percent }}%; background: linear-gradient(90deg, #00D1FF 0%, #10B981 100%);"></div>
+                                        </div>
+                                        <p class="mt-2 text-[11px] font-bold {{ $saleRemainingAmount != 0 ? 'text-red-400' : 'text-slate-500' }}">
+                                            @if($saleRemainingAmount > 0)
+                                                Cần phân bổ thêm: <span class="text-white">{{ number_format((float) $saleRemainingAmount, 0, ',', '.') }} đ</span>
+                                            @elseif($saleRemainingAmount < 0)
+                                                Dư phân bổ: <span class="text-white">{{ number_format(abs((float) $saleRemainingAmount), 0, ',', '.') }} đ</span>
+                                            @else
+                                                <span class="text-emerald-400 italic font-medium">Toàn bộ lợi nhuận đã được chia đều!</span>
+                                            @endif
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <hr class="border-gray-100">
-
-                    {{-- Members Sharing --}}
-                    <div class="space-y-4">
-                        <div class="flex items-center justify-between">
-                            <h4 class="text-md font-black text-gray-800 uppercase flex items-center gap-2">
-                                <i class="fa-solid fa-users text-blue-500"></i>
-                                Thành Viên Nhận Lợi Nhuận
-                            </h4>
+                    {{-- Members Section --}}
+                    <div class="space-y-6 pt-4">
+                        <div class="flex items-center justify-between border-b border-slate-200 pb-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center border border-blue-500/20 shadow-sm">
+                                    <i class="fa-solid fa-users text-sm"></i>
+                                </div>
+                                <h4 class="text-sm font-black text-slate-800 uppercase tracking-widest">Danh sách nhận lợi nhuận</h4>
+                            </div>
                             <button type="button" wire:click="addSaleMember"
-                                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-bold text-xs flex items-center gap-2 shadow-lg transition-all active:scale-95">
-                                <i class="fa-solid fa-user-plus"></i> Thêm Người
+                                class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-2xl font-bold text-xs flex items-center gap-2 shadow-[0_10px_20px_-5px_rgba(37,99,235,0.4)] transition-all active:scale-95 group">
+                                <i class="fa-solid fa-user-plus group-hover:rotate-12 transition-transform"></i> THÊM THÀNH VIÊN
                             </button>
                         </div>
 
-                        <div class="space-y-2">
-                            {{-- Header --}}
-                            <div class="hidden md:flex gap-3 px-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                                <div class="flex-1">Thành viên</div>
-                                <div class="w-64">Số tiền nhận (VNĐ)</div>
-                                <div class="w-11"></div>
-                            </div>
-
-                            @foreach ($sale_members as $index => $member)
-                                <div wire:key="member-row-{{ $index }}-{{ $member['user_id'] ?? 'new' }}-{{ count($sale_members) }}" 
-                                    class="flex flex-col md:flex-row items-center gap-3 p-2 md:p-3 bg-white rounded-2xl border border-gray-100 shadow-sm group animate-[scaleIn_0.1s_ease-out]">
-                                    <div class="flex-1 w-full" wire:ignore x-data x-init="$nextTick(() => {
+                        <div class="space-y-4">
+                            @forelse ($sale_members as $index => $member)
+                                <div wire:key="sale-member-{{ $index }}-{{ $member['user_id'] ?? 'new' }}" 
+                                    class="flex flex-col md:flex-row items-stretch gap-4 p-4 bg-white rounded-3xl border border-slate-200 shadow-sm hover:shadow-xl hover:border-blue-200 transition-all group/row animate-in slide-in-from-right-4 duration-300">
+                                    
+                                    {{-- User Selection --}}
+                                    <div class="flex-1 min-w-0" wire:ignore x-data x-init="$nextTick(() => {
                                         const boot = () => {
                                             if (window.initSelect2) {
                                                 window.initSelect2($refs.userSelect, 'sale_members.{{ $index }}.user_id', @js($member['user_id']));
@@ -1741,16 +1800,20 @@
                                         };
                                         boot();
                                     })">
-                                        <select x-ref="userSelect" data-livewire-id="{{ $this->getId() }}"
-                                            class="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50/50">
-                                            <option value="">-- Chọn nhân viên --</option>
-                                            @foreach ($salesUsers as $u)
-                                                <option value="{{ $u->id }}" @selected($member['user_id'] == $u->id)>{{ $u->name }} ({{ $u->phone }})</option>
-                                            @endforeach
-                                        </select>
+                                        <div class="relative">
+                                            <select x-ref="userSelect" data-livewire-id="{{ $this->getId() }}"
+                                                class="w-full bg-slate-50/50 border border-slate-200 rounded-2xl px-4 py-3.5 focus:ring-4 focus:ring-blue-500/10 outline-none text-sm font-bold appearance-none">
+                                                <option value="">-- Tìm thành viên --</option>
+                                                @foreach ($salesUsers as $u)
+                                                    <option value="{{ $u->id }}" @selected($member['user_id'] == $u->id)>{{ $u->name }} ({{ $u->phone }})</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
                                     </div>
-                                    <div class="w-full md:w-64">
-                                        <div class="relative" 
+
+                                    {{-- Amount Input --}}
+                                    <div class="w-full md:w-72">
+                                        <div class="relative group/input" 
                                             x-data="{ 
                                                 display: '{{ number_format((float)($member['received_amount'] ?? 0), 0, ',', '.') }}',
                                                 update(v) {
@@ -1758,46 +1821,70 @@
                                                     $wire.set('sale_members.{{ $index }}.received_amount', this.display.replace(/[^0-9]/g, ''));
                                                 }
                                             }">
+                                            <div class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within/input:text-emerald-500 transition-colors">
+                                                <i class="fa-solid fa-coins font-black"></i>
+                                            </div>
                                             <input type="text" 
                                                 x-model="display"
                                                 x-on:input="update($event.target.value)"
-                                                class="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50/50 font-bold text-blue-700"
+                                                class="w-full bg-slate-50/50 border border-slate-200 rounded-2xl pl-11 pr-14 py-3.5 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all text-sm font-black text-emerald-600"
                                                 placeholder="0">
+                                            <div class="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                                                <span class="text-[10px] font-black text-slate-400">VNĐ</span>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div class="shrink-0">
+
+                                    {{-- Remove Button --}}
+                                    <div class="flex items-center">
                                         <button type="button" wire:click="removeSaleMember({{ $index }})"
-                                            class="w-10 h-10 flex items-center justify-center rounded-xl bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-all">
-                                            <i class="fa-solid fa-times"></i>
+                                            class="w-12 h-12 flex items-center justify-center rounded-2xl bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-all shadow-sm active:scale-95 border border-red-100">
+                                            <i class="fa-solid fa-trash-can"></i>
                                         </button>
                                     </div>
                                 </div>
-                            @endforeach
-
-                            @if(count($sale_members) === 0)
-                                <div class="py-8 text-center border-2 border-dashed border-gray-100 rounded-2xl">
-                                    <div class="bg-gray-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3">
-                                        <i class="fa-solid fa-users-slash text-2xl text-gray-300"></i>
+                            @empty
+                                <div class="py-12 text-center border-2 border-dashed border-slate-200 rounded-[2rem] bg-slate-50/50">
+                                    <div class="w-20 h-20 bg-white rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-sm border border-slate-100">
+                                        <i class="fa-solid fa-user-gear text-3xl text-slate-200"></i>
                                     </div>
-                                    <p class="text-sm text-gray-500">Chưa có thành viên nào được thêm. Vui lòng bấm "Thêm Người".</p>
+                                    <h5 class="text-base font-black text-slate-400 uppercase tracking-widest mb-1">Chưa có thành viên</h5>
+                                    <p class="text-xs text-slate-400">Bấm nút "Thêm Thành Viên" phía trên để chia lợi nhuận.</p>
                                 </div>
-                            @endif
+                            @forelse
                         </div>
                     </div>
                 </div>
 
-                <div class="px-6 py-4 pb-12 md:pb-4 border-t border-gray-200 bg-white flex justify-end gap-3 shrink-0">
-                    <button wire:click="closeSoldPopup"
-                        class="px-6 py-3 rounded-xl text-gray-600 hover:bg-gray-100 font-bold transition-colors">Đóng</button>
-                    <button wire:click="saveSoldInformation"
-                        class="px-8 py-3 rounded-xl bg-gradient-to-r from-green-600 to-emerald-700 text-white font-black shadow-xl hover:shadow-green-500/20 transform active:scale-95 transition-all flex items-center gap-2">
-                        <i class="fa-solid fa-check-double"></i>
-                        Xác Nhận Giao Dịch
-                    </button>
+                {{-- Footer --}}
+                <div class="px-8 py-6 pb-12 md:pb-6 border-t border-slate-200 bg-white flex flex-col md:flex-row justify-between items-center gap-4 shrink-0">
+                    <div class="flex items-center gap-4 text-slate-400 text-[11px] font-bold">
+                        <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-50 border border-slate-200">
+                            <i class="fa-solid fa-info-circle text-blue-500"></i>
+                            Yêu cầu khớp số dư
+                        </div>
+                        <div class="hidden md:block w-px h-4 bg-slate-200"></div>
+                        <p class="hidden md:block">Hãy đảm bảo tổng tiền chia cho CTV phải bằng Tổng Lợi Nhuận Thực Nhận.</p>
+                    </div>
+
+                    <div class="flex gap-4 w-full md:w-auto">
+                        <button wire:click="closeSoldPopup"
+                            class="flex-1 md:flex-none px-8 py-3.5 rounded-2xl text-slate-600 hover:bg-slate-100 font-bold transition-all border border-transparent hover:border-slate-200">
+                            HỦY BỎ
+                        </button>
+                        <button wire:click="saveSoldInformation"
+                            @disabled($saleRemainingAmount != 0)
+                            class="flex-1 md:flex-none px-10 py-3.5 rounded-2xl bg-gradient-to-r from-[#00D1FF] to-[#0052FF] text-white font-black shadow-[0_20px_40px_-10px_rgba(0,131,255,0.5)] transform active:scale-95 transition-all flex items-center justify-center gap-3 disabled:grayscale disabled:opacity-50 disabled:cursor-not-allowed group">
+                            <i class="fa-solid fa-check-double group-hover:scale-125 transition-transform"></i>
+                            XÁC NHẬN GIAO DỊCH
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
     @endif
+    {{-- END AG REBUILD --}}
+
     @once
         <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
         <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
