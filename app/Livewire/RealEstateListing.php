@@ -592,7 +592,6 @@ class RealEstateListing extends Component
             'avatar' => $this->avatar,
             'user_id' => auth()->id(),
             'reporter_id' => $this->reporter_id,
-            'contact_phone' => $this->contact_phone,
         ];
 
         // Handle Customer Integration
@@ -945,24 +944,21 @@ class RealEstateListing extends Component
         $this->recalculateRemainingAmount();
     }
 
-    protected function normalizeCurrencyInput($value): ?float
+    protected function normalizeCurrencyInput($value): float
     {
         if ($value === null || $value === '' || $value === false) {
             return 0;
         }
 
-        // If it's already a number, just return the float value
         if (is_numeric($value)) {
             return (float) $value;
         }
 
-        // Otherwise, it's a formatted string like '1.000.500' or '1,000,500'
+        // Handle string input from UI (e.g., '1.000.000' or '1,000,000')
+        // Strip everything except digits
         $clean = preg_replace('/[^0-9]/', '', (string) $value);
-        if ($clean === null || $clean === '') {
-            return 0;
-        }
-
-        return (float) $clean;
+        
+        return $clean === '' ? 0 : (float) $clean;
     }
 
     protected function normalizePercentInput($value): ?float
@@ -971,21 +967,26 @@ class RealEstateListing extends Component
             return null;
         }
 
-        $clean = preg_replace('/[^0-9,.\-]/', '', (string) $value);
-        if ($clean === null || $clean === '') {
-            return null;
+        // If it's already a clean numeric value
+        if (is_numeric($value)) {
+            return (float) $value;
         }
 
-        if (str_contains($clean, ',')) {
+        $clean = (string) $value;
+
+        // Vietnamese style: 2,5 -> 2.5
+        // If it contains only ONE comma and NO dots, it's likely a decimal comma
+        if (str_contains($clean, ',') && !str_contains($clean, '.')) {
+            $clean = str_replace(',', '.', $clean);
+        } 
+        // If it contains dots as thousand separators: 1.000,5 -> 1000.5
+        elseif (str_contains($clean, '.') && str_contains($clean, ',')) {
+            $clean = str_replace('.', '', $clean);
             $clean = str_replace(',', '.', $clean);
         }
 
-        if (substr_count($clean, '.') > 1) {
-            $parts = explode('.', $clean);
-            $decimal = array_pop($parts);
-            $clean = implode('', $parts) . '.' . $decimal;
-        }
-
+        $clean = preg_replace('/[^0-9.]/', '', $clean);
+        
         return is_numeric($clean) ? (float) $clean : null;
     }
 
@@ -993,113 +994,132 @@ class RealEstateListing extends Component
     {
         $user = auth()->user();
         if (!$user || !$user->isAdmin()) {
-            $this->dispatch('toast', ['message' => 'Chi Admin moi co quyen danh dau da ban!', 'type' => 'error']);
+            $this->dispatch('toast', ['message' => 'Chỉ Admin mới có quyền đánh dấu đã bán!', 'type' => 'error']);
             return;
         }
 
+        // Step 1: Normalize all inputs strictly
         $this->recalculateSaleNumbers();
         $actualPrice = $this->normalizeCurrencyInput($this->saleActualPrice);
         $percent = $this->normalizePercentInput($this->saleRevenuePercent);
-        $bonus = $this->normalizeCurrencyInput($this->saleBonusAmount) ?? 0;
+        $bonus = $this->normalizeCurrencyInput($this->saleBonusAmount);
 
+        // Step 2: Validate basic fields
         $this->validate([
             'saleListingId' => 'required|exists:real_estate_listings,id',
-            'saleUserId' => 'nullable|exists:users,id',
             'saleProjectName' => 'required|string|max:255',
         ]);
 
-        if ($actualPrice === null || $actualPrice <= 0) {
-            $this->addError('saleActualPrice', 'Gia thuc te phai lon hon 0.');
+        if ($actualPrice <= 0) {
+            $this->addError('saleActualPrice', 'Giá thực tế phải lớn hơn 0.');
             return;
         }
 
         if ($percent === null || $percent < 0 || $percent > 100) {
-            $this->addError('saleRevenuePercent', 'Phan tram doanh thu phai tu 0 den 100.');
+            $this->addError('saleRevenuePercent', 'Phần trăm doanh thu phải từ 0 đến 100.');
             return;
         }
 
-        if ($bonus < 0) {
-            $this->addError('saleBonusAmount', 'Thuong khong duoc am.');
-            return;
-        }
-
+        // Step 3: Recalculate profit to distribute
         $revenueAmount = round(($actualPrice * $percent) / 100, 2);
         $netAmount = round($revenueAmount + $bonus, 2);
 
-        // Validate members
-        // Filter out completely empty rows (no user AND amount is 0/empty)
-        $this->sale_members = array_values(array_filter($this->sale_members, function($m) {
-            $amt = $this->normalizeCurrencyInput($m['received_amount'] ?? 0);
-            return !empty($m['user_id']) || $amt > 0;
-        }));
+        // Step 4: Validate and Pre-process Members (Split Commission)
+        $cleanMembers = [];
+        $totalDistributed = 0;
+        $seenUsers = [];
 
-        $distributedAmount = 0;
         foreach ($this->sale_members as $index => $member) {
-            $userId = $member['user_id'] ?? null;
-            if (!$userId) {
+            $uId = $member['user_id'] ?? null;
+            $rawAmount = $member['received_amount'] ?? 0;
+            $amt = $this->normalizeCurrencyInput($rawAmount);
+
+            // Skip entries that are completely empty
+            if (!$uId && $amt == 0) continue;
+
+            // Check for missing worker selection
+            if (!$uId) {
                 $this->dispatch('toast', ['message' => 'Dòng ' . ($index + 1) . ' chưa chọn nhân viên!', 'type' => 'error']);
                 return;
             }
 
-            $normalizedAmount = $this->normalizeCurrencyInput($member['received_amount'] ?? 0);
-            if ($normalizedAmount <= 0) {
-                $this->dispatch('toast', ['message' => 'Dòng ' . ($index + 1) . ' (' . (optional(\App\Models\User::find($userId))->name ?? 'nhân viên') . ') chưa có số tiền chia!', 'type' => 'error']);
+            // Check for zero/negative amount
+            if ($amt <= 0) {
+                $userName = optional(\App\Models\User::find($uId))->name ?? 'Nhân viên';
+                $this->dispatch('toast', ['message' => 'Dòng ' . ($index + 1) . ' (' . $userName . ') chưa có số tiền chia hoặc số tiền không hợp lệ!', 'type' => 'error']);
                 return;
             }
 
-            $this->sale_members[$index]['received_amount'] = $normalizedAmount;
-            $distributedAmount += $normalizedAmount;
+            // Handle duplicate users by merging amounts
+            if (isset($seenUsers[$uId])) {
+                $cleanMembers[$seenUsers[$uId]]['received_amount'] += $amt;
+            } else {
+                $seenUsers[$uId] = count($cleanMembers);
+                $cleanMembers[] = [
+                    'user_id' => $uId,
+                    'received_amount' => $amt
+                ];
+            }
+            $totalDistributed += $amt;
         }
 
-        $remaining = round($netAmount - $distributedAmount, 2);
+        // Step 5: Check if distribution matches exact profit
+        $remaining = round($netAmount - $totalDistributed, 2);
         if (abs($remaining) > 0.01) {
+            $diffText = number_format(abs($remaining), 0, ',', '.') . ' VNĐ';
             if ($remaining > 0) {
-                $this->dispatch('toast', ['message' => 'Lợi nhuận còn lại phải bằng 0 (Còn dư ' . number_format($remaining, 0, ',', '.') . ' VNĐ)!', 'type' => 'error']);
+                $this->dispatch('toast', ['message' => 'Lợi nhuận còn lại phải bằng 0 (Còn dư ' . $diffText . ' chưa chia)!', 'type' => 'error']);
             } else {
-                $this->dispatch('toast', ['message' => 'Tổng tiền chi trả vượt quá lợi nhuận (Dư ' . number_format(abs($remaining), 0, ',', '.') . ' VNĐ)!', 'type' => 'error']);
+                $this->dispatch('toast', ['message' => 'Tổng tiền chi trả vượt quá lợi nhuận ' . $diffText . '!', 'type' => 'error']);
             }
             return;
         }
 
-        DB::transaction(function () use ($actualPrice, $percent, $bonus, $revenueAmount, $netAmount) {
-            $listing = ListingModel::findOrFail($this->saleListingId);
-            $listing->update(['is_sold' => true]);
+        // Step 6: Atomic Database Transaction
+        try {
+            DB::transaction(function () use ($actualPrice, $percent, $bonus, $revenueAmount, $netAmount, $cleanMembers) {
+                $listing = ListingModel::findOrFail($this->saleListingId);
+                $listing->update(['is_sold' => true]);
 
-            // If no primary saleUserId is set, but we have members, use the first member as the primary seller
-            $finalSaleUserId = $this->saleUserId;
-            if (!$finalSaleUserId && !empty($this->sale_members)) {
-                $finalSaleUserId = $this->sale_members[0]['user_id'];
-            }
+                // Determine primary seller (for legacy/summary view)
+                // Use explicit saleUserId if set, otherwise first member in split
+                $finalSaleUserId = $this->saleUserId ?: ($cleanMembers[0]['user_id'] ?? null);
 
-            $sale = RealEstateListingSale::updateOrCreate(
-                ['listing_id' => $listing->id],
-                [
-                    'sold_by_user_id' => $finalSaleUserId, // Keep for backward compatibility or primary seller
-                    'project_name' => $this->saleProjectName,
-                    'actual_price' => $actualPrice,
-                    'revenue_percent' => $percent,
-                    'revenue_amount' => $revenueAmount,
-                    'bonus_amount' => $bonus,
-                    'net_received_amount' => $netAmount,
-                    'sold_at' => now(),
-                ]
-            );
+                $sale = RealEstateListingSale::updateOrCreate(
+                    ['listing_id' => $listing->id],
+                    [
+                        'sold_by_user_id' => $finalSaleUserId,
+                        'project_name' => $this->saleProjectName,
+                        'actual_price' => $actualPrice,
+                        'revenue_percent' => $percent,
+                        'revenue_amount' => $revenueAmount,
+                        'bonus_amount' => $bonus,
+                        'net_received_amount' => $netAmount,
+                        'sold_at' => now(),
+                    ]
+                );
 
-            // Sync members
-            $sale->members()->delete();
-            foreach ($this->sale_members as $member) {
-                $sale->members()->create([
-                    'user_id' => $member['user_id'],
-                    'received_amount' => $member['received_amount'],
-                ]);
-            }
-        });
+                // Re-sync members: delete old, insert merged new
+                $sale->members()->delete();
+                foreach ($cleanMembers as $m) {
+                    $sale->members()->create([
+                        'user_id' => $m['user_id'],
+                        'received_amount' => $m['received_amount'],
+                    ]);
+                }
+            });
 
-        $this->refreshCacheVersion();
-        $this->dispatch('toast', ['message' => 'Da luu thong tin ban va gan nguoi ban thanh cong!', 'type' => 'success']);
-        $listingId = $this->saleListingId;
-        $this->closeSoldPopup();
-        $this->refreshSelectedListing($listingId);
+            $this->refreshCacheVersion();
+            $this->dispatch('toast', ['message' => 'Đã lưu thông tin bán và phân bổ tiền cho các thành viên thành công!', 'type' => 'success']);
+            
+            $listingId = $this->saleListingId;
+            $this->closeSoldPopup();
+            $this->refreshSelectedListing($listingId);
+
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error("Save Sold Info Error: " . $e->getMessage());
+            $this->dispatch('toast', ['message' => 'Có lỗi xảy ra khi lưu: ' . $e->getMessage(), 'type' => 'error']);
+        }
     }
 
     protected function refreshSelectedListing($id): void
