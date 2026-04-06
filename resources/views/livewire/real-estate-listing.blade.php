@@ -1729,7 +1729,7 @@
                                         };
                                         boot();
                                     })">
-                                        <select x-ref="userSelect" class="w-full text-sm font-bold rounded-lg border-slate-200 bg-slate-50 focus:bg-white transition-colors">
+                                        <select x-ref="userSelect" data-livewire-id="{{ $this->getId() }}" class="w-full text-sm font-bold rounded-lg border-slate-200 bg-slate-50 focus:bg-white transition-colors">
                                             <option value="">-- Chọn thành viên --</option>
                                             @foreach ($salesUsers ?? $users_list ?? [] as $u)
                                                 <option value="{{ $u->id }}">{{ $u->name }} ({{ $u->phone }})</option>
@@ -1769,14 +1769,26 @@
                             {{ number_format(abs((float) $saleRemainingAmount), 0, ',', '.') }} đ
                         </div>
                     </div>
-                    <div class="flex justify-end gap-3">
-                        <button wire:click="closeSoldPopup" class="px-6 py-2.5 rounded-xl text-slate-600 font-bold text-sm hover:bg-slate-200 transition-colors border border-slate-200 bg-white">Đóng</button>
-                        <button wire:click="saveSoldInformation" 
-                            @disabled($saleRemainingAmount != 0)
-                            class="px-8 py-2.5 rounded-xl bg-blue-600 text-white font-black text-sm shadow-lg hover:bg-blue-700 transition-all flex items-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed disabled:grayscale">
-                            <i class="fa-solid fa-save text-sm"></i> 
-                            HOÀN TẤT & LƯU
-                        </button>
+                    <div class="flex justify-between items-center w-full">
+                        <div>
+                            @php $listing = \App\Models\RealEstateListing::find($saleListingId); @endphp
+                            @if($listing && $listing->is_sold)
+                                <button wire:click="unmarkAsSold" 
+                                    wire:confirm="Bạn có chắc chắn muốn hủy trạng thái Đã bán? Thông tin giao dịch vẫn sẽ được giữ lại trong lịch sử."
+                                    class="text-xs font-bold text-red-500 hover:text-red-600 px-3 py-2 rounded-lg hover:bg-red-50 transition-colors flex items-center gap-1.5">
+                                    <i class="fa-solid fa-rotate-left text-[10px]"></i> HỦY TRẠNG THÁI ĐÃ BÁN
+                                </button>
+                            @endif
+                        </div>
+                        <div class="flex gap-3">
+                            <button wire:click="closeSoldPopup" class="px-6 py-2.5 rounded-xl text-slate-600 font-bold text-sm hover:bg-slate-200 transition-colors border border-slate-200 bg-white">Đóng</button>
+                            <button wire:click="saveSoldInformation" 
+                                @disabled($saleRemainingAmount != 0)
+                                class="px-8 py-2.5 rounded-xl bg-blue-600 text-white font-black text-sm shadow-lg hover:bg-blue-700 transition-all flex items-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed disabled:grayscale">
+                                <i class="fa-solid fa-save text-sm"></i> 
+                                HOÀN TẤT & LƯU
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>

@@ -819,45 +819,70 @@ class RealEstateListing extends Component
     
     public function toggleSold($id)
     {
-        $listing = ListingModel::find($id);
-        if (!$listing) return;
-
-        if ($listing->is_sold) {
-            $listing->update(['is_sold' => false]);
-            $this->refreshCacheVersion();
-            $this->dispatch('toast', ['message' => 'Đã hủy trạng thái Đã bán.', 'type' => 'info']);
-            $this->refreshSelectedListing($id);
-            return;
-        }
-
         $this->openSoldPopup($id);
     }
 
     public function openSoldPopup($id)
     {
-        $listing = ListingModel::find($id);
+        $listing = ListingModel::with('sale.members')->find($id);
         if (!$listing) return;
 
         $this->saleListingId = $id;
-        $this->saleProjectName = $listing->title;
-        // Pre-fill with listing price
-        $this->saleActualPrice = number_format((float)$listing->price, 0, ',', '.');
-        $this->saleRevenuePercent = 1; // Default 1%
-        $this->saleBonusAmount = 0;
         
-        // Start with one distributor (the user who posted it)
-        $this->sale_members = [
-            ['user_id' => $listing->user_id, 'received_amount' => 0]
-        ];
+        if ($listing->sale) {
+            // Edit Mode: Load existing sale data
+            $this->saleProjectName = $listing->sale->project_name;
+            $this->saleActualPrice = number_format((float)$listing->sale->actual_price, 0, ',', '.');
+            $this->saleRevenuePercent = str_replace('.', ',', (string)$listing->sale->revenue_percent);
+            $this->saleBonusAmount = number_format((float)$listing->sale->bonus_amount, 0, ',', '.');
+            
+            $this->sale_members = [];
+            foreach ($listing->sale->members as $m) {
+                $this->sale_members[] = [
+                    'user_id' => $m->user_id,
+                    'received_amount' => number_format((float)$m->received_amount, 0, ',', '.')
+                ];
+            }
+        } else {
+            // New Mode: Defaults
+            $this->saleProjectName = $listing->title;
+            $this->saleActualPrice = number_format((float)$listing->price, 0, ',', '.');
+            $this->saleRevenuePercent = 1; 
+            $this->saleBonusAmount = 0;
+            $this->sale_members = [
+                ['user_id' => $listing->user_id, 'received_amount' => 0]
+            ];
+        }
 
         $this->syncSaleAmounts();
         $this->showSoldPopup = true;
     }
 
+    public function unmarkAsSold()
+    {
+        if (!auth()->user() || !auth()->user()->isAdmin()) return;
+
+        DB::transaction(function() {
+            $listing = ListingModel::find($this->saleListingId);
+            if ($listing) {
+                $listing->update(['is_sold' => false]);
+                // We keep the sale record for history but mark listing as unsold
+                // Or you can delete it: $listing->sale()->delete();
+                // User said "tiếp đến thêm người nhập đầy đủ vẫn báo lỗi" - they want data persistence.
+                // Let's just unset the status.
+            }
+        });
+
+        $this->refreshCacheVersion();
+        $this->dispatch('toast', ['message' => 'Đã hủy trạng thái Đã bán.', 'type' => 'info']);
+        $this->refreshSelectedListing($this->saleListingId);
+        $this->closeSoldPopup();
+    }
+
     public function closeSoldPopup()
     {
         $this->showSoldPopup = false;
-        $this->reset(['saleListingId', 'saleProjectName', 'saleActualPrice', 'saleRevenuePercent', 'saleBonusAmount', 'sale_members']);
+        $this->reset(['saleListingId', 'saleProjectName', 'saleActualPrice', 'saleRevenuePercent', 'saleBonusAmount', 'sale_members', 'saleNetAmount', 'saleRemainingAmount', 'saleRevenueAmount', 'saleBonusNumeric']);
     }
 
     public function syncSaleAmounts()
