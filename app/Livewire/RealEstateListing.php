@@ -64,12 +64,12 @@ class RealEstateListing extends Component
     public $saleActualPrice = '';
     public $saleRevenuePercent = '';
     public $saleBonusAmount = '';
-    public $saleDistribution = []; // Array of ['user_id' => ID, 'amount' => AMOUNT]
+    public $sale_members = []; // Array of ['user_id' => ID, 'received_amount' => AMOUNT]
     
     // Computed/Display only
-    public $totalNetProfit = 0;
-    public $remainingBalance = 0;
-    public $saleRevenueNumeric = 0;
+    public $saleNetAmount = 0;
+    public $saleRemainingAmount = 0;
+    public $saleRevenueAmount = 0;
     public $saleBonusNumeric = 0;
 
     // Filters
@@ -846,8 +846,8 @@ class RealEstateListing extends Component
         $this->saleBonusAmount = 0;
         
         // Start with one distributor (the user who posted it)
-        $this->saleDistribution = [
-            ['user_id' => $listing->user_id, 'amount' => 0]
+        $this->sale_members = [
+            ['user_id' => $listing->user_id, 'received_amount' => 0]
         ];
 
         $this->syncSaleAmounts();
@@ -857,7 +857,7 @@ class RealEstateListing extends Component
     public function closeSoldPopup()
     {
         $this->showSoldPopup = false;
-        $this->reset(['saleListingId', 'saleProjectName', 'saleActualPrice', 'saleRevenuePercent', 'saleBonusAmount', 'saleDistribution']);
+        $this->reset(['saleListingId', 'saleProjectName', 'saleActualPrice', 'saleRevenuePercent', 'saleBonusAmount', 'sale_members']);
     }
 
     public function syncSaleAmounts()
@@ -865,31 +865,31 @@ class RealEstateListing extends Component
         $actual = $this->parseNumeric($this->saleActualPrice);
         $percent = (float) str_replace(',', '.', (string)$this->saleRevenuePercent);
         $bonus = $this->parseNumeric($this->saleBonusAmount);
-
-        $this->saleRevenueNumeric = round(($actual * $percent) / 100, 2);
+    
+        $this->saleRevenueAmount = round(($actual * $percent) / 100, 2);
         $this->saleBonusNumeric = round($bonus, 2);
-        $this->totalNetProfit = $this->saleRevenueNumeric + $this->saleBonusNumeric;
-
+        $this->saleNetAmount = $this->saleRevenueAmount + $this->saleBonusNumeric;
+    
         $distributed = 0;
-        if (is_array($this->saleDistribution)) {
-            foreach ($this->saleDistribution as $d) {
-                $distributed += $this->parseNumeric($d['amount'] ?? 0);
+        if (is_array($this->sale_members)) {
+            foreach ($this->sale_members as $m) {
+                $distributed += $this->parseNumeric($m['received_amount'] ?? 0);
             }
         }
-        $this->remainingBalance = round($this->totalNetProfit - $distributed, 2);
+        $this->saleRemainingAmount = round($this->saleNetAmount - $distributed, 2);
     }
 
-    public function addDistributor()
+    public function addSaleMember()
     {
-        $this->saleDistribution[] = ['user_id' => null, 'amount' => 0];
+        $this->sale_members[] = ['user_id' => null, 'received_amount' => 0];
         $this->syncSaleAmounts();
     }
 
-    public function removeDistributor($index)
+    public function removeSaleMember($index)
     {
-        if (isset($this->saleDistribution[$index])) {
-            unset($this->saleDistribution[$index]);
-            $this->saleDistribution = array_values($this->saleDistribution);
+        if (isset($this->sale_members[$index])) {
+            unset($this->sale_members[$index]);
+            $this->sale_members = array_values($this->sale_members);
             $this->syncSaleAmounts();
         }
     }
@@ -898,7 +898,7 @@ class RealEstateListing extends Component
     public function updatedSaleRevenuePercent() { $this->syncSaleAmounts(); }
     public function updatedSaleBonusAmount() { $this->syncSaleAmounts(); }
 
-    public function finalizeSale()
+    public function saveSoldInformation()
     {
         if (!auth()->user() || !auth()->user()->isAdmin()) {
             $this->dispatch('toast', ['message' => 'Chỉ Admin mới có quyền thực hiện!', 'type' => 'error']);
@@ -907,21 +907,21 @@ class RealEstateListing extends Component
 
         $this->syncSaleAmounts();
 
-        if (abs($this->remainingBalance) > 1) { // 1đ tolerance
-            $msg = $this->remainingBalance > 0 
-                ? "Còn dư " . number_format($this->remainingBalance, 0,',','.') . " VNĐ chưa chia!" 
-                : "Chi vượt quá lợi nhuận " . number_format(abs($this->remainingBalance), 0,',','.') . " VNĐ!";
+        if (abs($this->saleRemainingAmount) > 1) { // 1đ tolerance
+            $msg = $this->saleRemainingAmount > 0 
+                ? "Còn dư " . number_format($this->saleRemainingAmount, 0,',','.') . " VNĐ chưa chia!" 
+                : "Chi vượt quá lợi nhuận " . number_format(abs($this->saleRemainingAmount), 0,',','.') . " VNĐ!";
             $this->dispatch('toast', ['message' => $msg, 'type' => 'error']);
             return;
         }
 
-        if (empty($this->saleDistribution)) {
+        if (empty($this->sale_members)) {
             $this->dispatch('toast', ['message' => 'Vui lòng thêm ít nhất một người nhận!', 'type' => 'error']);
             return;
         }
 
-        foreach ($this->saleDistribution as $index => $d) {
-            if (empty($d['user_id'])) {
+        foreach ($this->sale_members as $index => $m) {
+            if (empty($m['user_id'])) {
                 $this->dispatch('toast', ['message' => "Dòng " . ($index + 1) . " chưa chọn nhân viên!", 'type' => 'error']);
                 return;
             }
@@ -935,22 +935,22 @@ class RealEstateListing extends Component
                 $sale = RealEstateListingSale::updateOrCreate(
                     ['listing_id' => $listing->id],
                     [
-                        'sold_by_user_id' => $this->saleDistribution[0]['user_id'], // Primary ref
+                        'sold_by_user_id' => $this->sale_members[0]['user_id'], // Primary ref
                         'project_name' => $this->saleProjectName,
                         'actual_price' => $this->parseNumeric($this->saleActualPrice),
                         'revenue_percent' => (float) str_replace(',', '.', (string)$this->saleRevenuePercent),
-                        'revenue_amount' => $this->saleRevenueNumeric,
+                        'revenue_amount' => $this->saleRevenueAmount,
                         'bonus_amount' => $this->saleBonusNumeric,
-                        'net_received_amount' => $this->totalNetProfit,
+                        'net_received_amount' => $this->saleNetAmount,
                         'sold_at' => now(),
                     ]
                 );
 
                 $sale->members()->delete();
-                foreach ($this->saleDistribution as $d) {
+                foreach ($this->sale_members as $m) {
                     $sale->members()->create([
-                        'user_id' => $d['user_id'],
-                        'received_amount' => $this->parseNumeric($d['amount']),
+                        'user_id' => $m['user_id'],
+                        'received_amount' => $this->parseNumeric($m['received_amount']),
                     ]);
                 }
             });
