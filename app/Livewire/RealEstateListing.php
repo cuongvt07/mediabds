@@ -728,7 +728,7 @@ class RealEstateListing extends Component
 
     protected function prepareListingForDetail($listing)
     {
-        if (!$listing->relationLoaded('sale')) {
+        if (!$listing->relationLoaded('sale') || !$listing->sale->relationLoaded('members')) {
             $listing->load(['sale.soldBy', 'sale.members.user', 'user', 'reporter']);
         }
         if (!$listing->relationLoaded('reporter')) {
@@ -1014,7 +1014,7 @@ class RealEstateListing extends Component
             return;
         }
 
-        $listing = ListingModel::with('sale.soldBy')->find($id);
+        $listing = ListingModel::with(['sale.soldBy', 'sale.members.user', 'user', 'reporter'])->find($id);
         if ($listing) {
             $this->selectedListing = $this->prepareListingForDetail($listing);
         }
