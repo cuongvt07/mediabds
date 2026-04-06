@@ -1851,7 +1851,7 @@
                                     <h5 class="text-base font-black text-slate-400 uppercase tracking-widest mb-1">Chưa có thành viên</h5>
                                     <p class="text-xs text-slate-400">Bấm nút "Thêm Thành Viên" phía trên để chia lợi nhuận.</p>
                                 </div>
-                            @forelse
+                            @endforelse
                         </div>
                     </div>
                 </div>
