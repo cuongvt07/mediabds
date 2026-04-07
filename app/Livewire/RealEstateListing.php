@@ -728,7 +728,7 @@ class RealEstateListing extends Component
 
     protected function prepareListingForDetail($listing)
     {
-        if (!$listing->relationLoaded('sale') || !$listing->sale->relationLoaded('members')) {
+        if (!$listing->relationLoaded('sale') || ($listing->sale && !$listing->sale->relationLoaded('members'))) {
             $listing->load(['sale.soldBy', 'sale.members.user', 'user', 'reporter']);
         }
         if (!$listing->relationLoaded('reporter')) {
