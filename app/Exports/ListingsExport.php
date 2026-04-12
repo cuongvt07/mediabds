@@ -73,7 +73,8 @@ class ListingsExport implements FromCollection, WithHeadings, WithMapping, WithS
             $query->where(function ($q) {
                 $q->where('title', 'like', '%' . $this->filters['search'] . '%')
                     ->orWhere('address', 'like', '%' . $this->filters['search'] . '%')
-                    ->orWhere('code', 'like', '%' . $this->filters['search'] . '%');
+                    ->orWhere('code', 'like', '%' . $this->filters['search'] . '%')
+                    ->orWhere('contact_phone', 'like', '%' . $this->filters['search'] . '%');
             });
         }
 
@@ -101,6 +102,9 @@ class ListingsExport implements FromCollection, WithHeadings, WithMapping, WithS
         }
         if ($this->filters['is_sold'] !== null && $this->filters['is_sold'] !== '') {
             $query->where('is_sold', $this->filters['is_sold']);
+        }
+        if (!empty($this->filters['direction'])) {
+            $query->where('direction', $this->filters['direction']);
         }
 
         if (!empty($this->filters['month'])) {

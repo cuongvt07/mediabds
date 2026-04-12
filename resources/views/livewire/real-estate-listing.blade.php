@@ -97,6 +97,7 @@
                     $filter_date_to ||
                     $filter_area_min ||
                     $filter_area_max ||
+                    $filter_direction ||
                     $filter_is_sold !== null)
                 <button wire:click="clearFilters"
                     class="text-xs text-red-500 hover:text-red-700 font-semibold flex items-center gap-1">
@@ -178,6 +179,18 @@
                     <option value="">Tất cả</option>
                     <option value="0">Chưa bán</option>
                     <option value="1">Đã bán</option>
+                </select>
+            </div>
+
+            {{-- Direction Filter --}}
+            <div>
+                <label class="text-xs font-semibold text-gray-500 uppercase mb-1 block">Hướng</label>
+                <select wire:model.live="filter_direction"
+                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                    <option value="">Tất cả</option>
+                    @foreach (\App\Livewire\RealEstateListing::DIRECTIONS as $id => $name)
+                        <option value="{{ $id }}">{{ $name }}</option>
+                    @endforeach
                 </select>
             </div>
 

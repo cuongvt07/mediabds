@@ -90,6 +90,7 @@ class RealEstateListing extends Component
     public $filter_area_max;
     public $filter_districts = [];
     public $filter_wards = [];
+    public $filter_direction;
 
     // Form Fields
     public $title;
@@ -350,6 +351,7 @@ class RealEstateListing extends Component
         $this->filter_month = null;
         $this->filter_year = null;
         $this->filter_phone = null;
+        $this->filter_direction = null;
         $this->filter_date_from = null;
         $this->filter_date_to = null;
         $this->filter_area_min = null;
@@ -1090,6 +1092,7 @@ class RealEstateListing extends Component
             'date_from' => $this->filter_date_from,
             'date_to' => $this->filter_date_to,
             'phone' => $this->filter_phone,
+            'direction' => $this->filter_direction,
             'area_min' => $this->filter_area_min,
             'area_max' => $this->filter_area_max,
             'page' => $this->getPage(),
@@ -1141,7 +1144,8 @@ class RealEstateListing extends Component
                 } else {
                     $q->where('title', 'like', '%' . $term . '%')
                         ->orWhere('address', 'like', '%' . $term . '%')
-                        ->orWhere('code', 'like', '%' . $term . '%');
+                        ->orWhere('code', 'like', '%' . $term . '%')
+                        ->orWhere('contact_phone', 'like', '%' . $term . '%');
                 }
             });
         }
@@ -1180,6 +1184,9 @@ class RealEstateListing extends Component
             }
             if ($this->filter_is_sold !== null && $this->filter_is_sold !== '') {
                 $query->where('is_sold', $this->filter_is_sold);
+            }
+            if (!empty($this->filter_direction)) {
+                $query->where('direction', $this->filter_direction);
             }
 
             // Date Filters
@@ -1264,6 +1271,7 @@ class RealEstateListing extends Component
             'month' => $this->filter_month,
             'year' => $this->filter_year,
             'phone' => $this->filter_phone,
+            'direction' => $this->filter_direction,
             'date_from' => $this->filter_date_from,
             'date_to' => $this->filter_date_to,
             'area_min' => $this->filter_area_min,
