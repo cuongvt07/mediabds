@@ -19,7 +19,10 @@ Route::post('/logout', function () {
 })->name('logout');
 
 Route::get('/', function () {
-    return redirect()->route('listings');
+    if (Auth::check()) {
+        return redirect()->route('listings');
+    }
+    return redirect()->route('landing.ctv');
 });
 
 Route::get('/media', FileManager::class)->middleware(['auth', 'admin'])->name('media');
