@@ -120,6 +120,7 @@ class RealEstateListing extends Component
         112 => 'Khách sạn',
         113 => 'Nhà nghỉ',
         114 => 'Homestay',
+        115 => 'Nhà trọ',
     ];
 
     const PREFIX_MAP = [
@@ -136,6 +137,7 @@ class RealEstateListing extends Component
         112 => '#KS',
         113 => '#NN',
         114 => '#HS',
+        115 => '#NT',
     ];
 
     const DIRECTIONS = [

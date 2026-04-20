@@ -34,6 +34,7 @@ class ListingsExport implements FromCollection, WithHeadings, WithMapping, WithS
         112 => 'Khách sạn',
         113 => 'Nhà nghỉ',
         114 => 'Homestay',
+        115 => 'Nhà trọ',
     ];
 
     public function __construct(array $filters)
