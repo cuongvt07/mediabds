@@ -104,6 +104,17 @@
                     </div>
                     <span class="text-[10px] font-bold text-center leading-none">Khách Hàng</span>
                 </a>
+
+                <a href="{{ route('chatbot') }}" wire:navigate
+                    class="flex flex-col items-center justify-center p-3 rounded-2xl transition-all group {{ request()->routeIs('chatbot') ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-white hover:bg-slate-800' }}"
+                    title="AI Chatbot">
+                    <div
+                        class="w-8 h-8 flex items-center justify-center rounded-lg mb-1 {{ request()->routeIs('chatbot') ? 'bg-white/20' : 'bg-slate-800 group-hover:bg-slate-700' }}">
+                        <i class="fa-solid fa-robot text-sm"></i>
+                    </div>
+                    <span class="text-[10px] font-bold text-center leading-none">Chat AI</span>
+                </a>
+
             </div>
 
             <!-- Bottom Actions -->

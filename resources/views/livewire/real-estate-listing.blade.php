@@ -65,6 +65,13 @@
                 class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 md:px-4 md:py-2 rounded-lg font-bold text-xs md:text-sm flex items-center gap-1.5 md:gap-2 shadow-sm transition-all whitespace-nowrap">
                 <i class="fa-solid fa-file-excel"></i> <span class="hidden xs:inline">Xuất Excel</span>
             </button>
+            @if($isAdmin)
+                <button wire:click="openImportPopup"
+                    class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 md:px-4 md:py-2 rounded-lg font-bold text-xs md:text-sm flex items-center gap-1.5 md:gap-2 shadow-sm transition-all whitespace-nowrap">
+                    <i class="fa-solid fa-file-import"></i> <span class="hidden xs:inline">Nhập Excel</span>
+                </button>
+            @endif
+
             <button wire:click="openCreatePopup"
                 class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 md:px-4 md:py-2 rounded-lg font-bold text-xs md:text-sm flex items-center gap-1.5 md:gap-2 shadow-lg hover:shadow-xl transition-all whitespace-nowrap">
                 <i class="fa-solid fa-plus"></i> <span>Đăng Tin</span><span class="hidden xs:inline"> Mới</span>
@@ -1864,8 +1871,78 @@
         </button>
     </div>
 
-    {{-- PIN Verification Modal --}}
+    {{-- Import Modal --}}
+    @if ($showImportPopup)
+        <div class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
+                <div class="p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-xl font-black text-gray-800 uppercase flex items-center gap-2">
+                            <i class="fa-solid fa-file-import text-emerald-600"></i> Nhập dữ liệu tin đăng
+                        </h3>
+                        <button wire:click="closeImportPopup" class="text-gray-400 hover:text-red-500">
+                            <i class="fa-solid fa-times text-xl"></i>
+                        </button>
+                    </div>
+
+                    <div class="space-y-6">
+                        <div class="p-4 bg-emerald-50 rounded-xl border border-emerald-100">
+                            <p class="text-xs text-emerald-800 leading-relaxed font-medium">
+                                <i class="fa-solid fa-circle-info mr-1"></i>
+                                Vui lòng sử dụng file Excel (.xlsx) hoặc CSV. File cần có các cột tiêu đề: 
+                                <span class="font-bold">tieu_de, loai, loai_bds, dia_chi, dien_tich, gia, don_vi_gia, mo_ta, phone</span>.
+                            </p>
+                        </div>
+
+                        <div class="relative group">
+                            <input type="file" wire:model="importFile" 
+                                class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+                            <div class="border-2 border-dashed border-gray-200 group-hover:border-emerald-400 rounded-2xl p-8 text-center transition-all bg-gray-50 group-hover:bg-emerald-50/30">
+                                @if($importFile)
+                                    <i class="fa-solid fa-file-excel text-4xl text-emerald-600 mb-3"></i>
+                                    <p class="text-sm font-bold text-slate-800">{{ $importFile->getClientOriginalName() }}</p>
+                                    <p class="text-[10px] text-gray-500 mt-1 uppercase">{{ number_format($importFile->getSize() / 1024, 1) }} KB</p>
+                                @else
+                                    <i class="fa-solid fa-cloud-arrow-up text-4xl text-gray-300 group-hover:text-emerald-500 mb-3 transition-colors"></i>
+                                    <p class="text-sm font-bold text-gray-500 group-hover:text-emerald-700">Kéo thả hoặc nhấp để chọn file</p>
+                                    <p class="text-[10px] text-gray-400 mt-1">XLSX, XLS hoặc CSV (Max 10MB)</p>
+                                @endif
+                            </div>
+                        </div>
+
+                        <div wire:loading wire:target="importFile" class="w-full">
+                            <div class="flex items-center justify-center gap-2 text-blue-600 py-2">
+                                <i class="fa-solid fa-circle-notch animate-spin"></i>
+                                <span class="text-xs font-bold uppercase tracking-widest">Đang tải tệp lên...</span>
+                            </div>
+                        </div>
+
+                        @error('importFile')
+                            <p class="text-red-500 text-xs font-bold text-center italic">{{ $message }}</p>
+                        @enderror
+
+                        <div class="flex gap-3 pt-2">
+                            <button wire:click="closeImportPopup"
+                                class="flex-1 px-4 py-3 rounded-xl text-gray-600 hover:bg-gray-100 font-bold transition-colors">
+                                Hủy bỏ
+                            </button>
+                            <button wire:click="importListings"
+                                wire:loading.attr="disabled"
+                                class="flex-1 px-4 py-3 rounded-xl bg-emerald-600 text-white font-bold shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/40 transition-all active:scale-95 disabled:opacity-50">
+                                <span wire:loading.remove wire:target="importListings">Bắt đầu nhập</span>
+                                <span wire:loading wire:target="importListings">
+                                    <i class="fa-solid fa-circle-notch animate-spin mr-2"></i> Đang xử lý...
+                                </span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
+
     @if ($showPinModal)
+
         <div class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4"
             x-transition.opacity>
             <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200">

@@ -58,6 +58,11 @@ class RealEstateListing extends Component
     public $selectedListing = null;
     public $selectedListingId = null;
 
+    // Import State
+    public $showImportPopup = false;
+    public $importFile;
+
+
     // --- New Sale State (Rebuild) ---
     public $saleListingId = null;
     public $saleProjectName = '';
@@ -1367,4 +1372,38 @@ class RealEstateListing extends Component
             $this->addError('viewPinInput', 'Mã PIN không chính xác!');
         }
     }
+
+    public function openImportPopup()
+
+    {
+        if (!$this->isAdmin) return;
+        $this->showImportPopup = true;
+    }
+
+    public function closeImportPopup()
+    {
+        $this->showImportPopup = false;
+        $this->importFile = null;
+    }
+
+    public function importListings()
+    {
+        if (!$this->isAdmin) return;
+        
+        $this->validate([
+            'importFile' => 'required|mimes:xlsx,xls,csv|max:10240', // 10MB
+        ]);
+
+        try {
+            Excel::import(new \App\Imports\ListingsImport, $this->importFile);
+            
+            $this->closeImportPopup();
+            $this->dispatch('toast', ['message' => 'Nhập dữ liệu thành công!', 'type' => 'success']);
+            $this->resetPage();
+        } catch (\Exception $e) {
+            \Log::error('Import Error: ' . $e->getMessage());
+            $this->dispatch('toast', ['message' => 'Lỗi khi nhập dữ liệu: ' . $e->getMessage(), 'type' => 'error']);
+        }
+    }
 }
+

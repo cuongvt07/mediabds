@@ -36,6 +36,8 @@ Route::get('/landing/ctv', \App\Livewire\CtvLanding::class)->name('landing.ctv')
 Route::get('/my-profile', \App\Livewire\UserProfile::class)->middleware('auth')->name('user.profile');
 Route::get('/business/detail/{id}', \App\Livewire\BusinessDetail::class)->middleware(['auth', 'admin'])->name('business.detail');
 Route::get('/business/statistics', \App\Livewire\CtvStatistics::class)->middleware(['auth', 'admin'])->name('business.statistics');
+Route::get('/chatbot', \App\Livewire\Chatbot::class)->middleware('auth')->name('chatbot');
+
 
 
 
