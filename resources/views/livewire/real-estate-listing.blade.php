@@ -1400,7 +1400,12 @@
                                         <span class="text-gray-500 font-semibold"><i class="fa-solid fa-phone"></i>
                                             SĐT Liên hệ:</span>
                                         @if($isAdmin || in_array($selectedListing['id'], $revealedPhones))
-                                            <span class="font-bold text-green-600">{{ $selectedListing['contact_phone'] }}</span>
+                                            <span class="font-bold text-green-600">
+                                                {{ $selectedListing['contact_phone'] }}
+                                                @if(!empty($selectedListing['contact_customer_name']))
+                                                    - {{ $selectedListing['contact_customer_name'] }}
+                                                @endif
+                                            </span>
                                         @else
                                             <div class="flex items-center gap-2">
                                                 <span class="font-bold text-gray-400 font-mono">{{ substr($selectedListing['contact_phone'], 0, 3) }}*******</span>

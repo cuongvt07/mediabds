@@ -748,6 +748,17 @@ class RealEstateListing extends Component
         }
 
         $data = $listing->toArray();
+
+        // Fetch customer name by contact_phone
+        if (!empty($data['contact_phone'])) {
+            $customer = \App\Models\Customer::where('phone', $data['contact_phone'])
+                ->orWhere('phone2', $data['contact_phone'])
+                ->first(['name']);
+            if ($customer) {
+                $data['contact_customer_name'] = $customer->name;
+            }
+        }
+
         // Prepare slider images for detail view: Avatar first, then others
         if (!empty($data['avatar'])) {
             $images = $data['images'] ?? [];
