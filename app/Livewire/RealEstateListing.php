@@ -55,6 +55,9 @@ class RealEstateListing extends Component
     public $showMediaPopup = false;
     public $showDetailPopup = false;
     public $showSoldPopup = false;
+    public $showReporterListingsPopup = false;
+    public $reporterListings = [];
+    public $reporterNameForListings = '';
     public $selectedListing = null;
     public $selectedListingId = null;
 
@@ -733,6 +736,7 @@ class RealEstateListing extends Component
 
         $this->selectedListing = $this->prepareListingForDetail($listing);
         $this->showDetailPopup = true;
+        $this->showReporterListingsPopup = false;
     }
 
     protected function prepareListingForDetail($listing)
@@ -787,6 +791,25 @@ class RealEstateListing extends Component
             $this->closeDetailPopup();
             $this->editListing($listingId);
         }
+    }
+
+    public function showReporterListings($reporterId, $reporterName)
+    {
+        $this->reporterNameForListings = $reporterName;
+        // Fetch listings by this reporter
+        $this->reporterListings = ListingModel::where('reporter_id', $reporterId)
+            ->with(['reporter', 'user'])
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->toArray();
+            
+        $this->showReporterListingsPopup = true;
+    }
+
+    public function closeReporterListingsPopup()
+    {
+        $this->showReporterListingsPopup = false;
+        $this->reporterListings = [];
     }
 
     public function openCreatePopup()

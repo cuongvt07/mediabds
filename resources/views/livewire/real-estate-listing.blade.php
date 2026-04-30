@@ -418,7 +418,7 @@
                         {{-- Footer: Reporter & Timestamp --}}
                         <div class="mt-auto pt-3 border-t border-gray-50 flex justify-between items-center text-[10px] font-medium">
                             @if (!empty($listing['reporter']))
-                                <div class="flex items-center gap-1.5">
+                                <div class="flex items-center gap-1.5 cursor-pointer hover:bg-blue-50 p-1 rounded transition-colors" wire:click.stop="showReporterListings({{ $listing['reporter']['id'] }}, '{{ addslashes($listing['reporter']['name']) }}')">
                                     <div class="relative shrink-0">
                                         @if (!empty($listing['reporter']['avatar']))
                                             <img src="{{ url('storage/' . $listing['reporter']['avatar']) }}" 
@@ -1503,7 +1503,7 @@
                         {{-- Reporter & Publisher Info --}}
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                             @if (!empty($selectedListing['reporter']))
-                                <div class="flex items-center gap-4 p-4 bg-blue-50/50 rounded-2xl border border-blue-100 shadow-sm group hover:shadow-md transition-all">
+                                <div class="flex items-center gap-4 p-4 bg-blue-50/50 rounded-2xl border border-blue-100 shadow-sm group hover:shadow-md transition-all cursor-pointer" wire:click.stop="showReporterListings({{ $selectedListing['reporter']['id'] }}, '{{ addslashes($selectedListing['reporter']['name']) }}')">
                                     <div class="relative shrink-0">
                                         @if (!empty($selectedListing['reporter']['avatar']))
                                             <img src="{{ str_starts_with($selectedListing['reporter']['avatar'], 'http') ? $selectedListing['reporter']['avatar'] : url('storage/' . $selectedListing['reporter']['avatar']) }}" 
@@ -1979,6 +1979,68 @@
                             Xác nhận
                         </button>
                     </div>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    {{-- Reporter Listings Popup --}}
+    @if ($showReporterListingsPopup)
+        <div class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end md:items-center justify-center z-[110] p-0 md:p-4 transition-all duration-300 overflow-hidden">
+            <div class="bg-white rounded-t-[2.5rem] md:rounded-2xl shadow-2xl w-full max-w-5xl flex flex-col max-h-[85dvh] md:max-h-[90dvh] animate-[slideUp_0.4s_cubic-bezier(0.16,1,0.3,1)] overflow-hidden">
+                <div class="flex justify-between items-center px-6 py-4 border-b border-gray-200 bg-gray-50 rounded-t-2xl">
+                    <h2 class="text-xl font-black text-gray-800 uppercase flex items-center gap-2">
+                        <span class="bg-blue-100 text-blue-600 p-2 rounded-lg"><i class="fa-solid fa-list"></i></span>
+                        Tin đăng của: {{ $reporterNameForListings }}
+                    </h2>
+                    <button wire:click="closeReporterListingsPopup" class="text-gray-400 hover:text-red-500 transition-colors w-8 h-8 flex items-center justify-center rounded-full hover:bg-red-50">
+                        <i class="fa-solid fa-times fa-lg"></i>
+                    </button>
+                </div>
+                
+                <div class="p-4 overflow-y-auto flex-1 custom-scrollbar">
+                    @if(count($reporterListings) > 0)
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            @foreach ($reporterListings as $listing)
+                                <div wire:click="viewListingDetail({{ $listing['id'] }})"
+                                    class="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow border border-gray-100 overflow-hidden flex h-32 group cursor-pointer relative">
+                                    <div class="w-1/3 h-full bg-gray-200 relative overflow-hidden shrink-0">
+                                        <img src="{{ !empty($listing['avatar']) ? $listing['avatar'] : (!empty($listing['images']) && count($listing['images']) > 0 ? $listing['images'][0] : 'https://placehold.co/400x300?text=No+Img') }}"
+                                            class="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" loading="lazy" alt="{{ $listing['title'] }}">
+                                        @if ($listing['is_sold'])
+                                            <div class="absolute top-1 left-1 bg-red-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider shadow-sm flex items-center gap-1">
+                                                <i class="fa-solid fa-check"></i> ĐÃ BÁN
+                                            </div>
+                                        @endif
+                                    </div>
+                                    <div class="w-2/3 p-3 flex flex-col justify-between">
+                                        <h3 class="font-bold text-slate-800 text-sm leading-tight line-clamp-2 group-hover:text-blue-600 transition-colors" title="{{ $listing['title'] }}">
+                                            {{ $listing['title'] }}
+                                        </h3>
+                                        <p class="text-xs text-gray-500 font-medium truncate mb-1">
+                                            <i class="fa-solid fa-location-dot text-gray-400"></i>
+                                            {{ implode(', ', array_filter([$listing['ward_name'] ?? '', $listing['district_name'] ?? '', $listing['province_name'] ?? ''])) }}
+                                        </p>
+                                        <div class="flex items-center gap-2">
+                                            <span class="font-black text-red-600 text-sm">
+                                                {{ number_format($listing['price'], 0, ',', '.') }}
+                                                <span class="text-[10px] font-normal text-gray-400">
+                                                    {{ $listing['price_unit'] == 1 ? 'VNĐ' : ($listing['price_unit'] == 2 ? 'VNĐ/tháng' : 'VNĐ/m2') }}
+                                                </span>
+                                            </span>
+                                            <span class="w-px h-3 bg-gray-200"></span>
+                                            <span class="text-xs font-bold text-slate-700">{{ floatval($listing['area']) }} m²</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    @else
+                        <div class="text-center py-10 text-gray-500">
+                            <i class="fa-solid fa-box-open fa-3x mb-3 text-gray-300"></i>
+                            <p class="font-bold">Không có tin đăng nào.</p>
+                        </div>
+                    @endif
                 </div>
             </div>
         </div>
