@@ -795,9 +795,22 @@ class RealEstateListing extends Component
 
     public function showReporterListings($reporterId, $reporterName)
     {
-        $this->reporterNameForListings = $reporterName;
+        $this->reporterNameForListings = 'Thành viên: ' . $reporterName;
         // Fetch listings by this reporter
         $this->reporterListings = ListingModel::where('reporter_id', $reporterId)
+            ->with(['reporter', 'user'])
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->toArray();
+            
+        $this->showReporterListingsPopup = true;
+    }
+
+    public function showCustomerListings($phone, $customerName)
+    {
+        $this->reporterNameForListings = 'Khách hàng: ' . $customerName . ' (' . $phone . ')';
+        // Fetch listings related to this phone number
+        $this->reporterListings = ListingModel::where('contact_phone', $phone)
             ->with(['reporter', 'user'])
             ->orderBy('created_at', 'desc')
             ->get()

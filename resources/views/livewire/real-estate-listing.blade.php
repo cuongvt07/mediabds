@@ -1238,8 +1238,9 @@
                                     {{ $selectedListing['contact_type'] }}
                                 </span>
                             @endif
-                            @if (!empty($selectedListing['contact_customer_name']))
-                                <span class="inline-block bg-slate-800 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider ml-2">
+                             @if (!empty($selectedListing['contact_customer_name']))
+                                <span class="inline-block bg-slate-800 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider ml-2 cursor-pointer hover:bg-slate-700 transition-colors" 
+                                    wire:click="showCustomerListings('{{ $selectedListing['contact_phone'] }}', '{{ addslashes($selectedListing['contact_customer_name']) }}')">
                                     <i class="fa-solid fa-user-check mr-1 text-blue-400"></i> {{ $selectedListing['contact_customer_name'] }}
                                 </span>
                             @endif
@@ -1991,7 +1992,7 @@
                 <div class="flex justify-between items-center px-6 py-4 border-b border-gray-200 bg-gray-50 rounded-t-2xl">
                     <h2 class="text-xl font-black text-gray-800 uppercase flex items-center gap-2">
                         <span class="bg-blue-100 text-blue-600 p-2 rounded-lg"><i class="fa-solid fa-list"></i></span>
-                        Tin đăng của: {{ $reporterNameForListings }}
+                        {{ $reporterNameForListings }}
                     </h2>
                     <button wire:click="closeReporterListingsPopup" class="text-gray-400 hover:text-red-500 transition-colors w-8 h-8 flex items-center justify-center rounded-full hover:bg-red-50">
                         <i class="fa-solid fa-times fa-lg"></i>
