@@ -168,7 +168,7 @@
                 }
             })
          "
-         class="fixed bottom-20 right-6 z-[100] flex flex-col items-end gap-4">
+         class="fixed top-24 right-6 z-[100] flex flex-col items-end gap-4">
         
         <!-- Chat Popup -->
         <div x-show="chatOpen" 

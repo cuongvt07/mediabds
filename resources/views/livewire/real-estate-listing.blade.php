@@ -1896,8 +1896,12 @@
                             <p class="text-xs text-emerald-800 leading-relaxed font-medium">
                                 <i class="fa-solid fa-circle-info mr-1"></i>
                                 Vui lòng sử dụng file Excel (.xlsx) hoặc CSV. File cần có các cột tiêu đề: 
-                                <span class="font-bold">tieu_de, loai, loai_bds, dia_chi, dien_tich, gia, don_vi_gia, mo_ta, phone</span>.
+                                <span class="font-bold">tieu_de, loai, loai_bds, dia_chi, dien_tich, gia, don_vi_gia, mo_ta, phone, ma_tinh</span>.
                             </p>
+                            <button wire:click="downloadImportTemplate" 
+                                class="mt-3 flex items-center gap-2 text-xs font-bold text-emerald-700 hover:text-emerald-900 bg-white px-3 py-1.5 rounded-lg border border-emerald-200 transition-all shadow-sm">
+                                <i class="fa-solid fa-download"></i> Tải file mẫu (.xlsx)
+                            </button>
                         </div>
 
                         <div class="relative group">
