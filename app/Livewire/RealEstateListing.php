@@ -1453,13 +1453,5 @@ class RealEstateListing extends Component
         }
     }
 
-    public function showCustomerListings($phone, $name)
-    {
-        $this->clearFilters();
-        $this->filter_phone = $phone;
-        $this->search = ''; 
-        $this->closeDetailPopup();
-        $this->dispatch('toast', ['message' => "Đang hiển thị tin đăng của khách hàng: {$name}", 'type' => 'info']);
-    }
 }
 
