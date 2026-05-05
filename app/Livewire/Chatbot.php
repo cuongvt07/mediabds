@@ -215,12 +215,15 @@ class Chatbot extends Component
                 return;
             }
 
-            // After tool execution: 
-            // If SMART OR tool returned data (like search), call AI again to summarize.
-            // If it's a simple ACTION (create/update), just show feedback.
-            $hasData = !empty($toolMessages);
+            // Phase 5: Single Roundtrip Optimization
+            $hasComplexData = false;
+            foreach ($toolCalls as $tc) {
+                if (str_contains($tc['function']['name'], 'search') || str_contains($tc['function']['name'], 'get_details')) {
+                    $hasComplexData = true; break;
+                }
+            }
             
-            if ($mode === 'SMART' || $hasData) {
+            if ($mode === 'SMART' || $hasComplexData) {
                 $apiMessages[] = ['role' => 'assistant', 'content' => $this->streamingResponse, 'tool_calls' => $toolCalls];
                 foreach ($toolMessages as $tm) $apiMessages[] = $tm;
                 
@@ -230,8 +233,10 @@ class Chatbot extends Component
                     $this->stream(to: 'assistant-reply', content: $chunk);
                 });
             } else {
-                $this->streamingResponse .= "\n" . trim($toolFeedback);
-                $this->stream(to: 'assistant-reply', content: "\n" . trim($toolFeedback));
+                // For simple actions in FAST mode, just show the tool feedback directly
+                $feedback = "\n✅ " . trim($toolFeedback);
+                $this->streamingResponse .= $feedback;
+                $this->stream(to: 'assistant-reply', content: $feedback);
             }
         }
 
@@ -247,12 +252,12 @@ class Chatbot extends Component
     {
         $input = mb_strtolower($input);
         
-        // 🧠 SMART KEYWORDS (phân tích, so sánh, nhất, giá trị...)
-        $smartPatterns = ['phân tích', 'so sánh', 'đánh giá', 'xu hướng', 'thị trường', 'tại sao', 'nên mua', 'đầu tư', 'tối ưu', 'hiệu suất', 'thống kê', 'nhất', 'giá trị', 'bao nhiêu', 'tổng'];
+        // 🧠 SMART KEYWORDS (phân tích, so sánh sâu, xu hướng...)
+        $smartPatterns = ['phân tích', 'so sánh', 'đánh giá', 'xu hướng', 'thị trường', 'tại sao', 'nên mua', 'đầu tư', 'tối ưu', 'hiệu suất'];
         foreach ($smartPatterns as $kw) { if (str_contains($input, $kw)) return 'SMART'; }
 
-        // ⚡ FAST KEYWORDS (CRUD / thao tác nhanh)
-        $fastPatterns = ['tạo', 'thêm', 'update', 'cập nhật', 'chốt', 'đã bán', 'mở lại', 'xem tin', 'chi tiết', 'id', 'tìm tin', 'search'];
+        // ⚡ FAST KEYWORDS (CRUD / thao tác nhanh / hỏi đáp số liệu sẵn có)
+        $fastPatterns = ['tạo', 'thêm', 'update', 'cập nhật', 'chốt', 'đã bán', 'mở lại', 'xem tin', 'chi tiết', 'id', 'tìm tin', 'search', 'bao nhiêu', 'tổng', 'thống kê'];
         foreach ($fastPatterns as $kw) { if (str_contains($input, $kw)) return 'FAST'; }
 
         return 'FAST';
@@ -261,10 +266,10 @@ class Chatbot extends Component
     protected function getCachedSystemContext(string $mode = 'FAST'): string
     {
         $userId = auth()->id();
-        return \Illuminate\Support\Facades\Cache::remember("chatbot_context_{$mode}_{$userId}", 30, function() use ($mode) {
+        return \Illuminate\Support\Facades\Cache::remember("chatbot_context_{$mode}_{$userId}", 300, function() use ($mode) {
             $stats = $this->getSystemStats();
             $prompt = ($mode === 'FAST') ? $this->getFastPrompt() : $this->getSmartPrompt();
-            return "{$prompt}\n\n[DỮ LIỆU HỆ THỐNG]\n{$stats}";
+            return "{$prompt}\n\n[DỮ LIỆU HỆ THỐNG - TRẢ LỜI NGAY DỰA TRÊN ĐÂY]\n{$stats}";
         });
     }
 

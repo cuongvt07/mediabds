@@ -46,13 +46,14 @@ class OpenAIService
             $response = Http::withToken($this->apiKey)
                 ->withOptions(['stream' => true])
                 ->timeout(90)
+                ->retry(3, 200)
                 ->post($this->baseUrl, $payload);
 
             $body = $response->toPsrResponse()->getBody();
             $buffer = '';
 
             while (!$body->eof()) {
-                $chunk = $body->read(1024);
+                $chunk = $body->read(256);
                 $buffer .= $chunk;
 
                 while (($pos = strpos($buffer, "\n")) !== false) {
