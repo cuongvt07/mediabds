@@ -89,6 +89,18 @@ class Chatbot extends Component
 
     public string $streamingResponse = ''; // Holds the current chunked response
 
+    public function updatedChatFiles()
+    {
+        try {
+            $this->validate([
+                'chatFiles.*' => 'image|max:2048', // 2MB Max, only images
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            $this->chatFiles = []; // Clear failed uploads
+            $this->dispatch('toast', ['message' => 'Lỗi: Tệp phải là ảnh và dung lượng tối đa 2MB.', 'type' => 'error']);
+        }
+    }
+
     public function sendMessage()
     {
         if (empty(trim($this->userInput)) && empty($this->chatFiles)) return;

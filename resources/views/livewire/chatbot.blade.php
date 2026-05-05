@@ -219,8 +219,8 @@
 
 
         <form wire:submit.prevent="sendMessage" class="relative group flex items-center gap-2">
-            <label class="shrink-0 w-10 h-10 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-900 hover:bg-slate-100 cursor-pointer transition-all">
-                <input type="file" wire:model="chatFiles" multiple class="hidden">
+            <label class="shrink-0 w-10 h-10 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-900 hover:bg-slate-100 cursor-pointer transition-all" title="Tối đa 2MB (Chỉ ảnh)">
+                <input type="file" wire:model="chatFiles" multiple accept="image/*" class="hidden">
                 <i class="fa-solid fa-paperclip text-base"></i>
             </label>
 
