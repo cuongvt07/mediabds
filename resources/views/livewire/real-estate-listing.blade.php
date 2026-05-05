@@ -418,7 +418,7 @@
                         {{-- Footer: Reporter & Timestamp --}}
                         <div class="mt-auto pt-3 border-t border-gray-50 flex justify-between items-center text-[10px] font-medium">
                             @if (!empty($listing['reporter']))
-                                <div class="flex items-center gap-1.5">
+                                <div class="flex items-center gap-1.5 cursor-pointer hover:bg-blue-50 p-1 rounded transition-colors" wire:click.stop="showReporterListings({{ $listing['reporter']['id'] }}, '{{ addslashes($listing['reporter']['name']) }}')">
                                     <div class="relative shrink-0">
                                         @if (!empty($listing['reporter']['avatar']))
                                             <img src="{{ url('storage/' . $listing['reporter']['avatar']) }}" 
@@ -1238,6 +1238,12 @@
                                     {{ $selectedListing['contact_type'] }}
                                 </span>
                             @endif
+                             @if (!empty($selectedListing['contact_customer_name']))
+                                <span class="inline-block bg-slate-800 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider ml-2 cursor-pointer hover:bg-slate-700 transition-colors" 
+                                    wire:click="showCustomerListings('{{ $selectedListing['contact_phone'] }}', '{{ addslashes($selectedListing['contact_customer_name']) }}')">
+                                    <i class="fa-solid fa-user-check mr-1 text-blue-400"></i> {{ $selectedListing['contact_customer_name'] }}
+                                </span>
+                            @endif
                         </div>
 
                         {{-- Location --}}
@@ -1498,7 +1504,7 @@
                         {{-- Reporter & Publisher Info --}}
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                             @if (!empty($selectedListing['reporter']))
-                                <div class="flex items-center gap-4 p-4 bg-blue-50/50 rounded-2xl border border-blue-100 shadow-sm group hover:shadow-md transition-all">
+                                <div class="flex items-center gap-4 p-4 bg-blue-50/50 rounded-2xl border border-blue-100 shadow-sm group hover:shadow-md transition-all cursor-pointer" wire:click.stop="showReporterListings({{ $selectedListing['reporter']['id'] }}, '{{ addslashes($selectedListing['reporter']['name']) }}')">
                                     <div class="relative shrink-0">
                                         @if (!empty($selectedListing['reporter']['avatar']))
                                             <img src="{{ str_starts_with($selectedListing['reporter']['avatar'], 'http') ? $selectedListing['reporter']['avatar'] : url('storage/' . $selectedListing['reporter']['avatar']) }}" 
@@ -1978,48 +1984,4 @@
             </div>
         </div>
     @endif
-    <!-- Floating Antigravity AI Trigger -->
-    <div x-data="{ chatOpen: false }" class="fixed bottom-6 right-6 z-[100] flex flex-col items-end gap-4">
-        <!-- Chat Popup -->
-        <div x-show="chatOpen" 
-             x-transition:enter="transition ease-out duration-300"
-             x-transition:enter-start="opacity-0 translate-y-10 scale-95"
-             x-transition:enter-end="opacity-100 translate-y-0 scale-100"
-             x-transition:leave="transition ease-in duration-200"
-             x-transition:leave-start="opacity-100 translate-y-0 scale-100"
-             x-transition:leave-end="opacity-0 translate-y-10 scale-95"
-             class="w-[95vw] md:w-[450px] h-[70vh] md:h-[600px] bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col mb-4 relative"
-             style="display: none;">
-            
-            <!-- Popup Header -->
-            <div class="px-4 py-2 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
-                <div class="flex items-center gap-2">
-                    <div class="w-7 h-7 rounded-lg bg-slate-900 flex items-center justify-center text-white">
-                        <i class="fa-solid fa-robot text-xs"></i>
-                    </div>
-                    <span class="text-xs font-bold text-slate-900">Trợ lý AI</span>
-                </div>
-                <button @click="chatOpen = false" class="text-slate-400 hover:text-slate-900 transition-colors">
-                    <i class="fa-solid fa-circle-xmark text-lg"></i>
-                </button>
-            </div>
-
-            <!-- Chatbot Component -->
-            <div class="flex-1 overflow-hidden">
-                @livewire('chatbot', ['isPopup' => true])
-            </div>
-        </div>
-
-        <!-- Floating Button -->
-        <button @click="chatOpen = !chatOpen" 
-                class="w-14 h-14 bg-slate-900 hover:bg-black text-white rounded-full shadow-xl flex items-center justify-center transition-all hover:-translate-y-1 active:scale-90 group border-4 border-white ring-1 ring-slate-200 relative">
-            
-            <template x-if="!chatOpen">
-                <i class="fa-solid fa-comment-dots text-xl group-hover:animate-bounce"></i>
-            </template>
-            <template x-if="chatOpen">
-                <i class="fa-solid fa-xmark text-xl"></i>
-            </template>
-        </button>
-    </div>
 </div>

@@ -55,6 +55,9 @@ class RealEstateListing extends Component
     public $showMediaPopup = false;
     public $showDetailPopup = false;
     public $showSoldPopup = false;
+    public $showReporterListingsPopup = false;
+    public $reporterListings = [];
+    public $reporterNameForListings = '';
     public $selectedListing = null;
     public $selectedListingId = null;
 
@@ -733,6 +736,7 @@ class RealEstateListing extends Component
 
         $this->selectedListing = $this->prepareListingForDetail($listing);
         $this->showDetailPopup = true;
+        $this->showReporterListingsPopup = false;
     }
 
     protected function prepareListingForDetail($listing)
@@ -748,6 +752,17 @@ class RealEstateListing extends Component
         }
 
         $data = $listing->toArray();
+
+        // Fetch customer name by contact_phone
+        if (!empty($data['contact_phone'])) {
+            $customer = \App\Models\Customer::where('phone', $data['contact_phone'])
+                ->orWhere('phone2', $data['contact_phone'])
+                ->first(['name']);
+            if ($customer) {
+                $data['contact_customer_name'] = $customer->name;
+            }
+        }
+
         // Prepare slider images for detail view: Avatar first, then others
         if (!empty($data['avatar'])) {
             $images = $data['images'] ?? [];
@@ -776,6 +791,38 @@ class RealEstateListing extends Component
             $this->closeDetailPopup();
             $this->editListing($listingId);
         }
+    }
+
+    public function showReporterListings($reporterId, $reporterName)
+    {
+        $this->reporterNameForListings = 'Thành viên: ' . $reporterName;
+        // Fetch listings by this reporter
+        $this->reporterListings = ListingModel::where('reporter_id', $reporterId)
+            ->with(['reporter', 'user'])
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->toArray();
+            
+        $this->showReporterListingsPopup = true;
+    }
+
+    public function showCustomerListings($phone, $customerName)
+    {
+        $this->reporterNameForListings = 'Khách hàng: ' . $customerName . ' (' . $phone . ')';
+        // Fetch listings related to this phone number
+        $this->reporterListings = ListingModel::where('contact_phone', $phone)
+            ->with(['reporter', 'user'])
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->toArray();
+            
+        $this->showReporterListingsPopup = true;
+    }
+
+    public function closeReporterListingsPopup()
+    {
+        $this->showReporterListingsPopup = false;
+        $this->reporterListings = [];
     }
 
     public function openCreatePopup()

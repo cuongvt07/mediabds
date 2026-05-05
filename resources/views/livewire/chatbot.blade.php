@@ -74,12 +74,18 @@
 
 
     <!-- Chat Area -->
-    <div class="flex-1 overflow-y-auto px-4 py-4 space-y-4 scroll-smooth custom-scrollbar" id="chat-container" x-init="
-        $watch('$wire.messages', () => { 
+    <div class="flex-1 overflow-y-auto px-4 py-4 space-y-4 scroll-smooth custom-scrollbar" id="chat-container" 
+        x-init="
             $nextTick(() => { $el.scrollTop = $el.scrollHeight });
-        });
-        $el.scrollTop = $el.scrollHeight;
-    ">
+            $watch('$wire.messages', () => { 
+                $nextTick(() => { $el.scrollTop = $el.scrollHeight });
+            });
+            window.addEventListener('chat-opened', () => {
+                $nextTick(() => { $el.scrollTop = $el.scrollHeight });
+            });
+        "
+        @chat-opened.window="$nextTick(() => { $el.scrollTop = $el.scrollHeight })"
+    >
 
         @foreach($messages as $index => $message)
             <div class="flex {{ $message['role'] === 'user' ? 'justify-end' : 'justify-start' }} animate-in fade-in slide-in-from-bottom-1 duration-300">
