@@ -878,7 +878,8 @@ PROMPT;
 
     public function getListingData($id)
     {
-        return \App\Models\RealEstateListing::with(['reporter', 'user'])->find($id);
+        $listing = \App\Models\RealEstateListing::with(['reporter', 'user'])->find($id);
+        return $listing ? $listing->toArray() : null;
     }
 
 

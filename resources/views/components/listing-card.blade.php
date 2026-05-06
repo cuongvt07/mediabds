@@ -6,19 +6,29 @@
     @else
         wire:click="$set('userInput', 'xem chi tiết tin #{{ $listing['id'] }}'); sendMessage();"
     @endif
-    class="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow border border-gray-100 overflow-hidden flex flex-col md:flex-row h-auto {{ $mode === 'grid' ? 'md:h-52' : 'md:h-48' }} group cursor-pointer relative animate-[fadeIn_0.3s_ease-out] mb-3 last:mb-0">
+    class="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow border border-gray-100 overflow-hidden flex flex-col md:flex-row h-auto {{ $mode === 'grid' ? 'md:h-52' : '' }} group cursor-pointer relative animate-[fadeIn_0.3s_ease-out] mb-3 last:mb-0">
     
-    <!-- Left: Image (30%) -->
+    @if($mode === 'grid')
+    <!-- Left: Image (30%) - Only in grid mode -->
     <div class="w-full h-48 md:w-[30%] md:h-full bg-gray-200 relative overflow-hidden shrink-0">
-        <img src="{{ !empty($listing['avatar']) ? $listing['avatar'] : (!empty($listing['images']) && count($listing['images']) > 0 ? $listing['images'][0] : 'https://placehold.co/400x300?text=No+Img') }}"
+        @php
+            $avatarUrl = !empty($listing['avatar']) ? $listing['avatar'] : (!empty($listing['images']) && count($listing['images']) > 0 ? $listing['images'][0] : null);
+            if ($avatarUrl && !str_starts_with($avatarUrl, 'http')) {
+                $avatarUrl = url('storage/' . $avatarUrl);
+            }
+            $avatarUrl = $avatarUrl ?: 'https://placehold.co/400x300?text=No+Img';
+        @endphp
+        <img src="{{ $avatarUrl }}"
             class="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
             loading="lazy" alt="{{ $listing['title'] }}">
 
-        <!-- Type & Code Badges -->
-        <div class="absolute top-2 left-2 flex flex-col gap-1 z-10">
-            <span class="bg-blue-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider shadow-sm">
-                {{ $listing['type'] }}
-            </span>
+        <!-- Type & Code Badges (Absolute on Image) -->
+        <div class="absolute top-2 left-2 flex flex-col gap-1 z-20">
+            @if(!empty($listing['type']))
+                <span class="bg-blue-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider shadow-sm">
+                    {{ $listing['type'] }}
+                </span>
+            @endif
             @if (!empty($listing['contact_type']))
                 <span class="bg-emerald-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider shadow-sm">
                     {{ $listing['contact_type'] }}
@@ -45,10 +55,37 @@
             </div>
         @endif
     </div>
+    @endif
 
-    <!-- Right: Info (70%) -->
-    <div class="w-full md:w-[70%] p-3 md:p-4 flex flex-col justify-between relative overflow-hidden">
+    <!-- Right: Info (70% in grid, 100% in chat) -->
+    <div class="w-full {{ $mode === 'grid' ? 'md:w-[70%]' : '' }} p-3 md:p-4 flex flex-col justify-between relative overflow-hidden">
         <div>
+            @if($mode === 'chat')
+            <!-- Tags in Chat Mode (Inline at top) -->
+            <div class="flex flex-wrap gap-1 mb-2">
+                @if(!empty($listing['type']))
+                    <span class="bg-blue-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider shadow-sm">
+                        {{ $listing['type'] }}
+                    </span>
+                @endif
+                @if (!empty($listing['contact_type']))
+                    <span class="bg-emerald-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider shadow-sm">
+                        {{ $listing['contact_type'] }}
+                    </span>
+                @endif
+                @if (!empty($listing['code']))
+                    <span class="bg-slate-800 text-white text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider shadow-sm">
+                        #{{ $listing['code'] }}
+                    </span>
+                @endif
+                @if (!empty($listing['is_sold']))
+                    <span class="bg-red-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider shadow-sm flex items-center gap-1">
+                        <i class="fa-solid fa-check"></i> ĐÃ BÁN
+                    </span>
+                @endif
+            </div>
+            @endif
+
             <div class="flex justify-between items-start gap-2 mb-1.5">
                 <h3 class="font-bold text-slate-800 text-sm md:text-base leading-tight line-clamp-2 group-hover:text-blue-600 transition-colors" title="{{ $listing['title'] }}">
                     {{ $listing['title'] }}
@@ -119,8 +156,14 @@
                 <div class="flex items-center gap-1.5 {{ $mode === 'grid' ? 'cursor-pointer hover:bg-blue-50' : '' }} p-1 rounded transition-colors" 
                     @if($mode === 'grid') wire:click.stop="showReporterListings({{ $listing['reporter']['id'] }}, '{{ addslashes($listing['reporter']['name']) }}')" @endif>
                     <div class="relative shrink-0">
-                        @if (!empty($listing['reporter']['avatar']))
-                            <img src="{{ url('storage/' . $listing['reporter']['avatar']) }}" 
+                        @php
+                            $reporterAvatar = !empty($listing['reporter']['avatar']) ? $listing['reporter']['avatar'] : null;
+                            if ($reporterAvatar && !str_starts_with($reporterAvatar, 'http')) {
+                                $reporterAvatar = url('storage/' . $reporterAvatar);
+                            }
+                        @endphp
+                        @if ($reporterAvatar)
+                            <img src="{{ $reporterAvatar }}" 
                                  class="w-5 h-5 rounded-md object-cover ring-1 ring-gray-100 shadow-sm">
                         @else
                             <div class="w-5 h-5 rounded-md bg-blue-100 text-blue-600 flex items-center justify-center text-[8px] font-black">
@@ -137,8 +180,14 @@
             @elseif(!empty($listing['user']))
                 <div class="flex items-center gap-1.5">
                     <div class="shrink-0">
-                        @if (!empty($listing['user']['avatar']))
-                            <img src="{{ url('storage/' . $listing['user']['avatar']) }}" 
+                        @php
+                            $userAvatar = !empty($listing['user']['avatar']) ? $listing['user']['avatar'] : null;
+                            if ($userAvatar && !str_starts_with($userAvatar, 'http')) {
+                                $userAvatar = url('storage/' . $userAvatar);
+                            }
+                        @endphp
+                        @if ($userAvatar)
+                            <img src="{{ $userAvatar }}" 
                                  class="w-5 h-5 rounded-md object-cover ring-1 ring-gray-100 shadow-sm">
                         @else
                             <div class="w-5 h-5 rounded-md bg-slate-100 text-slate-600 flex items-center justify-center text-[8px] font-black">
