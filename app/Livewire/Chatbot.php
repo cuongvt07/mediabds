@@ -205,7 +205,7 @@ class Chatbot extends Component
                 } else {
                     $result = $this->executeTool($toolName, $args);
                     $toolFeedback .= ($result['message'] ?? 'Đã xử lý.') . "\n";
-                    $toolMessages[] = ['role' => 'tool', 'tool_call_id' => $toolCall['id'], 'name' => $toolName, 'content' => json_encode($result)];
+                    $toolMessages[] = ['role' => 'tool', 'tool_call_id' => $toolCall['id'], 'name' => $toolName, 'content' => json_encode($result, JSON_UNESCAPED_UNICODE)];
                 }
             }
 
@@ -312,10 +312,10 @@ Nếu câu hỏi hoàn toàn nằm ngoài phạm vi trên, từ chối ngắn g�
   Ví dụ: "Cần thêm SĐT liên hệ để tạo tin. Số nào?"
 
 ## Định dạng đầu ra
-- Thành công:    ✅ [kết quả 1 dòng + ID nếu có]
+- Thành công:    ✅ [kết quả 1 dòng + Mã tin nếu có]
 - Lỗi/không tìm: ❌ [lý do ngắn] + gợi ý bước tiếp nếu có
-- Danh sách ≥3:  dùng markdown table với cột ID | Tiêu đề | Giá | Trạng thái.
-- CHI TIẾT TIN: Khi người dùng hỏi về một tin cụ thể hoặc danh sách tin cần xem kỹ, hãy dùng định dạng [LISTING:ID] (ví dụ: [LISTING:102]) để hiển thị thẻ thông tin chi tiết.
+- Danh sách ≥3:  dùng markdown table với cột Mã tin | Tiêu đề | Giá | Trạng thái (CHỈ dùng cho Khách hàng/Nhân sự, KHÔNG dùng cho Tin đăng BĐS).
+- TIN ĐĂNG BĐS:  LUÔN dùng định dạng [LISTING:ID] để hiển thị thẻ tóm tắt. KHI NGƯỜI DÙNG CẦN XEM CHI TIẾT (xem kỹ, xem hết, thông tin đầy đủ), hãy gọi tool `get_listing_details` và LIỆT KÊ TẤT CẢ thông tin (Mô tả, Link MXH, Tọa độ, Thông số kỹ thuật...) dưới dạng danh sách hoặc bảng để người dùng nắm rõ.
 - Số tiền:       "2.5 Tỷ" / "850 Triệu" / "15 Triệu/tháng"
 - Không in đậm toàn câu — chỉ in đậm số liệu quan trọng
 
@@ -327,7 +327,7 @@ Ví dụ: "❌ Không tìm thấy tin #99. Bạn muốn tìm theo địa chỉ h
 
 ## Giới hạn quyền
 - Không tự xóa dữ liệu nếu không có tool delete tường minh.
-- Cập nhật is_sold = true là không thể hoàn tác dễ dàng — confirm lại ID trước khi thực hiện nếu user chưa nêu rõ.{$rules}
+- Cập nhật is_sold = true là không thể hoàn tác dễ dàng — confirm lại Mã tin/ID trước khi thực hiện nếu user chưa nêu rõ.{$rules}
 PROMPT;
     }
 
@@ -354,10 +354,10 @@ Không vòng vo, không liệt kê hiển nhiên, không giả định số li�
 
 ## Định dạng đầu ra
 - Báo cáo: markdown với ## heading rõ ràng
-- Bảng so sánh: markdown table, căn chỉnh số phải
+- Bảng so sánh: markdown table, căn chỉnh số phải (Dùng cột Mã tin thay vì ID cho BĐS nếu cần liệt kê).
 - Chỉ số nổi bật: in đậm con số (ví dụ: doanh thu **2.3 Tỷ**)
 - Không in đậm toàn câu
-- CHI TIẾT TIN: Khi trình bày các tin đăng tiêu biểu, hãy dùng định dạng [LISTING:ID] (ví dụ: [LISTING:102]) để hiển thị thẻ thông tin chi tiết.
+- TIN ĐĂNG BĐS: LUÔN dùng định dạng [LISTING:ID] để hiển thị thẻ tóm tắt. KHI NGƯỜI DÙNG CẦN XEM CHI TIẾT (xem kỹ, xem hết, thông tin đầy đủ), hãy gọi tool `get_listing_details` và LIỆT KÊ TẤT CẢ thông tin dưới dạng báo cáo chuyên sâu.
 - Số tiền: "2.5 Tỷ" / "850 Triệu"
 
 ## Xử lý khi dữ liệu thiếu
@@ -399,7 +399,7 @@ PROMPT;
                 'role' => 'tool',
                 'tool_call_id' => $toolCall['id'],
                 'name' => $toolCall['function']['name'],
-                'content' => json_encode($toolResult)
+                'content' => json_encode($toolResult, JSON_UNESCAPED_UNICODE)
             ];
         }
 
@@ -431,7 +431,7 @@ PROMPT;
                 'role' => 'tool',
                 'tool_call_id' => $toolCall['id'],
                 'name' => $toolCall['function']['name'],
-                'content' => json_encode(['status' => 'error', 'message' => 'Người dùng đã từ chối thực hiện hành động này.'])
+                'content' => json_encode(['status' => 'error', 'message' => 'Người dùng đã từ chối thực hiện hành động này.'], JSON_UNESCAPED_UNICODE)
             ];
         }
 
@@ -463,7 +463,7 @@ PROMPT;
                     'role' => 'tool',
                     'tool_call_id' => $toolCall['id'],
                     'name' => $toolCall['function']['name'],
-                    'content' => json_encode($toolResult)
+                    'content' => json_encode($toolResult, JSON_UNESCAPED_UNICODE)
                 ];
             }
             // One last call for the final summary after recursive tools
@@ -681,21 +681,6 @@ PROMPT;
             return "❌ Không tìm thấy tin đăng ID #{$id} để mở lại.";
         }
 
-        // 4. View Listing Details (Pattern: chi tiết tin [id] / xem tin [id])
-        if (preg_match('/(?:chi tiết tin|xem tin|check tin)\s*(?:số|id)?\s*(\d+)/i', $input, $matches)) {
-            $id = $matches[1];
-            $listing = RealEstateListing::find($id);
-            if ($listing) {
-                return "🔍 **Chi tiết tin đăng #{$id}**:\n" .
-                       "- Tiêu đề: {$listing->title}\n" .
-                       "- Giá: " . number_format($listing->price, 0, ',', '.') . " {$listing->price_unit}\n" .
-                       "- Địa chỉ: {$listing->address}\n" .
-                       "- Trạng thái: " . ($listing->is_sold ? '🔴 Đã bán' : '🟢 Còn trống') . "\n" .
-                       "- SĐT: {$listing->contact_phone}";
-            }
-            return "❌ Không tìm thấy tin đăng ID #{$id}.";
-        }
-
         // 5. Search Listing (Pattern: tìm tin [query])
         if (preg_match('/(?:tìm tin|tìm kiếm tin|search)\s+(.+)/i', $input, $matches)) {
             $query = trim($matches[1]);
@@ -708,7 +693,7 @@ PROMPT;
             if ($results->count() > 0) {
                 $text = "🔎 Kết quả tìm kiếm cho '{$query}':\n";
                 foreach($results as $r) {
-                    $text .= "- [#{$r->id}] {$r->title} ({$r->price} {$r->price_unit})\n";
+                    $text .= "[LISTING:{$r->id}]\n";
                 }
                 return $text;
             }
@@ -753,7 +738,7 @@ PROMPT;
                         'code' => 'AI-' . strtoupper(str()->random(6))
                     ], $args);
                     $listing = RealEstateListing::create($data);
-                    return ['status' => 'success', 'message' => "Đã tạo tin đăng thành công. ID: #{$listing->id}. Mã: {$listing->code}"];
+                    return ['status' => 'success', 'message' => "Đã tạo tin đăng thành công. Mã tin: {$listing->code} (ID: #{$listing->id})"];
 
 
                 case 'create_customer':
@@ -763,7 +748,7 @@ PROMPT;
                         'assigned_user_id' => auth()->id()
                     ], $args);
                     $customer = Customer::create($data);
-                    return ['status' => 'success', 'message' => "Đã tạo hồ sơ khách hàng thành công. ID: #{$customer->id}. Mã: {$customer->code}"];
+                    return ['status' => 'success', 'message' => "Đã tạo hồ sơ khách hàng thành công. Mã KH: {$customer->code} (ID: #{$customer->id})"];
 
                 case 'update_listing_status':
                     $listing = RealEstateListing::find($args['listing_id']);
@@ -807,6 +792,7 @@ PROMPT;
                         'count' => $results->count(),
                         'data' => $results->map(fn($r) => [
                             'id' => $r->id,
+                            'code' => $r->code,
                             'title' => $r->title,
                             'price_display' => number_format($r->price, 0, ',', '.') . ' ' . $r->price_unit,
                             'area' => $r->area . ' m2',
@@ -930,7 +916,7 @@ PROMPT;
         $toSummarize = array_slice($this->messages, 0, -5);
         $prompt = [
             ['role' => 'system', 'content' => 'Hãy tóm tắt cuộc hội thoại sau thành một đoạn văn ngắn (dưới 100 chữ) để làm ngữ cảnh cho AI. Giữ lại các thông tin quan trọng như ID tin đăng đang thảo luận hoặc tên khách hàng.'],
-            ['role' => 'user', 'content' => json_encode($toSummarize)]
+            ['role' => 'user', 'content' => json_encode($toSummarize, JSON_UNESCAPED_UNICODE)]
         ];
 
         $response = $openAIService->chat($prompt);
