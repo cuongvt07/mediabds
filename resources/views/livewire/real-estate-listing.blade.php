@@ -1988,4 +1988,66 @@
             </div>
         </div>
     @endif
+    {{-- Reporter Listings Popup --}}
+    @if ($showReporterListingsPopup)
+        <div class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center z-[110] p-4">
+            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl flex flex-col max-h-[90dvh] overflow-hidden animate-in zoom-in-95 duration-200">
+                <div class="flex justify-between items-center px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+                    <h3 class="text-xl font-black text-gray-800 flex items-center gap-2 uppercase">
+                        <i class="fa-solid fa-list-ul text-blue-600"></i>
+                        {{ $reporterNameForListings }}
+                    </h3>
+                    <button wire:click="closeReporterListingsPopup" class="text-gray-400 hover:text-red-500 transition-colors">
+                        <i class="fa-solid fa-times text-xl"></i>
+                    </button>
+                </div>
+
+                <div class="flex-1 overflow-y-auto p-6 custom-scrollbar bg-slate-50/30">
+                    @if (empty($reporterListings))
+                        <div class="flex flex-col items-center justify-center py-20 text-gray-400">
+                            <i class="fa-solid fa-folder-open text-5xl mb-4 opacity-20"></i>
+                            <p class="font-bold">Không tìm thấy tin đăng nào.</p>
+                        </div>
+                    @else
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            @foreach ($reporterListings as $rl)
+                                <div wire:click="viewListingDetail({{ $rl['id'] }})"
+                                    class="bg-white p-3 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all cursor-pointer flex gap-3 group">
+                                    <div class="w-20 h-20 rounded-lg overflow-hidden shrink-0 bg-gray-100">
+                                        <img src="{{ !empty($rl['avatar']) ? $rl['avatar'] : (!empty($rl['images']) && count($rl['images']) > 0 ? $rl['images'][0] : 'https://placehold.co/100x100?text=No+Img') }}"
+                                            class="w-full h-full object-cover transition-transform group-hover:scale-110">
+                                    </div>
+                                    <div class="flex-1 min-w-0 flex flex-col justify-between">
+                                        <div>
+                                            <h4 class="font-bold text-gray-800 text-sm line-clamp-1 group-hover:text-blue-600 transition-colors">{{ $rl['title'] }}</h4>
+                                            <p class="text-[10px] text-gray-500 line-clamp-1 mt-0.5">
+                                                <i class="fa-solid fa-location-dot mr-1"></i>
+                                                {{ implode(', ', array_filter([$rl['ward_name'], $rl['district_name'], $rl['province_name']])) }}
+                                            </p>
+                                        </div>
+                                        <div class="flex items-center justify-between mt-2">
+                                            <span class="text-xs font-black text-red-600">
+                                                {{ number_format($rl['price'], 0, ',', '.') }}
+                                                <span class="text-[8px] font-normal text-gray-400">
+                                                    {{ $rl['price_unit'] == 1 ? 'VNĐ' : ($rl['price_unit'] == 2 ? 'VNĐ/tháng' : 'VNĐ/m2') }}
+                                                </span>
+                                            </span>
+                                            <span class="text-[10px] font-bold text-gray-600">{{ floatval($rl['area']) }} m²</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
+                </div>
+
+                <div class="p-4 border-t border-gray-100 bg-gray-50 flex justify-end">
+                    <button wire:click="closeReporterListingsPopup"
+                        class="px-6 py-2 rounded-xl bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold transition-all active:scale-95">
+                        Đóng
+                    </button>
+                </div>
+            </div>
+        </div>
+    @endif
 </div>
