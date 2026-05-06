@@ -118,7 +118,26 @@
                             {{ $message['role'] === 'user' 
                                 ? 'bg-slate-900 text-white border-slate-800 rounded-tr-none' 
                                 : 'bg-slate-50 border-slate-200 text-slate-800 rounded-tl-none' }}">
-                            {!! nl2br(e($message['content'])) !!}
+                            @php
+                                $parts = preg_split('/(\[LISTING:\d+\])/', $message['content'], -1, PREG_SPLIT_DELIM_CAPTURE);
+                            @endphp
+                            @foreach($parts as $part)
+                                @if(preg_match('/\[LISTING:(\d+)\]/', $part, $matches))
+                                    @php 
+                                        $listingId = $matches[1]; 
+                                        $listing = $this->getListingData($listingId); 
+                                    @endphp
+                                    @if($listing)
+                                        <div class="my-3 -mx-2">
+                                            <x-listing-card :listing="$listing" mode="chat" />
+                                        </div>
+                                    @else
+                                        <span class="text-red-500 text-[10px]">❌ Không tìm thấy tin #{{ $listingId }}</span>
+                                    @endif
+                                @else
+                                    {!! nl2br(e($part)) !!}
+                                @endif
+                            @endforeach
 
                             @if(isset($message['is_hitl']) && $message['is_hitl'])
                                 <div class="mt-3 flex gap-2 p-2 bg-white rounded-lg border border-slate-200 border-dashed">

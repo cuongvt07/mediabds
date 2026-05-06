@@ -314,7 +314,8 @@ Nếu câu hỏi hoàn toàn nằm ngoài phạm vi trên, từ chối ngắn g�
 ## Định dạng đầu ra
 - Thành công:    ✅ [kết quả 1 dòng + ID nếu có]
 - Lỗi/không tìm: ❌ [lý do ngắn] + gợi ý bước tiếp nếu có
-- Danh sách ≥3:  dùng markdown table với cột ID | Tiêu đề | Giá | Trạng thái
+- Danh sách ≥3:  dùng markdown table với cột ID | Tiêu đề | Giá | Trạng thái.
+- CHI TIẾT TIN: Khi người dùng hỏi về một tin cụ thể hoặc danh sách tin cần xem kỹ, hãy dùng định dạng [LISTING:ID] (ví dụ: [LISTING:102]) để hiển thị thẻ thông tin chi tiết.
 - Số tiền:       "2.5 Tỷ" / "850 Triệu" / "15 Triệu/tháng"
 - Không in đậm toàn câu — chỉ in đậm số liệu quan trọng
 
@@ -356,6 +357,7 @@ Không vòng vo, không liệt kê hiển nhiên, không giả định số li�
 - Bảng so sánh: markdown table, căn chỉnh số phải
 - Chỉ số nổi bật: in đậm con số (ví dụ: doanh thu **2.3 Tỷ**)
 - Không in đậm toàn câu
+- CHI TIẾT TIN: Khi trình bày các tin đăng tiêu biểu, hãy dùng định dạng [LISTING:ID] (ví dụ: [LISTING:102]) để hiển thị thẻ thông tin chi tiết.
 - Số tiền: "2.5 Tỷ" / "850 Triệu"
 
 ## Xử lý khi dữ liệu thiếu
@@ -795,7 +797,10 @@ PROMPT;
                     $query->orderBy($sortBy, $sortOrder);
 
                     $limit = min($args['limit'] ?? 5, 20);
-                    $results = $query->limit($limit)->get(['id', 'title', 'price', 'price_unit', 'area', 'address', 'type', 'is_sold']);
+                    $results = $query->limit($limit)->get([
+                        'id', 'title', 'price', 'price_unit', 'area', 'address', 'type', 'is_sold', 
+                        'code', 'contact_type', 'property_type', 'avatar', 'images'
+                    ]);
                     
                     return [
                         'status' => 'success', 
@@ -870,6 +875,12 @@ PROMPT;
             return ['status' => 'error', 'message' => $e->getMessage()];
         }
     }
+
+    public function getListingData($id)
+    {
+        return \App\Models\RealEstateListing::with(['reporter', 'user'])->find($id);
+    }
+
 
 
 
