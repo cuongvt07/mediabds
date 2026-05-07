@@ -28,6 +28,10 @@ class Chatbot extends Component
     // HITL (Human-In-The-Loop) State
     public ?string $pendingRunStateId = null;
 
+    // Quick View Listing Detail
+    public $selectedListing = null;
+    public bool $showDetailPopup = false;
+
 
     public function mount()
     {
@@ -866,6 +870,57 @@ PROMPT;
     {
         $listing = \App\Models\RealEstateListing::with(['reporter', 'user'])->find($id);
         return $listing ? $listing->toArray() : null;
+    }
+
+    public function viewListingQuickly($id)
+    {
+        $listing = \App\Models\RealEstateListing::with(['reporter', 'user', 'sale.soldBy', 'sale.members.user'])->find($id);
+        if (!$listing) {
+            $this->dispatch('toast', ['message' => 'Không tìm thấy tin đăng!', 'type' => 'error']);
+            return;
+        }
+
+        $this->selectedListing = $this->prepareListingForQuickView($listing);
+        $this->showDetailPopup = true;
+    }
+
+    public function closeDetailQuickly()
+    {
+        $this->showDetailPopup = false;
+        $this->selectedListing = null;
+    }
+
+    protected function prepareListingForQuickView($listing)
+    {
+        $data = $listing->toArray();
+
+        // Fetch customer name by contact_phone
+        if (!empty($data['contact_phone'])) {
+            $customer = \App\Models\Customer::where('phone', $data['contact_phone'])
+                ->orWhere('phone2', $data['contact_phone'])
+                ->first(['name']);
+            if ($customer) {
+                $data['contact_customer_name'] = $customer->name;
+            }
+        }
+
+        // Prepare slider images: Avatar first, then others
+        $allImages = [];
+        if (!empty($data['avatar'])) {
+            $allImages[] = $data['avatar'];
+        }
+        
+        if (!empty($data['images']) && is_array($data['images'])) {
+            foreach ($data['images'] as $img) {
+                if ($img !== $data['avatar']) {
+                    $allImages[] = $img;
+                }
+            }
+        }
+        
+        $data['display_images'] = count($allImages) > 0 ? $allImages : ['https://placehold.co/800x600?text=No+Image'];
+        
+        return $data;
     }
 
 

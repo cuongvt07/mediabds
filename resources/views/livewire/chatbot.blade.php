@@ -269,15 +269,207 @@
         </form>
 
         <div class="mt-2 flex justify-center gap-4 opacity-30">
-            <span class="text-[8px] font-bold text-slate-500 uppercase tracking-widest">GPT-5 Nano</span>
+            <span class="text-[8px] font-bold text-slate-500 uppercase tracking-widest">GPT-4o Mini</span>
             <span class="text-[8px] font-bold text-slate-500 uppercase tracking-widest">OpenAI Neural</span>
+        </div>
+    </div>
+
+    <!-- Quick View Detail Drawer (Slide-over) -->
+    <div x-cloak x-show="$wire.showDetailPopup" 
+         class="fixed inset-0 z-[100] flex justify-end overflow-hidden"
+         x-on:keydown.escape.window="$wire.closeDetailQuickly()">
+        
+        <!-- Backdrop -->
+        <div x-show="$wire.showDetailPopup" 
+             x-transition:enter="ease-out duration-300"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="ease-in duration-200"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0"
+             @click="$wire.closeDetailQuickly()"
+             class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity"></div>
+
+        <!-- Drawer Content -->
+        <div x-show="$wire.showDetailPopup" 
+             x-transition:enter="transform transition ease-in-out duration-500 sm:duration-700"
+             x-transition:enter-start="translate-x-full"
+             x-transition:enter-end="translate-x-0"
+             x-transition:leave="transform transition ease-in-out duration-500 sm:duration-700"
+             x-transition:leave-start="translate-x-0"
+             x-transition:leave-end="translate-x-full"
+             class="relative w-full max-w-md h-full bg-slate-950/90 backdrop-blur-2xl border-l border-white/10 shadow-2xl flex flex-col">
+            
+            @if($selectedListing)
+            <!-- Header -->
+            <div class="px-6 py-4 flex items-center justify-between border-b border-white/5 bg-slate-900/50">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
+                        <i class="fa-solid fa-house-chimney text-white text-base"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-black text-white uppercase tracking-wider">Chi tiết tin đăng</h3>
+                        <p class="text-[10px] text-blue-400 font-bold">#{{ $selectedListing['code'] }}</p>
+                    </div>
+                </div>
+                <button @click="$wire.closeDetailQuickly()" class="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 text-white transition-all flex items-center justify-center">
+                    <i class="fa-solid fa-xmark text-sm"></i>
+                </button>
+            </div>
+
+            <!-- Scrollable Content -->
+            <div class="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-6">
+                <!-- Image Slider (Simple) -->
+                <div class="relative group" x-data="{ 
+                    current: 0, 
+                    images: @js($selectedListing['display_images']),
+                    next() { this.current = (this.current + 1) % this.images.length },
+                    prev() { this.current = (this.current - 1 + this.images.length) % this.images.length }
+                }">
+                    <div class="aspect-[4/3] rounded-2xl bg-slate-900 overflow-hidden border border-white/10 shadow-xl relative">
+                        <template x-for="(img, index) in images" :key="index">
+                            <img x-show="current === index" :src="img" 
+                                 class="absolute inset-0 w-full h-full object-cover transition-all duration-700"
+                                 x-transition:enter="opacity-0 scale-110"
+                                 x-transition:enter-end="opacity-100 scale-100"
+                                 loading="lazy">
+                        </template>
+
+                        <!-- Nav Buttons -->
+                        <div class="absolute inset-0 flex items-center justify-between px-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button @click="prev()" class="w-8 h-8 rounded-full bg-black/40 backdrop-blur-md text-white hover:bg-black/60 transition-all flex items-center justify-center">
+                                <i class="fa-solid fa-chevron-left text-xs"></i>
+                            </button>
+                            <button @click="next()" class="w-8 h-8 rounded-full bg-black/40 backdrop-blur-md text-white hover:bg-black/60 transition-all flex items-center justify-center">
+                                <i class="fa-solid fa-chevron-right text-xs"></i>
+                            </button>
+                        </div>
+
+                        <!-- Dots -->
+                        <div class="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 px-2 py-1 rounded-full bg-black/20 backdrop-blur-md">
+                            <template x-for="(img, index) in images" :key="index">
+                                <button @click="current = index" 
+                                        :class="current === index ? 'bg-blue-400 w-4' : 'bg-white/40 w-1.5'"
+                                        class="h-1.5 rounded-full transition-all duration-300"></button>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Main Info -->
+                <div class="space-y-4">
+                    <h2 class="text-lg font-bold text-white leading-tight">{{ $selectedListing['title'] }}</h2>
+                    
+                    <div class="flex flex-wrap gap-2">
+                        <span class="px-2.5 py-1 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[10px] font-black uppercase tracking-widest">
+                            {{ $selectedListing['type'] }}
+                        </span>
+                        @if($selectedListing['property_type'])
+                        <span class="px-2.5 py-1 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[10px] font-black uppercase tracking-widest">
+                            {{ \App\Livewire\RealEstateListing::PROPERTY_TYPES[$selectedListing['property_type']] ?? 'Khác' }}
+                        </span>
+                        @endif
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="p-4 rounded-2xl bg-white/5 border border-white/10">
+                            <p class="text-[9px] text-slate-400 font-bold uppercase tracking-widest mb-1">Giá bán</p>
+                            <p class="text-xl font-black text-red-500">
+                                {{ number_format($selectedListing['price'], 0, ',', '.') }}
+                                <span class="text-xs font-bold text-slate-400">{{ $selectedListing['price_unit'] == 1 ? 'VNĐ' : ($selectedListing['price_unit'] == 2 ? 'VNĐ/tháng' : 'VNĐ/m2') }}</span>
+                            </p>
+                        </div>
+                        <div class="p-4 rounded-2xl bg-white/5 border border-white/10">
+                            <p class="text-[9px] text-slate-400 font-bold uppercase tracking-widest mb-1">Diện tích</p>
+                            <p class="text-xl font-black text-blue-400">{{ floatval($selectedListing['area']) }} <span class="text-xs font-bold text-slate-400">m²</span></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Facts -->
+                <div class="grid grid-cols-3 gap-3">
+                    @if($selectedListing['floors'])
+                    <div class="flex flex-col items-center p-3 rounded-xl bg-slate-900 border border-white/5">
+                        <i class="fa-solid fa-layer-group text-slate-500 mb-2"></i>
+                        <span class="text-xs font-bold text-white">{{ $selectedListing['floors'] }} Tầng</span>
+                    </div>
+                    @endif
+                    @if($selectedListing['bedrooms'])
+                    <div class="flex flex-col items-center p-3 rounded-xl bg-slate-900 border border-white/5">
+                        <i class="fa-solid fa-bed text-slate-500 mb-2"></i>
+                        <span class="text-xs font-bold text-white">{{ $selectedListing['bedrooms'] }} PN</span>
+                    </div>
+                    @endif
+                    @if($selectedListing['toilets'])
+                    <div class="flex flex-col items-center p-3 rounded-xl bg-slate-900 border border-white/5">
+                        <i class="fa-solid fa-restroom text-slate-500 mb-2"></i>
+                        <span class="text-xs font-bold text-white">{{ $selectedListing['toilets'] }} WC</span>
+                    </div>
+                    @endif
+                </div>
+
+                <!-- Location -->
+                <div class="p-4 rounded-2xl bg-slate-900 border border-white/5 space-y-2">
+                    <p class="text-[9px] text-slate-500 font-bold uppercase tracking-widest">Vị trí</p>
+                    <div class="flex items-start gap-3">
+                        <i class="fa-solid fa-location-dot text-blue-500 mt-1"></i>
+                        <div>
+                            <p class="text-sm font-bold text-white leading-snug">{{ $selectedListing['address'] }}</p>
+                            <p class="text-xs text-slate-400 mt-1">{{ implode(', ', array_filter([$selectedListing['ward_name'], $selectedListing['district_name'], $selectedListing['province_name']])) }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Description -->
+                <div class="space-y-2">
+                    <p class="text-[9px] text-slate-500 font-bold uppercase tracking-widest">Mô tả</p>
+                    <div class="text-sm text-slate-300 leading-relaxed whitespace-pre-line">
+                        {{ $selectedListing['description'] }}
+                    </div>
+                </div>
+
+                <!-- Social Links -->
+                <div class="space-y-3 pb-8">
+                    <p class="text-[9px] text-slate-500 font-bold uppercase tracking-widest">Liên kết hỗ trợ</p>
+                    <div class="grid grid-cols-2 gap-2">
+                        @if (!empty($selectedListing['facebook_link']))
+                            <a href="{{ $selectedListing['facebook_link'] }}" target="_blank" class="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600/10 border border-blue-600/20 text-blue-400 hover:bg-blue-600/20 transition-all text-xs font-bold">
+                                <i class="fa-brands fa-facebook text-base"></i> Facebook
+                            </a>
+                        @endif
+                        @if (!empty($selectedListing['google_map_link']))
+                            <a href="{{ $selectedListing['google_map_link'] }}" target="_blank" class="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600/10 border border-emerald-600/20 text-emerald-400 hover:bg-emerald-600/20 transition-all text-xs font-bold">
+                                <i class="fa-solid fa-map-location-dot text-base"></i> Google Map
+                            </a>
+                        @endif
+                        @if (!empty($selectedListing['youtube_link']))
+                            <a href="{{ $selectedListing['youtube_link'] }}" target="_blank" class="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-red-600/10 border border-red-600/20 text-red-400 hover:bg-red-600/20 transition-all text-xs font-bold col-span-2">
+                                <i class="fa-brands fa-youtube text-base"></i> Video Review
+                            </a>
+                        @endif
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer Action -->
+            <div class="px-6 py-4 border-t border-white/5 bg-slate-900/50 flex gap-2">
+                <button @click="
+                    const text = `🏠 {{ $selectedListing['title'] }} \n📍 Vị trí: {{ $selectedListing['address'] }} \n💰 Giá: {{ number_format($selectedListing['price'], 0, ',', '.') }} {{ $selectedListing['price_unit'] == 1 ? 'VNĐ' : ($selectedListing['price_unit'] == 2 ? 'VNĐ/tháng' : 'VNĐ/m2') }} \n📐 Diện tích: {{ floatval($selectedListing['area']) }} m²`;
+                    navigator.clipboard.writeText(text);
+                    $dispatch('toast', { message: 'Đã copy thông tin tin đăng!', type: 'success' });
+                " class="flex-1 h-11 rounded-xl bg-white/5 border border-white/10 text-white font-bold text-xs uppercase tracking-widest hover:bg-white/10 transition-all flex items-center justify-center gap-2">
+                    <i class="fa-regular fa-copy"></i> Copy thông tin
+                </button>
+            </div>
+            @endif
         </div>
     </div>
 
     <style>
         .custom-scrollbar::-webkit-scrollbar { width: 2px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.05); border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
+        [x-cloak] { display: none !important; }
     </style>
 </div>
 

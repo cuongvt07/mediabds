@@ -4,7 +4,7 @@
     @if($mode === 'grid')
         wire:click="viewListingDetail({{ $listing['id'] }})"
     @else
-        wire:click="$set('userInput', 'xem chi tiết tin #{{ $listing['id'] }}'); sendMessage();"
+        wire:click="viewListingQuickly({{ $listing['id'] }})"
     @endif
     class="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow border border-gray-100 overflow-hidden flex flex-col md:flex-row h-auto {{ $mode === 'grid' ? 'md:h-52' : '' }} group cursor-pointer relative animate-[fadeIn_0.3s_ease-out] mb-3 last:mb-0">
     
