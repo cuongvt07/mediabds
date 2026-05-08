@@ -889,12 +889,19 @@ PROMPT;
                     'parameters' => [
                         'type' => 'object',
                         'properties' => [
-                            'query' => ['type' => 'string', 'description' => 'Từ khóa tìm kiếm (địa chỉ, tiêu đề)'],
+                            'query' => ['type' => 'string', 'description' => 'Từ khóa tìm kiếm (địa chỉ, tiêu đề, mã tin)'],
                             'type' => ['type' => 'string', 'enum' => ['Cần bán', 'Cho thuê', 'Cần mua'], 'description' => 'Loại hình'],
+                            'property_type' => ['type' => 'string', 'description' => 'Loại BĐS (Biệt thự, Căn hộ, Đất, Nhà phố, Khách sạn...)'],
                             'min_price' => ['type' => 'number', 'description' => 'Giá tối thiểu'],
                             'max_price' => ['type' => 'number', 'description' => 'Giá tối đa'],
                             'min_area' => ['type' => 'number', 'description' => 'Diện tích tối thiểu'],
                             'max_area' => ['type' => 'number', 'description' => 'Diện tích tối đa'],
+                            'province' => ['type' => 'string', 'description' => 'Tỉnh/Thành phố'],
+                            'district' => ['type' => 'string', 'description' => 'Quận/Huyện'],
+                            'ward' => ['type' => 'string', 'description' => 'Phường/Xã'],
+                            'direction' => ['type' => 'string', 'description' => 'Hướng nhà (Đông, Tây, Nam, Bắc, Đông Bắc...)'],
+                            'is_sold' => ['type' => 'boolean', 'description' => 'Trạng thái đã bán (true/false)'],
+                            'contact_phone' => ['type' => 'string', 'description' => 'Số điện thoại liên hệ'],
                             'sort_by' => ['type' => 'string', 'enum' => ['price', 'area', 'created_at'], 'description' => 'Trường sắp xếp'],
                             'sort_order' => ['type' => 'string', 'enum' => ['asc', 'desc'], 'description' => 'Thứ tự (asc/desc)'],
                             'limit' => ['type' => 'integer', 'description' => 'Số lượng kết quả (mặc định 5, tối đa 20)'],
@@ -1000,12 +1007,42 @@ PROMPT;
 
                 case 'search_listings':
                     $query = RealEstateListing::query();
-                    if (!empty($args['query'])) { $query->where(function($q) use ($args) { $q->where('title', 'like', '%' . $args['query'] . '%')->orWhere('address', 'like', '%' . $args['query'] . '%')->orWhere('contact_phone', 'like', '%' . $args['query'] . '%'); }); }
+                    if (!empty($args['query'])) {
+                        $term = trim($args['query']);
+                        $query->where(function($q) use ($term) {
+                            if (preg_match('/^[A-ZĐ]{1,3}\d+$/i', $term)) {
+                                $q->where('code', $term)->orWhere('title', 'like', '%' . $term . '%');
+                            } else {
+                                $q->where('title', 'like', '%' . $term . '%')
+                                  ->orWhere('address', 'like', '%' . $term . '%')
+                                  ->orWhere('code', 'like', '%' . $term . '%')
+                                  ->orWhere('contact_phone', 'like', '%' . $term . '%');
+                            }
+                        });
+                    }
                     if (!empty($args['type'])) $query->where('type', $args['type']);
                     if (isset($args['min_price'])) $query->where('price', '>=', $args['min_price']);
                     if (isset($args['max_price'])) $query->where('price', '<=', $args['max_price']);
                     if (isset($args['min_area'])) $query->where('area', '>=', $args['min_area']);
                     if (isset($args['max_area'])) $query->where('area', '<=', $args['max_area']);
+                    
+                    // Advanced Filters
+                    if (!empty($args['province'])) $query->where('province_name', 'like', '%' . $args['province'] . '%');
+                    if (!empty($args['district'])) $query->where('district_name', 'like', '%' . $args['district'] . '%');
+                    if (!empty($args['ward'])) $query->where('ward_name', 'like', '%' . $args['ward'] . '%');
+                    if (!empty($args['direction'])) $query->where('direction', 'like', '%' . $args['direction'] . '%');
+                    if (isset($args['is_sold'])) $query->where('is_sold', $args['is_sold']);
+                    if (!empty($args['contact_phone'])) $query->where('contact_phone', 'like', '%' . $args['contact_phone'] . '%');
+                    
+                    if (!empty($args['property_type'])) {
+                        $pTypes = [110 => 'Bất động sản khác', 102 => 'Biệt thự', 103 => 'Căn hộ', 104 => 'Đất', 105 => 'Đất nền', 106 => 'Mặt tiền', 107 => 'Nhà mặt phố', 111 => 'Nhà mặt phố', 108 => 'Nhà riêng', 109 => 'Trang trại', 112 => 'Khách sạn', 113 => 'Nhà nghỉ', 114 => 'Homestay', 115 => 'Nhà trọ'];
+                        $foundType = null;
+                        foreach($pTypes as $id => $name) {
+                            if (mb_stripos($name, $args['property_type']) !== false) { $foundType = $id; break; }
+                        }
+                        if ($foundType) $query->where('property_type', $foundType);
+                    }
+
                     $query->orderBy($args['sort_by'] ?? 'created_at', $args['sort_order'] ?? 'desc');
                     $results = $query->limit(min($args['limit'] ?? 5, 20))->get(['id', 'title', 'price', 'price_unit', 'area', 'address', 'type', 'is_sold', 'code', 'property_type', 'avatar', 'images']);
                     return ['status' => 'success', 'count' => $results->count(), 'format_hint' => 'BẮT BUỘC dùng [LISTING:ID] cho mỗi tin đăng, KHÔNG dùng bảng.', 'data' => $results->map(fn($r) => ['id' => $r->id, 'code' => $r->code, 'title' => $r->title, 'price_display' => number_format($r->price, 0, ',', '.') . ' ' . $r->price_unit, 'area' => $r->area . ' m2', 'address' => $r->address, 'status' => $r->is_sold ? 'Đã bán' : 'Còn trống'])];
@@ -1044,7 +1081,12 @@ PROMPT;
 
     public function getListingData($id)
     {
-        $listing = \App\Models\RealEstateListing::with(['reporter', 'user'])->find($id);
+        // Try finding by ID first, then by Code
+        $listing = \App\Models\RealEstateListing::with(['reporter', 'user'])
+            ->where('id', $id)
+            ->orWhere('code', $id)
+            ->orWhere('code', 'NR' . $id) // Handle common prefix if user just types the number
+            ->first();
         return $listing ? $listing->toArray() : null;
     }
 
