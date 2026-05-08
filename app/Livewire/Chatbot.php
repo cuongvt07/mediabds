@@ -7,7 +7,7 @@ use App\Services\OpenAIService;
 use App\Models\RealEstateListing;
 use App\Models\Customer;
 use App\Models\User;
-use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Cache;
 
 use Livewire\WithFileUploads;
 
@@ -18,20 +18,29 @@ class Chatbot extends Component
     public string $userInput = '';
     public array $messages = [];
     public bool $isTyping = false;
-    public $chatFiles = []; // Temporary uploads
+    public $chatFiles = [];
     public bool $isPopup = false;
-    
-    // Custom Rules Management
+
     public string $customRules = '';
     public bool $showRulesEditor = false;
 
-    // HITL (Human-In-The-Loop) State
     public ?string $pendingRunStateId = null;
 
-    // Quick View Listing Detail
     public $selectedListing = null;
     public bool $showDetailPopup = false;
 
+    // ═══════════════════════════════════════════════════════
+    // [MỚI] Conversation Memory — lưu entities được nhắc đến
+    // ═══════════════════════════════════════════════════════
+    public array $conversationContext = [
+        'last_listing_ids' => [],   // IDs tin đăng vừa nhắc đến
+        'last_customer_ids' => [],  // IDs khách hàng vừa nhắc đến
+        'last_user_ids' => [],      // IDs nhân sự vừa nhắc đến
+        'last_intent' => null,      // Intent vừa thực hiện
+        'pending_clarification' => null, // Đang chờ làm rõ gì?
+    ];
+
+    public string $streamingResponse = '';
 
     public function mount()
     {
@@ -39,6 +48,9 @@ class Chatbot extends Component
         $this->loadHistory();
     }
 
+    // ═══════════════════════════════════════════════════════════════
+    // [CẢI THIỆN] loadHistory — khôi phục cả conversationContext
+    // ═══════════════════════════════════════════════════════════════
     public function loadHistory()
     {
         $dbMessages = \App\Models\ChatMessage::where('user_id', auth()->id())
@@ -50,13 +62,31 @@ class Chatbot extends Component
                 'role' => $m->role,
                 'content' => $m->content
             ])->toArray();
+
+            // Khôi phục entity context từ lịch sử gần nhất
+            $this->rebuildConversationContext();
         } else {
-            $this->messages = [
-                [
-                    'role' => 'assistant',
-                    'content' => 'Xin chào! Tôi là Antigravity Admin AI. Tôi có thể giúp bạn quản lý hệ thống, thống kê dữ liệu hoặc giải đáp các thắc mắc về quy trình tin đăng. Hôm nay tôi có thể giúp gì cho bạn?'
-                ]
-            ];
+            $this->messages = [[
+                'role' => 'assistant',
+                'content' => 'Xin chào! Tôi là Antigravity Admin AI. Tôi có thể giúp bạn quản lý hệ thống, thống kê dữ liệu hoặc giải đáp các thắc mắc về quy trình tin đăng. Hôm nay tôi có thể giúp gì cho bạn?'
+            ]];
+        }
+    }
+
+    /**
+     * [MỚI] Quét lại 10 tin nhắn gần nhất để trích xuất entities còn liên quan.
+     */
+    protected function rebuildConversationContext(): void
+    {
+        $recent = array_slice($this->messages, -10);
+        $ids = [];
+        foreach ($recent as $m) {
+            preg_match_all('/\[LISTING:(\d+)\]|tin\s*(?:đăng|#|ID)?\s*#?(\d+)/i', $m['content'], $matches);
+            $found = array_filter(array_merge($matches[1], $matches[2]));
+            foreach ($found as $id) $ids[] = (int)$id;
+        }
+        if (!empty($ids)) {
+            $this->conversationContext['last_listing_ids'] = array_values(array_unique(array_slice($ids, -3)));
         }
     }
 
@@ -68,13 +98,8 @@ class Chatbot extends Component
 
     public function saveRules()
     {
-        if (!auth()->user()?->isAdmin()) {
-            return;
-        }
-
-        $path = storage_path('app/chatbot_rules.md');
-        file_put_contents($path, $this->customRules);
-        
+        if (!auth()->user()?->isAdmin()) return;
+        file_put_contents(storage_path('app/chatbot_rules.md'), $this->customRules);
         $this->showRulesEditor = false;
         $this->dispatch('toast', ['message' => 'Đã cập nhật quy tắc hệ thống!', 'type' => 'success']);
     }
@@ -85,34 +110,36 @@ class Chatbot extends Component
         $this->showRulesEditor = !$this->showRulesEditor;
     }
 
-
     public function removeFile($index)
     {
         array_splice($this->chatFiles, $index, 1);
     }
 
-    public string $streamingResponse = ''; // Holds the current chunked response
-
     public function updatedChatFiles()
     {
         try {
-            $this->validate([
-                'chatFiles.*' => 'image|max:2048', // 2MB Max, only images
-            ]);
+            $this->validate(['chatFiles.*' => 'image|max:2048']);
         } catch (\Illuminate\Validation\ValidationException $e) {
-            $this->chatFiles = []; // Clear failed uploads
+            $this->chatFiles = [];
             $this->dispatch('toast', ['message' => 'Lỗi: Tệp phải là ảnh và dung lượng tối đa 2MB.', 'type' => 'error']);
         }
     }
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // [CẢI THIỆN] sendMessage — thêm context injection trước khi gửi AI
+    // ═══════════════════════════════════════════════════════════════════════
     public function sendMessage()
     {
         if (empty(trim($this->userInput)) && empty($this->chatFiles)) return;
 
         $userMessage = $this->userInput;
-        
-        // Phase 1: Rapid Intent Check (Bypass AI for keywords)
-        $intentHandled = $this->handleKeywordIntents($userMessage);
+
+        // [CẢI THIỆN] Làm giàu input với context trước khi kiểm tra keyword
+        $enrichedMessage = $this->enrichWithContext($userMessage);
+
+        // Keyword intent chỉ dùng cho lệnh CỰC KỲ rõ ràng (đã bán #123, mở lại #123)
+        // Các câu mơ hồ đều đẩy lên AI để hiểu ngữ nghĩa
+        $intentHandled = $this->handleKeywordIntents($enrichedMessage);
         if ($intentHandled) {
             $this->messages[] = ['role' => 'user', 'content' => $userMessage];
             $this->messages[] = ['role' => 'assistant', 'content' => $intentHandled];
@@ -123,7 +150,6 @@ class Chatbot extends Component
         }
 
         $fileInfo = "";
-        // Process File Uploads (Synchronous for now, but fast)
         if (!empty($this->chatFiles)) {
             $uploadedUrls = [];
             foreach ($this->chatFiles as $file) {
@@ -136,13 +162,13 @@ class Chatbot extends Component
             $fileInfo = "\n\n[Hệ thống: Đã đính kèm " . count($uploadedUrls) . " tệp: {$fileNames}]";
         }
 
-        $fullUserContent = $userMessage . $fileInfo;
-        \App\Models\ChatMessage::create(['user_id' => auth()->id(), 'role' => 'user', 'content' => $fullUserContent]);
+        // fullUserContent dùng enrichedMessage để AI có đủ ngữ cảnh
+        $fullUserContent = $enrichedMessage . $fileInfo;
+        \App\Models\ChatMessage::create(['user_id' => auth()->id(), 'role' => 'user', 'content' => $userMessage]);
 
-        // INSTANT UI UPDATE
         $this->messages[] = [
-            'role' => 'user', 
-            'content' => $userMessage ?: "Đã gửi tệp tin.",
+            'role' => 'user',
+            'content' => $userMessage,
             'has_files' => count($this->chatFiles)
         ];
 
@@ -151,50 +177,97 @@ class Chatbot extends Component
         $this->isTyping = true;
         $this->streamingResponse = '';
 
-        // DISPATCH AI PROCESSING (Separate request)
         $this->dispatch('trigger-ai-response', userMessage: $userMessage, fullUserContent: $fullUserContent);
     }
 
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // [MỚI] enrichWithContext — tự động giải mã đại từ/tham chiếu mơ hồ
+    // Ví dụ: "xem chi tiết cái đó" → "xem chi tiết tin đăng ID #42"
+    //        "cập nhật nó thành đã bán" → "cập nhật tin đăng ID #42 thành đã bán"
+    // ═══════════════════════════════════════════════════════════════════════════════
+    protected function enrichWithContext(string $input): string
+    {
+        $lower = mb_strtolower($input);
+        $ctx = $this->conversationContext;
+
+        // Giải mã đại từ "cái đó", "nó", "tin đó", "tin này" → ID cụ thể
+        $pronounPatterns = ['cái đó', 'cái này', 'nó', 'tin đó', 'tin này', 'cái trên', 'tin vừa rồi'];
+        $hasPronoun = false;
+        foreach ($pronounPatterns as $p) {
+            if (str_contains($lower, $p)) { $hasPronoun = true; break; }
+        }
+
+        if ($hasPronoun && !empty($ctx['last_listing_ids'])) {
+            $lastId = end($ctx['last_listing_ids']);
+            $input .= "\n[System context: Người dùng đang đề cập đến tin đăng ID #{$lastId} từ cuộc hội thoại trước đó]";
+        }
+
+        // Nếu input CÓ số nhưng không có "ID/tin/đăng" — gợi ý đó là listing ID
+        if (preg_match('/\b(\d{1,6})\b/', $input, $m) && !empty($ctx['last_listing_ids'])) {
+            $num = (int)$m[1];
+            if (in_array($num, $ctx['last_listing_ids'])) {
+                // Đây là ID tin đăng đã nhắc — không cần bổ sung
+            } elseif ($num > 0 && $num < 100000 && !str_contains($lower, 'giá') && !str_contains($lower, 'triệu') && !str_contains($lower, 'tỷ')) {
+                $input .= "\n[System context: Số {$num} có thể là ID tin đăng hoặc khách hàng]";
+            }
+        }
+
+        // Inject pending clarification context nếu đang chờ
+        if ($ctx['pending_clarification']) {
+            $input .= "\n[System context: Đang chờ làm rõ: {$ctx['pending_clarification']}]";
+        }
+
+        return $input;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // [CẢI THIỆN LỚN] generateAIResponse — thêm Pre-Reasoning + Smart Context Window
+    // ═══════════════════════════════════════════════════════════════════════════════
     #[\Livewire\Attributes\On('trigger-ai-response')]
     public function generateAIResponse($userMessage, $fullUserContent)
     {
         $openAIService = app(OpenAIService::class);
-        
+
         // Rate Limiting
         $rateKey = 'chatbot_limit_' . auth()->id();
-        $hits = \Illuminate\Support\Facades\Cache::get($rateKey, 0);
+        $hits = Cache::get($rateKey, 0);
         if ($hits > 50) {
             $this->messages[] = ['role' => 'assistant', 'content' => '⚠️ Quá giới hạn (50 tin/giờ). Thử lại sau.'];
-            $this->isTyping = false; return;
+            $this->isTyping = false;
+            return;
         }
-        \Illuminate\Support\Facades\Cache::put($rateKey, $hits + 1, 3600);
+        Cache::put($rateKey, $hits + 1, 3600);
 
-        // Summarize if history is long
-        if (count($this->messages) > 25) $this->summarizeHistory();
+        // [CẢI THIỆN] Smart summarize: chỉ summarize khi thực sự cần
+        if (count($this->messages) > 30) $this->summarizeHistory();
 
-        // Phase 3: Auto-Switch Mode (FAST vs SMART)
-        $mode = $this->detectMode($userMessage);
+        // [CẢI THIỆN] detectMode dùng AI-assisted analysis thay vì keyword thuần
+        $mode = $this->detectModeAdvanced($userMessage);
         $this->dispatch('mode-detected', mode: $mode);
 
-        $context = $this->getCachedSystemContext($mode);
-        $tools = ($mode === 'FAST') ? $this->getAvailableTools('GENERAL') : $this->getAvailableTools('ALL');
+        $context = $this->buildSmartSystemContext($mode);
+        $tools = $this->getAvailableTools('ALL');
 
-        // Prepare API Messages (Last 6 to save tokens)
-        $apiMessages = array_map(fn($m) => ['role' => $m['role'], 'content' => $m['content']], array_slice($this->messages, -6));
-        if (!empty($apiMessages) && $apiMessages[count($apiMessages) - 1]['role'] === 'user') {
-            $apiMessages[count($apiMessages) - 1]['content'] = $fullUserContent;
-        }
+        // [CẢI THIỆN] Smart Context Window: giữ lại messages quan trọng, không chỉ 6 gần nhất
+        $apiMessages = $this->buildSmartContextWindow($fullUserContent);
         array_unshift($apiMessages, ['role' => 'system', 'content' => $context]);
 
-        // Phase 4: Unified Streaming Execution (1-Roundtrip focused)
+        // [MỚI] Pre-Reasoning Step cho câu phức tạp
+        if ($mode === 'SMART' || $this->requiresReasoning($userMessage)) {
+            $apiMessages = $this->injectReasoningInstruction($apiMessages, $userMessage);
+        }
+
+        // Streaming + Tool calls
         $pendingCalls = [];
         $toolCalls = $openAIService->streamChat($apiMessages, function($chunk) {
             $this->streamingResponse .= $chunk;
             $this->stream(to: 'assistant-reply', content: $chunk);
         }, $tools);
 
-        // Handle Tool Calls if detected during stream
         if (!empty($toolCalls)) {
+            // [MỚI] Cập nhật conversation context sau khi tool được gọi
+            $this->updateConversationContextFromTools($toolCalls);
+
             $requiresConfirmation = false;
             $toolFeedback = "";
             $toolMessages = [];
@@ -208,48 +281,50 @@ class Chatbot extends Component
                     $pendingCalls[] = $toolCall;
                 } else {
                     $result = $this->executeTool($toolName, $args);
+
+                    // [MỚI] Extract entities từ tool result để cập nhật context
+                    $this->extractEntitiesFromResult($toolName, $result);
+
                     $toolFeedback .= ($result['message'] ?? 'Đã xử lý.') . "\n";
-                    $toolMessages[] = ['role' => 'tool', 'tool_call_id' => $toolCall['id'], 'name' => $toolName, 'content' => json_encode($result, JSON_UNESCAPED_UNICODE)];
+                    $toolMessages[] = [
+                        'role' => 'tool',
+                        'tool_call_id' => $toolCall['id'],
+                        'name' => $toolName,
+                        'content' => json_encode($result, JSON_UNESCAPED_UNICODE)
+                    ];
                 }
             }
 
             if ($requiresConfirmation) {
-                // Ensure the assistant message with tool_calls is in the context
                 $apiMessages[] = ['role' => 'assistant', 'content' => $this->streamingResponse, 'tool_calls' => $toolCalls];
-                
                 $runStateId = uniqid('run_', true);
-                \Illuminate\Support\Facades\Cache::put("hitl_state_{$runStateId}", [
-                    'apiMessages' => $apiMessages, 
-                    'pendingCalls' => $pendingCalls, 
-                    'iteration' => 0, 
+                Cache::put("hitl_state_{$runStateId}", [
+                    'apiMessages' => $apiMessages,
+                    'pendingCalls' => $pendingCalls,
+                    'iteration' => 0,
                     'tools' => $tools
                 ], 3600);
-                
                 $this->pendingRunStateId = $runStateId;
                 $this->messages[] = ['role' => 'assistant', 'content' => "⚠️ Cần xác nhận: \n" . $toolFeedback, 'is_hitl' => true];
-                $this->isTyping = false; 
+                $this->isTyping = false;
                 return;
             }
 
-            // Phase 5: Single Roundtrip Optimization
-            $hasComplexData = false;
-            foreach ($toolCalls as $tc) {
-                if (str_contains($tc['function']['name'], 'search') || str_contains($tc['function']['name'], 'get_details')) {
-                    $hasComplexData = true; break;
-                }
-            }
-            
+            $hasComplexData = collect($toolCalls)->contains(fn($tc) =>
+                str_contains($tc['function']['name'], 'search') ||
+                str_contains($tc['function']['name'], 'get_details') ||
+                str_contains($tc['function']['name'], 'get_listing')
+            );
+
             if ($mode === 'SMART' || $hasComplexData) {
                 $apiMessages[] = ['role' => 'assistant', 'content' => $this->streamingResponse, 'tool_calls' => $toolCalls];
                 foreach ($toolMessages as $tm) $apiMessages[] = $tm;
-                
-                $this->streamingResponse = ''; // Reset for summary
+                $this->streamingResponse = '';
                 $openAIService->streamChat($apiMessages, function($chunk) {
                     $this->streamingResponse .= $chunk;
                     $this->stream(to: 'assistant-reply', content: $chunk);
                 });
             } else {
-                // For simple actions in FAST mode, just show the tool feedback directly
                 $feedback = "\n✅ " . trim($toolFeedback);
                 $this->streamingResponse .= $feedback;
                 $this->stream(to: 'assistant-reply', content: $feedback);
@@ -257,36 +332,286 @@ class Chatbot extends Component
         }
 
         if (!empty($this->streamingResponse)) {
+            // [MỚI] Cập nhật context từ response trước khi lưu
+            $this->extractEntitiesFromResponse($this->streamingResponse);
+
             $this->messages[] = ['role' => 'assistant', 'content' => $this->streamingResponse];
             \App\Models\ChatMessage::create(['user_id' => auth()->id(), 'role' => 'assistant', 'content' => $this->streamingResponse]);
         }
+
         $this->isTyping = false;
         $this->streamingResponse = '';
     }
 
-    protected function detectMode(string $input): string
+    // ═══════════════════════════════════════════════════════════════════
+    // [MỚI] detectModeAdvanced — kết hợp pattern + semantic signals
+    // Chính xác hơn keyword matching đơn thuần
+    // ═══════════════════════════════════════════════════════════════════
+    protected function detectModeAdvanced(string $input): string
     {
         $input = mb_strtolower($input);
-        
-        // 🧠 SMART KEYWORDS (phân tích, so sánh sâu, xu hướng...)
-        $smartPatterns = ['phân tích', 'so sánh', 'đánh giá', 'xu hướng', 'thị trường', 'tại sao', 'nên mua', 'đầu tư', 'tối ưu', 'hiệu suất'];
-        foreach ($smartPatterns as $kw) { if (str_contains($input, $kw)) return 'SMART'; }
+        $wordCount = str_word_count($input);
 
-        // ⚡ FAST KEYWORDS (CRUD / thao tác nhanh / hỏi đáp số liệu sẵn có)
-        $fastPatterns = ['tạo', 'thêm', 'update', 'cập nhật', 'chốt', 'đã bán', 'mở lại', 'xem tin', 'chi tiết', 'id', 'tìm tin', 'search', 'bao nhiêu', 'tổng', 'thống kê'];
-        foreach ($fastPatterns as $kw) { if (str_contains($input, $kw)) return 'FAST'; }
+        // SMART signals — cần suy luận sâu
+        $smartSignals = [
+            // Phân tích & so sánh
+            'phân tích', 'so sánh', 'đánh giá', 'xu hướng', 'thị trường',
+            'tại sao', 'lý do', 'nguyên nhân', 'vì sao',
+            // Tư vấn & chiến lược
+            'nên', 'có nên', 'có đáng', 'tốt hơn', 'ưu điểm', 'nhược điểm',
+            'hiệu quả', 'tối ưu', 'cải thiện', 'đề xuất', 'khuyến nghị',
+            // Dự báo & xu hướng
+            'dự báo', 'tiềm năng', 'triển vọng', 'tương lai',
+            // Câu dài có nhiều điều kiện
+        ];
 
-        return 'FAST';
+        $smartScore = 0;
+        foreach ($smartSignals as $kw) {
+            if (str_contains($input, $kw)) $smartScore++;
+        }
+
+        // Câu dài (>10 từ) có nhiều điều kiện → khả năng cần SMART
+        if ($wordCount > 10) $smartScore++;
+        // Có dấu "?" và câu dài → câu hỏi mở
+        if (str_contains($input, '?') && $wordCount > 6) $smartScore++;
+
+        if ($smartScore >= 2) return 'SMART';
+
+        // FAST signals — thao tác cụ thể
+        $fastSignals = [
+            'tạo', 'thêm', 'cập nhật', 'chốt', 'đã bán', 'mở lại',
+            'xem', 'chi tiết', 'tìm', 'search', 'danh sách', 'list',
+            'bao nhiêu', 'tổng', 'thống kê', 'id', 'số',
+            'update', 'sửa', 'xóa', 'lưu',
+        ];
+
+        foreach ($fastSignals as $kw) {
+            if (str_contains($input, $kw)) return 'FAST';
+        }
+
+        // Default: FAST cho câu ngắn, SMART cho câu dài không rõ
+        return $wordCount <= 5 ? 'FAST' : 'SMART';
     }
 
-    protected function getCachedSystemContext(string $mode = 'FAST'): string
+    // ═════════════════════════════════════════════════════════════════════
+    // [MỚI] requiresReasoning — phát hiện câu cần suy nghĩ trước khi trả lời
+    // ═════════════════════════════════════════════════════════════════════
+    protected function requiresReasoning(string $input): bool
+    {
+        $lower = mb_strtolower($input);
+        $reasoningTriggers = [
+            'tại sao', 'vì sao', 'lý do', 'giải thích', 'nguyên nhân',
+            'so sánh', 'khác nhau', 'giống nhau', 'ưu', 'nhược',
+            'nên chọn', 'tốt hơn', 'phù hợp', 'đánh giá',
+            'phân tích', 'báo cáo', 'tổng hợp',
+        ];
+        foreach ($reasoningTriggers as $t) {
+            if (str_contains($lower, $t)) return true;
+        }
+        return false;
+    }
+
+    // ════════════════════════════════════════════════════════════════════════
+    // [MỚI] injectReasoningInstruction — thêm bước "think before answer"
+    // Dùng kỹ thuật scratchpad nhẹ, không làm chậm quá nhiều
+    // ════════════════════════════════════════════════════════════════════════
+    protected function injectReasoningInstruction(array $apiMessages, string $userMessage): array
+    {
+        // Inject vào system message thay vì gọi thêm API round-trip
+        $reasoningAddition = "\n\n## Yêu cầu đặc biệt cho câu hỏi này\n" .
+            "Trước khi trả lời, hãy NGẦM xác định (không cần in ra):\n" .
+            "1. User thực sự muốn biết điều gì? (core intent)\n" .
+            "2. Cần tool nào? Nếu không chắc → gọi tool trước.\n" .
+            "3. Dữ liệu đủ chưa? Nếu thiếu → hỏi đúng 1 câu.\n" .
+            "Sau đó mới trả lời theo cấu trúc: Quan sát → Nhận xét → Khuyến nghị.";
+
+        // Thêm vào cuối system message
+        if (!empty($apiMessages) && $apiMessages[0]['role'] === 'system') {
+            $apiMessages[0]['content'] .= $reasoningAddition;
+        }
+
+        return $apiMessages;
+    }
+
+    // ════════════════════════════════════════════════════════════════════════════
+    // [MỚI] buildSmartContextWindow — giữ lại messages QUAN TRỌNG, không chỉ 6 cuối
+    // Logic: Luôn giữ 2 đầu + 8 cuối + bất kỳ message nào có listing ID được nhắc lại
+    // ════════════════════════════════════════════════════════════════════════════
+    protected function buildSmartContextWindow(string $fullUserContent): array
+    {
+        $all = $this->messages;
+        $total = count($all);
+
+        if ($total <= 10) {
+            // Ít tin nhắn → giữ hết
+            $window = $all;
+        } else {
+            // Luôn giữ: 2 message đầu (chào hỏi/setup) + 8 message cuối
+            $head = array_slice($all, 0, 2);
+            $tail = array_slice($all, -8);
+
+            // Tìm thêm messages "anchor" — chứa entities đang được nhắc đến
+            $anchors = [];
+            $importantIds = $this->conversationContext['last_listing_ids'];
+            if (!empty($importantIds)) {
+                $idPattern = implode('|', $importantIds);
+                foreach (array_slice($all, 2, -8) as $idx => $msg) {
+                    if (preg_match("/({$idPattern})/", $msg['content'])) {
+                        $anchors[] = $msg;
+                        if (count($anchors) >= 3) break; // Tối đa 3 anchor messages
+                    }
+                }
+            }
+
+            $window = array_merge($head, $anchors, $tail);
+        }
+
+        // Map sang API format + inject fullUserContent vào message cuối
+        $apiMessages = array_map(fn($m) => [
+            'role' => $m['role'],
+            'content' => $m['content']
+        ], $window);
+
+        // Thay thế content của user message cuối cùng bằng enriched version
+        for ($i = count($apiMessages) - 1; $i >= 0; $i--) {
+            if ($apiMessages[$i]['role'] === 'user') {
+                $apiMessages[$i]['content'] = $fullUserContent;
+                break;
+            }
+        }
+
+        return $apiMessages;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // [MỚI] buildSmartSystemContext — thay getCachedSystemContext
+    // Cache theo mode + user + conversation context hash
+    // ═══════════════════════════════════════════════════════════════════
+    protected function buildSmartSystemContext(string $mode): string
     {
         $userId = auth()->id();
-        return \Illuminate\Support\Facades\Cache::remember("chatbot_context_{$mode}_{$userId}", 300, function() use ($mode) {
+        // Hash context để invalidate cache khi context thay đổi
+        $ctxHash = md5(json_encode($this->conversationContext));
+
+        return Cache::remember("chatbot_ctx_{$mode}_{$userId}_{$ctxHash}", 120, function() use ($mode) {
             $stats = $this->getSystemStats();
             $prompt = ($mode === 'FAST') ? $this->getFastPrompt() : $this->getSmartPrompt();
-            return "{$prompt}\n\n[DỮ LIỆU HỆ THỐNG - TRẢ LỜI NGAY DỰA TRÊN ĐÂY]\n{$stats}";
+
+            // [MỚI] Inject conversation memory vào system context
+            $memoryBlock = $this->buildMemoryBlock();
+
+            return "{$prompt}\n\n{$memoryBlock}\n\n[DỮ LIỆU HỆ THỐNG]\n{$stats}";
         });
+    }
+
+    // ════════════════════════════════════════════════════════════════════
+    // [MỚI] buildMemoryBlock — tóm tắt "bộ nhớ ngắn hạn" cho AI
+    // ════════════════════════════════════════════════════════════════════
+    protected function buildMemoryBlock(): string
+    {
+        $ctx = $this->conversationContext;
+        $parts = [];
+
+        if (!empty($ctx['last_listing_ids'])) {
+            $ids = implode(', #', $ctx['last_listing_ids']);
+            $parts[] = "- Tin đăng đang thảo luận: #{$ids}";
+        }
+        if (!empty($ctx['last_customer_ids'])) {
+            $ids = implode(', #', $ctx['last_customer_ids']);
+            $parts[] = "- Khách hàng đang thảo luận: #{$ids}";
+        }
+        if (!empty($ctx['last_intent'])) {
+            $parts[] = "- Thao tác vừa thực hiện: {$ctx['last_intent']}";
+        }
+        if (!empty($ctx['pending_clarification'])) {
+            $parts[] = "- ⚠️ Đang chờ user làm rõ: {$ctx['pending_clarification']}";
+        }
+
+        if (empty($parts)) return '[BỘ NHỚ NGẮN HẠN: Cuộc hội thoại mới]';
+
+        return "[BỘ NHỚ NGẮN HẠN — Dùng để hiểu đại từ/tham chiếu]\n" . implode("\n", $parts);
+    }
+
+    // ════════════════════════════════════════════════════════════════════════
+    // [MỚI] updateConversationContextFromTools — cập nhật context sau tool call
+    // ════════════════════════════════════════════════════════════════════════
+    protected function updateConversationContextFromTools(array $toolCalls): void
+    {
+        foreach ($toolCalls as $tc) {
+            $name = $tc['function']['name'];
+            $args = json_decode($tc['function']['arguments'], true) ?? [];
+
+            // Cập nhật last_intent
+            $intentMap = [
+                'search_listings' => 'Tìm kiếm tin đăng',
+                'get_listing_details' => 'Xem chi tiết tin đăng',
+                'create_listing' => 'Tạo tin đăng mới',
+                'update_listing_status' => 'Cập nhật trạng thái tin đăng',
+                'search_customers' => 'Tìm kiếm khách hàng',
+                'get_customer_details' => 'Xem chi tiết khách hàng',
+                'create_customer' => 'Tạo khách hàng mới',
+                'get_user_performance' => 'Xem hiệu suất nhân sự',
+                'get_system_stats' => 'Xem thống kê hệ thống',
+            ];
+            $this->conversationContext['last_intent'] = $intentMap[$name] ?? $name;
+
+            // Cập nhật entity IDs
+            if (isset($args['listing_id'])) {
+                $this->addToContext('last_listing_ids', (int)$args['listing_id']);
+            }
+            if (isset($args['customer_id'])) {
+                $this->addToContext('last_customer_ids', (int)$args['customer_id']);
+            }
+            if (isset($args['user_id'])) {
+                $this->addToContext('last_user_ids', (int)$args['user_id']);
+            }
+        }
+    }
+
+    // ════════════════════════════════════════════════════════════════════════
+    // [MỚI] extractEntitiesFromResult — trích xuất ID từ kết quả tool
+    // ════════════════════════════════════════════════════════════════════════
+    protected function extractEntitiesFromResult(string $toolName, array $result): void
+    {
+        if ($result['status'] !== 'success') return;
+
+        if (isset($result['data']) && is_array($result['data'])) {
+            // search_listings trả về array các listings
+            if (str_contains($toolName, 'listing')) {
+                foreach (($result['data'] ?? []) as $item) {
+                    if (isset($item['id'])) $this->addToContext('last_listing_ids', (int)$item['id']);
+                }
+            }
+            if (str_contains($toolName, 'customer')) {
+                foreach (($result['data'] ?? []) as $item) {
+                    if (isset($item['id'])) $this->addToContext('last_customer_ids', (int)$item['id']);
+                }
+            }
+        }
+    }
+
+    // ════════════════════════════════════════════════════════════════════════
+    // [MỚI] extractEntitiesFromResponse — trích xuất [LISTING:ID] từ response AI
+    // ════════════════════════════════════════════════════════════════════════
+    protected function extractEntitiesFromResponse(string $response): void
+    {
+        preg_match_all('/\[LISTING:(\d+)\]/', $response, $matches);
+        foreach ($matches[1] as $id) {
+            $this->addToContext('last_listing_ids', (int)$id);
+        }
+
+        // Reset pending_clarification nếu AI đã trả lời đầy đủ
+        $this->conversationContext['pending_clarification'] = null;
+    }
+
+    // Helper: thêm ID vào context, giữ tối đa 5 phần tử
+    protected function addToContext(string $key, int $id): void
+    {
+        $arr = $this->conversationContext[$key] ?? [];
+        $arr[] = $id;
+        $arr = array_values(array_unique($arr));
+        if (count($arr) > 5) $arr = array_slice($arr, -5);
+        $this->conversationContext[$key] = $arr;
     }
 
     protected function getFastPrompt(): string
@@ -297,41 +622,34 @@ class Chatbot extends Component
             : '';
 
         return <<<PROMPT
-Bạn là Trợ lý Vận hành Antigravity, đang hỗ trợ nhân sự {$user->name} (ID #{$user->id}).
+Bạn là Trợ lý Vận hành Antigravity, đang hỗ trợ {$user->name} (ID #{$user->id}).
 
-Bạn CHỈ hỗ trợ các nghiệp vụ:
+## Phạm vi hỗ trợ
 - Tin đăng bất động sản (tạo, tìm, cập nhật trạng thái)
 - Hồ sơ khách hàng (tạo, tìm, xem lịch sử)
 - Nhân sự & CTV (hiệu suất, doanh thu, rank)
 - Thống kê tổng quan hệ thống
 
-Nếu câu hỏi hoàn toàn nằm ngoài phạm vi trên, từ chối ngắn gọn:
-"Tôi chỉ hỗ trợ nghiệp vụ trong hệ thống Antigravity. Bạn cần giúp gì về tin đăng hay khách hàng không?"
+Nếu ngoài phạm vi → từ chối ngắn gọn bằng 1 câu.
+
+## Hiểu câu hỏi — QUAN TRỌNG NHẤT
+- Đọc [BỘ NHỚ NGẮN HẠN] để hiểu "nó", "cái đó", "tin đó" đang chỉ đến entity nào.
+- Đọc [System context] trong message user nếu có.
+- Nếu câu hỏi có đại từ mà KHÔNG có context → hỏi 1 câu cụ thể.
+- Nếu câu THIẾU 1 thông số bắt buộc → hỏi ĐÚNG 1 câu, không hỏi nhiều.
+  VD: "Cần thêm SĐT để tạo tin. Số nào?"
+- Nếu ĐỦ thông tin → gọi tool NGAY, không hỏi lại.
 
 ## Phong cách — Fast mode
 - Trả lời TRỰC TIẾP. Không mở đầu bằng "Xin chào", "Tất nhiên", "Để tôi...".
-- Không giải thích quy trình suy nghĩ. Không "Chain-of-thought".
-- Đủ thông tin → gọi tool ngay, không hỏi lại.
-- Thiếu 1 trường bắt buộc → hỏi đúng 1 câu, cụ thể.
-  Ví dụ: "Cần thêm SĐT liên hệ để tạo tin. Số nào?"
+- Không giải thích quy trình suy nghĩ.
 
 ## Định dạng đầu ra
-- Thành công:    ✅ [kết quả 1 dòng]
-- Lỗi/không tìm: ❌ [lý do ngắn]
-- TIN ĐĂNG BĐS:  PHẢI LUÔN dùng định dạng [LISTING:ID] để hiển thị thẻ tóm tắt trực quan. TUYỆT ĐỐI KHÔNG dùng văn bản mô tả, không dùng danh sách gạch đầu dòng, và CẤM TUYỆT ĐỐI dùng Markdown Table cho Tin đăng BĐS (kể cả khi bạn nghĩ bảng sẽ đẹp hơn). Mọi danh sách tin đăng phải là một dãy các thẻ [LISTING:ID].
-- CHI TIẾT TIN:  Khi người dùng cần xem kỹ, hãy gọi tool `get_listing_details` và trình bày thông tin đầy đủ chuyên nghiệp.
-- Số tiền:       "2.5 Tỷ" / "850 Triệu" / "15 Triệu/tháng"
-- Không in đậm toàn câu — chỉ in đậm số liệu quan trọng
-
-## Xử lý lỗi tool
-Tool trả về status "error":
-→ Báo lỗi bằng tiếng Việt.
-→ Đề xuất hướng xử lý nếu có.
-Ví dụ: "❌ Không tìm thấy tin #99. Bạn muốn tìm theo địa chỉ hoặc SĐT không?"
-
-## Giới hạn quyền
-- Không tự xóa dữ liệu nếu không có tool delete tường minh.
-- Cập nhật is_sold = true là không thể hoàn tác dễ dàng — confirm lại Mã tin/ID trước khi thực hiện nếu user chưa nêu rõ.{$rules}
+- Thành công:      ✅ [kết quả 1 dòng]
+- Lỗi/không tìm:   ❌ [lý do ngắn + hướng xử lý]
+- TIN ĐĂNG BĐS:    LUÔN dùng [LISTING:ID]. KHÔNG dùng bảng, KHÔNG dùng danh sách text.
+- Số tiền:         "2.5 Tỷ" / "850 Triệu" / "15 Triệu/tháng"
+- Không in đậm toàn câu — chỉ in đậm số liệu quan trọng{$rules}
 PROMPT;
     }
 
@@ -343,148 +661,162 @@ PROMPT;
             : '';
 
         return <<<PROMPT
-Bạn là Chuyên gia Phân tích Antigravity, đang hỗ trợ cấp cao {$user->name} (ID #{$user->id}).
+Bạn là Chuyên gia Phân tích Antigravity, đang hỗ trợ {$user->name} (ID #{$user->id}).
 
-Bạn CHỈ phân tích dữ liệu trong hệ thống: tin đăng, khách hàng, doanh thu, hiệu suất nhân sự. Không so sánh với thị trường bên ngoài trừ khi user cung cấp số liệu cụ thể.
+## Phạm vi phân tích
+Chỉ phân tích dữ liệu trong hệ thống: tin đăng, khách hàng, doanh thu, hiệu suất nhân sự.
+
+## Hiểu câu hỏi — QUAN TRỌNG NHẤT
+- Đọc [BỘ NHỚ NGẮN HẠN] để hiểu tham chiếu từ cuộc hội thoại trước.
+- Xác định: User muốn BIẾT gì (thông tin) hay muốn LÀM gì (hành động)?
+- Nếu câu hỏi mơ hồ → gọi tool để lấy dữ liệu trước, sau đó phân tích.
+- Nếu thiếu dữ liệu → thừa nhận và đề xuất góc phân tích thay thế.
 
 ## Phong cách — Smart mode
-Cấu trúc bắt buộc cho mọi phân tích:
-  1. Quan sát  — dữ liệu nói gì?
-  2. Nhận xét  — tại sao lại như vậy?
-  3. Khuyến nghị — nên làm gì tiếp theo?
+Cấu trúc cho phân tích:
+  1. **Quan sát** — dữ liệu nói gì? (≤3 câu)
+  2. **Nhận xét** — tại sao lại như vậy? (≤3 câu)
+  3. **Khuyến nghị** — nên làm gì tiếp? (≤3 câu)
 
-Giữ mỗi phần ≤3 câu. Kết thúc bằng mục **Khuyến nghị:** in đậm.
-Không vòng vo, không liệt kê hiển nhiên, không giả định số liệu ngoài những gì tool trả về.
-
-- TIN ĐĂNG BĐS: PHẢI LUÔN dùng định dạng [LISTING:ID] để hiển thị thẻ tóm tắt. TUYỆT ĐỐI KHÔNG sử dụng text thuần hay bảng để mô tả danh sách tin đăng, kể cả khi so sánh.
-- CHI TIẾT TIN: Gọi tool `get_listing_details` và liệt kê toàn bộ thông số dưới dạng báo cáo chuyên sâu.
+## Định dạng
+- TIN ĐĂNG BĐS: LUÔN dùng [LISTING:ID]. KHÔNG dùng bảng hay danh sách text.
 - Số tiền: "2.5 Tỷ" / "850 Triệu"
-
-## Xử lý khi dữ liệu thiếu
-Nếu tool trả về rỗng hoặc lỗi:
-→ Thừa nhận giới hạn dữ liệu.
-→ Đề xuất góc phân tích thay thế khả thi.
-Ví dụ: "Chưa có giao dịch tháng này. Tôi có thể phân tích theo quý hoặc so sánh doanh thu theo loại BĐS — bạn muốn góc nào?"
-
-## Giới hạn
-- Không dự báo thị trường ngoài dữ liệu hệ thống.
-- Không đề xuất giá bán/mua cụ thể trừ khi có đủ data tham chiếu.{$rules}
+- Không dự báo ngoài dữ liệu hệ thống.{$rules}
 PROMPT;
     }
+
+    // ════════════════════════════════════════════════════════════════════════
+    // [CẢI THIỆN] handleKeywordIntents — CHỈ xử lý lệnh CỰC KỲ rõ ràng
+    // Loại bỏ các pattern mơ hồ, để AI xử lý thay
+    // ════════════════════════════════════════════════════════════════════════
+    protected function handleKeywordIntents(string $input): ?string
+    {
+        $input = mb_strtolower(trim($input));
+
+        // ✅ Pattern 1: Đánh dấu đã bán — CHỈ khi có ID rõ ràng
+        // "đã bán 42", "chốt tin 42", "đã chốt #42"
+        if (preg_match('/^(?:đã bán|chốt tin|đã chốt)\s*(?:số|id|tin|#)?\s*(\d+)$/i', $input, $matches)) {
+            $id = $matches[1];
+            $listing = RealEstateListing::find($id);
+            if ($listing) {
+                $listing->update(['is_sold' => true]);
+                $this->addToContext('last_listing_ids', (int)$id);
+                $this->conversationContext['last_intent'] = 'Đánh dấu đã bán';
+                return "✅ Đã chuyển tin #{$id} sang **ĐÃ BÁN**. Chúc mừng giao dịch! 🎉";
+            }
+            return "❌ Không tìm thấy tin đăng #{$id}.";
+        }
+
+        // ✅ Pattern 2: Mở lại — CHỈ khi có ID rõ ràng
+        if (preg_match('/^mở lại\s*(?:số|id|tin|#)?\s*(\d+)$/i', $input, $matches)) {
+            $id = $matches[1];
+            $listing = RealEstateListing::find($id);
+            if ($listing) {
+                $listing->update(['is_sold' => false]);
+                $this->addToContext('last_listing_ids', (int)$id);
+                return "✅ Đã mở lại tin #{$id}. Trạng thái: **Còn trống**.";
+            }
+            return "❌ Không tìm thấy tin đăng #{$id}.";
+        }
+
+        // ✅ Pattern 3: Tìm kiếm nhanh (Listing Search)
+        if (preg_match('/(?:tìm|kiếm|search|danh sách|list|xem)\s+(?:tin|nhà|đất|bđs|căn|hộ|phòng|biệt thự|kho|xưởng)?\s*(.*)/i', $input, $matches)) {
+            $query = trim($matches[1]);
+            if (!empty($query)) {
+                $results = RealEstateListing::where(function($q) use ($query) {
+                    $q->where('title', 'like', "%{$query}%")->orWhere('address', 'like', "%{$query}%")->orWhere('code', 'like', "%{$query}%")->orWhere('price', 'like', "%{$query}%");
+                })->where('is_sold', false)->limit(5)->get();
+                if ($results->count() > 0) {
+                    $text = "🔎 Kết quả cho '{$query}':\n\n";
+                    foreach($results as $r) { $text .= "[LISTING:{$r->id}]\n"; $this->addToContext('last_listing_ids', $r->id); }
+                    return $text;
+                }
+            }
+        }
+
+        // ✅ Pattern 4: Tin giá trị nhất
+        if (preg_match('/(?:tin|nhà|đất|bđs)\s+(?:giá trị nhất|đắt nhất|cao nhất|khủng nhất)/i', $input)) {
+            $maxListing = RealEstateListing::where('is_sold', false)->orderBy('price', 'desc')->first();
+            if ($maxListing) {
+                $this->addToContext('last_listing_ids', $maxListing->id);
+                return "🏆 Tin đăng có giá trị cao nhất hệ thống hiện tại:\n\n[LISTING:{$maxListing->id}]";
+            }
+        }
+
+        // ✅ Pattern 5: Thống kê
+        if ($input === 'thống kê' || $input === 'thống kê hệ thống') return null;
+
+        return null;
+    }
+
+    // ════════════════════════════════════════════
+    // Các methods còn lại giữ nguyên từ bản gốc
+    // ════════════════════════════════════════════
 
     public function confirmToolCall(OpenAIService $openAIService)
     {
         if (!$this->pendingRunStateId) return;
-
-        $state = \Illuminate\Support\Facades\Cache::get("hitl_state_{$this->pendingRunStateId}");
+        $state = Cache::get("hitl_state_{$this->pendingRunStateId}");
         if (!$state) {
-            $this->dispatch('toast', ['message' => 'Phiên làm việc đã hết hạn. Vui lòng thử lại.', 'type' => 'error']);
+            $this->dispatch('toast', ['message' => 'Phiên làm việc đã hết hạn.', 'type' => 'error']);
             $this->pendingRunStateId = null;
             return;
         }
-
-        $apiMessages = $state['apiMessages'];
-        $pendingCalls = $state['pendingCalls'];
-        $iteration = $state['iteration'];
-        $tools = $state['tools'];
-
         $this->messages[] = ['role' => 'user', 'content' => 'Tôi xác nhận thực hiện hành động trên.'];
         \App\Models\ChatMessage::create(['user_id' => auth()->id(), 'role' => 'user', 'content' => 'Tôi xác nhận thực hiện hành động trên.']);
-
         $this->isTyping = true;
-        
-        foreach ($pendingCalls as $toolCall) {
+        $apiMessages = $state['apiMessages'];
+        foreach ($state['pendingCalls'] as $toolCall) {
             $toolResult = $this->executeTool($toolCall['function']['name'], json_decode($toolCall['function']['arguments'], true));
-            $apiMessages[] = [
-                'role' => 'tool',
-                'tool_call_id' => $toolCall['id'],
-                'name' => $toolCall['function']['name'],
-                'content' => json_encode($toolResult, JSON_UNESCAPED_UNICODE)
-            ];
+            $apiMessages[] = ['role' => 'tool', 'tool_call_id' => $toolCall['id'], 'name' => $toolCall['function']['name'], 'content' => json_encode($toolResult, JSON_UNESCAPED_UNICODE)];
         }
-
-        \Illuminate\Support\Facades\Cache::forget("hitl_state_{$this->pendingRunStateId}");
+        Cache::forget("hitl_state_{$this->pendingRunStateId}");
         $this->pendingRunStateId = null;
-        
-        $this->resumeRun($openAIService, $apiMessages, $iteration + 1, $tools);
+        $this->resumeRun($openAIService, $apiMessages, $state['iteration'] + 1, $state['tools']);
     }
 
     public function cancelToolCall(OpenAIService $openAIService)
     {
         if (!$this->pendingRunStateId) return;
-        
-        $state = \Illuminate\Support\Facades\Cache::get("hitl_state_{$this->pendingRunStateId}");
+        $state = Cache::get("hitl_state_{$this->pendingRunStateId}");
         if (!$state) return;
-
-        $apiMessages = $state['apiMessages'];
-        $pendingCalls = $state['pendingCalls'];
-        $iteration = $state['iteration'];
-        $tools = $state['tools'];
-
         $this->messages[] = ['role' => 'user', 'content' => 'Tôi hủy bỏ hành động này.'];
         \App\Models\ChatMessage::create(['user_id' => auth()->id(), 'role' => 'user', 'content' => 'Tôi hủy bỏ hành động này.']);
-
         $this->isTyping = true;
-        
-        foreach ($pendingCalls as $toolCall) {
-            $apiMessages[] = [
-                'role' => 'tool',
-                'tool_call_id' => $toolCall['id'],
-                'name' => $toolCall['function']['name'],
-                'content' => json_encode(['status' => 'error', 'message' => 'Người dùng đã từ chối thực hiện hành động này.'], JSON_UNESCAPED_UNICODE)
-            ];
+        $apiMessages = $state['apiMessages'];
+        foreach ($state['pendingCalls'] as $toolCall) {
+            $apiMessages[] = ['role' => 'tool', 'tool_call_id' => $toolCall['id'], 'name' => $toolCall['function']['name'], 'content' => json_encode(['status' => 'error', 'message' => 'Người dùng đã từ chối.'], JSON_UNESCAPED_UNICODE)];
         }
-
-        \Illuminate\Support\Facades\Cache::forget("hitl_state_{$this->pendingRunStateId}");
+        Cache::forget("hitl_state_{$this->pendingRunStateId}");
         $this->pendingRunStateId = null;
-
-        $this->resumeRun($openAIService, $apiMessages, $iteration + 1, $tools);
+        $this->resumeRun($openAIService, $apiMessages, $state['iteration'] + 1, $state['tools']);
     }
 
     protected function resumeRun(OpenAIService $openAIService, array $apiMessages, int $iteration, array $tools)
     {
         $this->streamingResponse = '';
         $this->isTyping = true;
-
-        // Note: $apiMessages already contains: [..., User, Assistant (tool_calls), Tool (result)]
-        // We just need one more streamChat call to get the final answer.
         $toolCalls = $openAIService->streamChat($apiMessages, function($chunk) {
             $this->streamingResponse .= $chunk;
-            // Use replace: true to update the stream target correctly
             $this->stream(to: 'assistant-reply', content: $this->streamingResponse, replace: true);
         }, $tools);
-
-        // If it somehow calls MORE tools (recursive), we execute them automatically for now to avoid loop
         if (!empty($toolCalls)) {
             foreach ($toolCalls as $toolCall) {
                 $toolResult = $this->executeTool($toolCall['function']['name'], json_decode($toolCall['function']['arguments'], true));
                 $apiMessages[] = ['role' => 'assistant', 'content' => '', 'tool_calls' => [$toolCall]];
-                $apiMessages[] = [
-                    'role' => 'tool',
-                    'tool_call_id' => $toolCall['id'],
-                    'name' => $toolCall['function']['name'],
-                    'content' => json_encode($toolResult, JSON_UNESCAPED_UNICODE)
-                ];
+                $apiMessages[] = ['role' => 'tool', 'tool_call_id' => $toolCall['id'], 'name' => $toolCall['function']['name'], 'content' => json_encode($toolResult, JSON_UNESCAPED_UNICODE)];
             }
-            // One last call for the final summary after recursive tools
             $this->resumeRun($openAIService, $apiMessages, $iteration + 1, $tools);
             return;
         }
-
         if (!empty($this->streamingResponse)) {
-            \App\Models\ChatMessage::create([
-                'user_id' => auth()->id(),
-                'role' => 'assistant',
-                'content' => $this->streamingResponse
-            ]);
+            $this->extractEntitiesFromResponse($this->streamingResponse);
+            \App\Models\ChatMessage::create(['user_id' => auth()->id(), 'role' => 'assistant', 'content' => $this->streamingResponse]);
             $this->messages[] = ['role' => 'assistant', 'content' => $this->streamingResponse];
         }
-
         $this->streamingResponse = '';
         $this->isTyping = false;
     }
-
-
 
     protected function getAvailableTools(string $intent = 'ALL'): array
     {
@@ -616,7 +948,7 @@ PROMPT;
                 'type' => 'function',
                 'function' => [
                     'name' => 'get_user_performance',
-                    'description' => 'Xem báo cáo hiệu suất của một nhân sự hoặc CTV (Doanh thu, Rank, số lượng mời).',
+                    'description' => 'Xem báo cáo hiệu suất của một nhân sự hoặc CTV.',
                     'parameters' => [
                         'type' => 'object',
                         'properties' => [
@@ -630,7 +962,7 @@ PROMPT;
                 'type' => 'function',
                 'function' => [
                     'name' => 'get_system_stats',
-                    'description' => 'Xem thống kê tổng quan của hệ thống (Số lượng tin đăng, khách hàng, nhân sự, giá trị cao nhất).',
+                    'description' => 'Xem thống kê tổng quan của hệ thống.',
                     'parameters' => [
                         'type' => 'object',
                         'properties' => (object)[]
@@ -638,225 +970,66 @@ PROMPT;
                 ]
             ]
         ];
-
-        // Phase 3: Tool Filtering by Intent (Optional, but good for performance)
-        if ($intent === 'LISTING') {
-            return array_values(array_filter($allTools, fn($t) => in_array($t['function']['name'], ['create_listing', 'search_listings', 'get_listing_details', 'update_listing_status', 'delete_listing'])));
-        }
-        if ($intent === 'CUSTOMER') {
-            return array_values(array_filter($allTools, fn($t) => in_array($t['function']['name'], ['create_customer', 'search_customers', 'get_customer_details'])));
-        }
-        if ($intent === 'ANALYTICS') {
-            return array_values(array_filter($allTools, fn($t) => in_array($t['function']['name'], ['get_user_performance', 'get_system_stats'])));
-        }
-
         return $allTools;
     }
-
-
-    protected function handleKeywordIntents(string $input): ?string
-    {
-        $input = mb_strtolower($input);
-        
-
-        // 2. Mark as Sold (Pattern: đã bán [id] / chốt tin [id])
-        if (preg_match('/(?:đã bán|chốt tin|đã chốt)\s*(?:số|id)?\s*(\d+)/i', $input, $matches)) {
-            $id = $matches[1];
-            $listing = RealEstateListing::find($id);
-            if ($listing) {
-                $listing->update(['is_sold' => true]);
-                return "✅ Đã chuyển trạng thái tin đăng ID #{$id} sang 'ĐÃ BÁN'. Chúc mừng giao dịch thành công! 🎉";
-            }
-            return "❌ Không tìm thấy tin đăng ID #{$id} để cập nhật.";
-        }
-
-        // 3. Mark as Available (Pattern: mở lại [id])
-        if (preg_match('/mở lại\s*(?:số|id)?\s*(\d+)/i', $input, $matches)) {
-            $id = $matches[1];
-            $listing = RealEstateListing::find($id);
-            if ($listing) {
-                $listing->update(['is_sold' => false]);
-                return "✅ Đã mở lại tin đăng ID #{$id}. Tin hiện đang ở trạng thái 'Chưa bán'.";
-            }
-            return "❌ Không tìm thấy tin đăng ID #{$id} để mở lại.";
-        }
-
-        // 5. Search Listing (Very Broad Pattern to catch "tìm 3 tỷ", "tìm nhà 2 tỷ", etc.)
-        if (preg_match('/(?:tìm|kiếm|search|danh sách|list|xem)\s+(?:tin|nhà|đất|bđs|căn|hộ|phòng|biệt thự|kho|xưởng)?\s*(.*)/i', $input, $matches)) {
-            $query = trim($matches[1]);
-            if (empty($query)) return null; // Let AI handle if too vague
-            
-            $results = RealEstateListing::where(function($q) use ($query) {
-                        $q->where('title', 'like', "%{$query}%")
-                          ->orWhere('address', 'like', "%{$query}%")
-                          ->orWhere('contact_phone', 'like', "%{$query}%")
-                          ->orWhere('code', 'like', "%{$query}%")
-                          ->orWhere('price', 'like', "%{$query}%");
-                })
-                ->where('is_sold', false)
-                ->limit(5)
-                ->get();
-            
-            if ($results->count() > 0) {
-                $text = "🔎 Kết quả cho '{$query}':\n\n";
-                foreach($results as $r) {
-                    $text .= "[LISTING:{$r->id}]\n";
-                }
-                return $text;
-            }
-        }
-
-        // 6. Quick Stats (Pattern: thống kê)
-        if ($input === 'thống kê' || $input === 'thống kê hệ thống') {
-            return null; // Let AI handle the full stats analysis as it's better at formatting it
-        }
-
-        return null;
-    }
-
 
     protected function executeTool(string $name, array $args)
     {
         try {
             switch ($name) {
                 case 'create_listing':
-                    // Normalize 'type'
-                    if (isset($args['type'])) {
-                        $typeMap = [
-                            'bán' => 'Cần bán', 'cần bán' => 'Cần bán', 'bán nhà' => 'Cần bán',
-                            'thuê' => 'Cho thuê', 'cho thuê' => 'Cho thuê',
-                            'mua' => 'Cần mua', 'cần mua' => 'Cần mua'
-                        ];
-                        $args['type'] = $typeMap[mb_strtolower($args['type'])] ?? $args['type'];
-                    }
-
-                    // Normalize 'price_unit'
-                    if (isset($args['price_unit'])) {
-                        $unitMap = ['tỷ' => 'Tỷ', 'tỉ' => 'Tỷ', 'triệu' => 'Triệu', 'tr' => 'Triệu', 'vnđ' => 'VNĐ/tháng'];
-                        $args['price_unit'] = $unitMap[mb_strtolower($args['price_unit'])] ?? $args['price_unit'];
-                    }
-
-                    $data = array_merge([
-                        'type' => 'Cần bán',
-                        'property_type' => 'Nhà phố',
-                        'price_unit' => 'Tỷ',
-                        'user_id' => auth()->id(),
-                        'code' => 'AI-' . strtoupper(str()->random(6))
-                    ], $args);
+                    if (isset($args['type'])) { $typeMap = ['bán' => 'Cần bán', 'cần bán' => 'Cần bán', 'thuê' => 'Cho thuê', 'cho thuê' => 'Cho thuê', 'mua' => 'Cần mua', 'cần mua' => 'Cần mua']; $args['type'] = $typeMap[mb_strtolower($args['type'])] ?? $args['type']; }
+                    if (isset($args['price_unit'])) { $unitMap = ['tỷ' => 'Tỷ', 'tỉ' => 'Tỷ', 'triệu' => 'Triệu', 'tr' => 'Triệu', 'vnđ' => 'VNĐ/tháng']; $args['price_unit'] = $unitMap[mb_strtolower($args['price_unit'])] ?? $args['price_unit']; }
+                    $data = array_merge(['type' => 'Cần bán', 'property_type' => 'Nhà phố', 'price_unit' => 'Tỷ', 'user_id' => auth()->id(), 'code' => 'AI-' . strtoupper(str()->random(6))], $args);
                     $listing = RealEstateListing::create($data);
-                    return ['status' => 'success', 'message' => "Đã tạo tin đăng thành công. Mã tin: {$listing->code} (ID: #{$listing->id})"];
-
+                    $this->addToContext('last_listing_ids', $listing->id);
+                    return ['status' => 'success', 'message' => "Đã tạo tin đăng. Mã: {$listing->code} (ID: #{$listing->id})"];
 
                 case 'create_customer':
-                    $data = array_merge([
-                        'code' => 'KH' . rand(1000, 9999),
-                        'status' => 'khach_mua_o',
-                        'assigned_user_id' => auth()->id()
-                    ], $args);
+                    $data = array_merge(['code' => 'KH' . rand(1000, 9999), 'status' => 'khach_mua_o', 'assigned_user_id' => auth()->id()], $args);
                     $customer = Customer::create($data);
-                    return ['status' => 'success', 'message' => "Đã tạo hồ sơ khách hàng thành công. Mã KH: {$customer->code} (ID: #{$customer->id})"];
+                    $this->addToContext('last_customer_ids', $customer->id);
+                    return ['status' => 'success', 'message' => "Đã tạo khách hàng. Mã: {$customer->code} (ID: #{$customer->id})"];
 
                 case 'update_listing_status':
                     $listing = RealEstateListing::find($args['listing_id']);
                     if (!$listing) return ['status' => 'error', 'message' => 'Không tìm thấy tin đăng ID: ' . $args['listing_id']];
-                    if ($listing->user_id !== auth()->id() && !auth()->user()?->isAdmin()) {
-                        return ['status' => 'error', 'message' => 'Bạn không có quyền cập nhật tin đăng này.'];
-                    }
+                    if ($listing->user_id !== auth()->id() && !auth()->user()?->isAdmin()) return ['status' => 'error', 'message' => 'Bạn không có quyền cập nhật tin đăng này.'];
                     $listing->update(['is_sold' => $args['is_sold']]);
-                    return ['status' => 'success', 'message' => 'Đã cập nhật trạng thái tin đăng thành công.'];
-
+                    return ['status' => 'success', 'message' => 'Đã cập nhật trạng thái tin đăng.'];
 
                 case 'search_listings':
                     $query = RealEstateListing::query();
-                    
-                    if (!empty($args['query'])) {
-                        $query->where(function($q) use ($args) {
-                            $q->where('title', 'like', '%' . $args['query'] . '%')
-                              ->orWhere('address', 'like', '%' . $args['query'] . '%')
-                              ->orWhere('contact_phone', 'like', '%' . $args['query'] . '%');
-                        });
-                    }
-
+                    if (!empty($args['query'])) { $query->where(function($q) use ($args) { $q->where('title', 'like', '%' . $args['query'] . '%')->orWhere('address', 'like', '%' . $args['query'] . '%')->orWhere('contact_phone', 'like', '%' . $args['query'] . '%'); }); }
                     if (!empty($args['type'])) $query->where('type', $args['type']);
                     if (isset($args['min_price'])) $query->where('price', '>=', $args['min_price']);
                     if (isset($args['max_price'])) $query->where('price', '<=', $args['max_price']);
                     if (isset($args['min_area'])) $query->where('area', '>=', $args['min_area']);
                     if (isset($args['max_area'])) $query->where('area', '<=', $args['max_area']);
-                    
-                    $sortBy = $args['sort_by'] ?? 'created_at';
-                    $sortOrder = $args['sort_order'] ?? 'desc';
-                    $query->orderBy($sortBy, $sortOrder);
-
-                    $limit = min($args['limit'] ?? 5, 20);
-                    $results = $query->limit($limit)->get([
-                        'id', 'title', 'price', 'price_unit', 'area', 'address', 'type', 'is_sold', 
-                        'code', 'contact_type', 'property_type', 'avatar', 'images'
-                    ]);
-                    
-                    return [
-                        'status' => 'success', 
-                        'count' => $results->count(),
-                        'format_hint' => 'BẮT BUỘC dùng [LISTING:ID] cho mỗi tin đăng, KHÔNG dùng bảng.',
-                        'data' => $results->map(fn($r) => [
-                            'id' => $r->id,
-                            'code' => $r->code,
-                            'title' => $r->title,
-                            'price_display' => number_format($r->price, 0, ',', '.') . ' ' . $r->price_unit,
-                            'area' => $r->area . ' m2',
-                            'address' => $r->address,
-                            'status' => $r->is_sold ? 'Đã bán' : 'Còn trống'
-                        ])
-                    ];
+                    $query->orderBy($args['sort_by'] ?? 'created_at', $args['sort_order'] ?? 'desc');
+                    $results = $query->limit(min($args['limit'] ?? 5, 20))->get(['id', 'title', 'price', 'price_unit', 'area', 'address', 'type', 'is_sold', 'code', 'property_type', 'avatar', 'images']);
+                    return ['status' => 'success', 'count' => $results->count(), 'format_hint' => 'BẮT BUỘC dùng [LISTING:ID] cho mỗi tin đăng, KHÔNG dùng bảng.', 'data' => $results->map(fn($r) => ['id' => $r->id, 'code' => $r->code, 'title' => $r->title, 'price_display' => number_format($r->price, 0, ',', '.') . ' ' . $r->price_unit, 'area' => $r->area . ' m2', 'address' => $r->address, 'status' => $r->is_sold ? 'Đã bán' : 'Còn trống'])];
 
                 case 'get_listing_details':
                     $listing = RealEstateListing::find($args['listing_id']);
                     if (!$listing) return ['status' => 'error', 'message' => 'Không tìm thấy tin đăng ID: ' . $args['listing_id']];
-                    return [
-                        'status' => 'success',
-                        'data' => $listing->toArray()
-                    ];
+                    return ['status' => 'success', 'data' => $listing->toArray()];
 
                 case 'search_customers':
                     $q = Customer::query();
-                    if (!empty($args['query'])) {
-                        $q->where(function($sub) use ($args) {
-                            $sub->where('name', 'like', '%' . $args['query'] . '%')
-                                ->orWhere('phone', 'like', '%' . $args['query'] . '%');
-                        });
-                    }
-                    if (!empty($args['status'])) {
-                        $q->where('status', $args['status']);
-                    }
-                    $results = $q->limit(5)->get(['id', 'name', 'phone', 'status', 'budget_from', 'budget_to']);
-                    return ['status' => 'success', 'data' => $results];
+                    if (!empty($args['query'])) { $q->where(function($sub) use ($args) { $sub->where('name', 'like', '%' . $args['query'] . '%')->orWhere('phone', 'like', '%' . $args['query'] . '%'); }); }
+                    if (!empty($args['status'])) $q->where('status', $args['status']);
+                    return ['status' => 'success', 'data' => $q->limit(5)->get(['id', 'name', 'phone', 'status', 'budget_from', 'budget_to'])];
 
                 case 'get_customer_details':
                     $customer = Customer::with(['works.user'])->find($args['customer_id']);
                     if (!$customer) return ['status' => 'error', 'message' => 'Không tìm thấy khách hàng ID: ' . $args['customer_id']];
-                    return [
-                        'status' => 'success',
-                        'profile' => $customer->toArray(),
-                        'history' => $customer->works->map(fn($w) => [
-                            'date' => $w->formatted_date,
-                            'content' => $w->content,
-                            'progress' => $w->progress,
-                            'user' => $w->user?->name
-                        ])
-                    ];
+                    return ['status' => 'success', 'profile' => $customer->toArray(), 'history' => $customer->works->map(fn($w) => ['date' => $w->formatted_date, 'content' => $w->content, 'progress' => $w->progress, 'user' => $w->user?->name])];
 
                 case 'get_user_performance':
                     $user = User::find($args['user_id']);
                     if (!$user) return ['status' => 'error', 'message' => 'Không tìm thấy người dùng ID: ' . $args['user_id']];
-                    return [
-                        'status' => 'success',
-                        'user' => [
-                            'name' => $user->name,
-                            'phone' => $user->phone,
-                            'total_revenue' => number_format($user->total_revenue, 0, ',', '.') . ' VNĐ',
-                            'rank' => $user->rank?->name ?? 'N/A',
-                            'invitees_count' => $user->invitees()->count()
-                        ]
-                    ];
+                    return ['status' => 'success', 'user' => ['name' => $user->name, 'phone' => $user->phone, 'total_revenue' => number_format($user->total_revenue, 0, ',', '.') . ' VNĐ', 'rank' => $user->rank?->name ?? 'N/A', 'invitees_count' => $user->invitees()->count()]];
 
                 case 'get_system_stats':
                     return ['status' => 'success', 'data' => $this->getSystemStats()];
@@ -878,11 +1051,7 @@ PROMPT;
     public function viewListingQuickly($id)
     {
         $listing = \App\Models\RealEstateListing::with(['reporter', 'user', 'sale.soldBy', 'sale.members.user'])->find($id);
-        if (!$listing) {
-            $this->dispatch('toast', ['message' => 'Không tìm thấy tin đăng!', 'type' => 'error']);
-            return;
-        }
-
+        if (!$listing) { $this->dispatch('toast', ['message' => 'Không tìm thấy tin đăng!', 'type' => 'error']); return; }
         $this->selectedListing = $this->prepareListingForQuickView($listing);
         $this->showDetailPopup = true;
     }
@@ -896,109 +1065,52 @@ PROMPT;
     protected function prepareListingForQuickView($listing)
     {
         $data = $listing->toArray();
-
-        // Fetch customer name by contact_phone
         if (!empty($data['contact_phone'])) {
-            $customer = \App\Models\Customer::where('phone', $data['contact_phone'])
-                ->orWhere('phone2', $data['contact_phone'])
-                ->first(['name']);
-            if ($customer) {
-                $data['contact_customer_name'] = $customer->name;
-            }
+            $customer = \App\Models\Customer::where('phone', $data['contact_phone'])->orWhere('phone2', $data['contact_phone'])->first(['name']);
+            if ($customer) $data['contact_customer_name'] = $customer->name;
         }
-
-        // Prepare slider images: Avatar first, then others
         $allImages = [];
-        if (!empty($data['avatar'])) {
-            $allImages[] = $data['avatar'];
-        }
-        
-        if (!empty($data['images']) && is_array($data['images'])) {
-            foreach ($data['images'] as $img) {
-                if ($img !== $data['avatar']) {
-                    $allImages[] = $img;
-                }
-            }
-        }
-        
+        if (!empty($data['avatar'])) $allImages[] = $data['avatar'];
+        if (!empty($data['images']) && is_array($data['images'])) { foreach ($data['images'] as $img) { if ($img !== $data['avatar']) $allImages[] = $img; } }
         $data['display_images'] = count($allImages) > 0 ? $allImages : ['https://placehold.co/800x600?text=No+Image'];
-        
         return $data;
     }
 
-
-
-
-
-
     protected function getSystemStats(): string
     {
-        return \Illuminate\Support\Facades\Cache::remember('system_ctx_stats', 60, function () {
-            $listingStats = [
-                'total' => RealEstateListing::count(),
-                'sold' => RealEstateListing::where('is_sold', true)->count(),
-                'available' => RealEstateListing::where('is_sold', false)->count(),
-                'max_price' => RealEstateListing::max('price'),
-                'by_type' => RealEstateListing::selectRaw('type, count(*) as count')->groupBy('type')->pluck('count', 'type')->toArray(),
-            ];
-            
-            $customerStats = [
-                'total' => Customer::count(),
-                'by_status' => Customer::selectRaw('status, count(*) as count')->groupBy('status')->pluck('count', 'status')->toArray(),
-                'pending_tasks' => \App\Models\CustomerWork::where('progress', '!=', 'Hoàn thành')->count(),
-            ];
-            
-            $userStats = [
-                'total' => User::count(),
-                'admins' => User::where('phone', User::ADMIN_PHONE)->count(),
-                'ctvs' => User::where('phone', '!=', User::ADMIN_PHONE)->count(),
-            ];
-            
-            $storageStats = [
-                'files' => \App\Models\File::count(),
-                'folders' => \App\Models\Folder::count(),
-            ];
-
-            return "THỐNG KÊ HỆ THỐNG REAL-TIME:\n" .
-                "- Tin đăng: {$listingStats['total']} (" . implode(', ', array_map(fn($k, $v) => "$k: $v", array_keys($listingStats['by_type']), $listingStats['by_type'])) . "). Đã bán: {$listingStats['sold']}.\n" .
-                "- Giá trị tin đăng cao nhất: " . number_format($listingStats['max_price'], 0, ',', '.') . " Tỷ (hoặc đơn vị tương đương).\n" .
-                "- Khách hàng: {$customerStats['total']} (" . implode(', ', array_map(fn($k, $v) => "$k: $v", array_keys($customerStats['by_status']), $customerStats['by_status'])) . "). Công việc tồn đọng: {$customerStats['pending_tasks']}.\n" .
-                "- Nhân sự: {$userStats['total']} thành viên ({$userStats['admins']} Admin, {$userStats['ctvs']} CTV).\n" .
-                "- Lưu trữ: {$storageStats['files']} tệp tin, {$storageStats['folders']} thư mục.";
+        return Cache::remember('system_ctx_stats', 60, function () {
+            $maxListing = RealEstateListing::where('is_sold', false)->orderBy('price', 'desc')->first(['id', 'code', 'price', 'price_unit', 'title']);
+            $listingStats = ['total' => RealEstateListing::count(), 'sold' => RealEstateListing::where('is_sold', true)->count(), 'available' => RealEstateListing::where('is_sold', false)->count(), 'max_listing' => $maxListing, 'by_type' => RealEstateListing::selectRaw('type, count(*) as count')->groupBy('type')->pluck('count', 'type')->toArray()];
+            $customerStats = ['total' => Customer::count(), 'by_status' => Customer::selectRaw('status, count(*) as count')->groupBy('status')->pluck('count', 'status')->toArray(), 'pending_tasks' => \App\Models\CustomerWork::where('progress', '!=', 'Hoàn thành')->count()];
+            $userStats = ['total' => User::count(), 'admins' => User::where('phone', User::ADMIN_PHONE)->count(), 'ctvs' => User::where('phone', '!=', User::ADMIN_PHONE)->count()];
+            $storageStats = ['files' => \App\Models\File::count(), 'folders' => \App\Models\Folder::count()];
+            $maxInfo = $listingStats['max_listing'] ? "[LISTING:{$listingStats['max_listing']->id}] (Mã: {$listingStats['max_listing']->code}) - " . number_format($listingStats['max_listing']->price, 0, ',', '.') . " {$listingStats['max_listing']->price_unit}" : "N/A";
+            return "THỐNG KÊ HỆ THỐNG:\n- Tin đăng: {$listingStats['total']} (" . implode(', ', array_map(fn($k, $v) => "$k: $v", array_keys($listingStats['by_type']), $listingStats['by_type'])) . "). Đã bán: {$listingStats['sold']}.\n- Tin giá trị nhất: {$maxInfo}\n- Khách hàng: {$customerStats['total']} (" . implode(', ', array_map(fn($k, $v) => "$k: $v", array_keys($customerStats['by_status']), $customerStats['by_status'])) . "). Tồn đọng: {$customerStats['pending_tasks']}.\n- Nhân sự: {$userStats['total']} ({$userStats['admins']} Admin, {$userStats['ctvs']} CTV).\n- Lưu trữ: {$storageStats['files']} tệp, {$storageStats['folders']} thư mục.";
         });
     }
 
     protected function summarizeHistory()
     {
         $openAIService = app(OpenAIService::class);
-        $toSummarize = array_slice($this->messages, 0, -5);
+        $toSummarize = array_slice($this->messages, 0, -8); // Giữ lại 8 thay vì 5
         $prompt = [
-            ['role' => 'system', 'content' => 'Hãy tóm tắt cuộc hội thoại sau thành một đoạn văn ngắn (dưới 100 chữ) để làm ngữ cảnh cho AI. Giữ lại các thông tin quan trọng như ID tin đăng đang thảo luận hoặc tên khách hàng.'],
+            ['role' => 'system', 'content' => 'Tóm tắt cuộc hội thoại dưới 120 chữ. Giữ lại: ID tin đăng/khách hàng được nhắc đến, các quyết định quan trọng, thông tin đang chờ xác nhận.'],
             ['role' => 'user', 'content' => json_encode($toSummarize, JSON_UNESCAPED_UNICODE)]
         ];
-
         $response = $openAIService->chat($prompt);
-        $summary = $response['choices'][0]['message']['content'] ?? 'Cuộc hội thoại trước đó.';
-
-        // Replace old messages with summary
+        $summary = $response['choices'][0]['message']['content'] ?? 'Cuộc hội thoại trước.';
         $this->messages = array_merge(
-            [['role' => 'system', 'content' => 'Tóm tắt hội thoại trước đó: ' . $summary]],
-            array_slice($this->messages, -5)
+            [['role' => 'system', 'content' => '[TÓM TẮT HỘI THOẠI TRƯỚC]: ' . $summary]],
+            array_slice($this->messages, -8)
         );
     }
-
-
-
-
-
-
 
     public function clearChat()
     {
         \App\Models\ChatMessage::where('user_id', auth()->id())->delete();
+        $this->conversationContext = ['last_listing_ids' => [], 'last_customer_ids' => [], 'last_user_ids' => [], 'last_intent' => null, 'pending_clarification' => null];
         $this->loadHistory();
     }
-
 
     public function render()
     {

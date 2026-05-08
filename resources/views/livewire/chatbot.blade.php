@@ -452,14 +452,33 @@
             </div>
 
             <!-- Footer Action -->
-            <div class="px-6 py-4 border-t border-white/5 bg-slate-900/50 flex gap-2">
-                <button @click="
-                    const text = `🏠 {{ $selectedListing['title'] }} \n📍 Vị trí: {{ $selectedListing['address'] }} \n💰 Giá: {{ number_format($selectedListing['price'], 0, ',', '.') }} {{ $selectedListing['price_unit'] == 1 ? 'VNĐ' : ($selectedListing['price_unit'] == 2 ? 'VNĐ/tháng' : 'VNĐ/m2') }} \n📐 Diện tích: {{ floatval($selectedListing['area']) }} m²`;
-                    navigator.clipboard.writeText(text);
-                    $dispatch('toast', { message: 'Đã copy thông tin tin đăng!', type: 'success' });
-                " class="flex-1 h-11 rounded-xl bg-white/5 border border-white/10 text-white font-bold text-xs uppercase tracking-widest hover:bg-white/10 transition-all flex items-center justify-center gap-2">
-                    <i class="fa-regular fa-copy"></i> Copy thông tin
-                </button>
+            <div class="px-6 py-4 border-t border-white/5 bg-slate-900/50 flex flex-col gap-3">
+                <div class="flex gap-2">
+                    @if(!empty($selectedListing['contact_phone']))
+                    <a href="tel:{{ $selectedListing['contact_phone'] }}" class="flex-1 h-12 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 text-white font-black text-[10px] uppercase tracking-widest hover:shadow-[0_0_20px_rgba(37,99,235,0.4)] transition-all flex items-center justify-center gap-2 border border-blue-400/20">
+                        <i class="fa-solid fa-phone"></i> Gọi: {{ $selectedListing['contact_phone'] }}
+                    </a>
+                    <a href="https://zalo.me/{{ $selectedListing['contact_phone'] }}" target="_blank" class="flex-1 h-12 rounded-xl bg-[#0068ff] text-white font-black text-[10px] uppercase tracking-widest hover:shadow-[0_0_20px_rgba(0,104,255,0.4)] transition-all flex items-center justify-center gap-2 border border-white/10">
+                        <i class="fa-solid fa-comment-dots"></i> Nhắn Zalo
+                    </a>
+                    @endif
+                </div>
+                
+                <div class="flex gap-2">
+                    <button @click="
+                        const text = `🏠 {{ $selectedListing['title'] }} \n📍 Vị trí: {{ $selectedListing['address'] }} \n💰 Giá: {{ number_format($selectedListing['price'], 0, ',', '.') }} {{ $selectedListing['price_unit'] == 1 ? 'VNĐ' : ($selectedListing['price_unit'] == 2 ? 'VNĐ/tháng' : 'VNĐ/m2') }} \n📐 Diện tích: {{ floatval($selectedListing['area']) }} m² \n📞 Liên hệ: {{ $selectedListing['contact_phone'] }}`;
+                        navigator.clipboard.writeText(text);
+                        $dispatch('toast', { message: 'Đã copy thông tin tin đăng!', type: 'success' });
+                    " class="flex-1 h-11 rounded-xl bg-white/5 border border-white/10 text-white font-bold text-[10px] uppercase tracking-widest hover:bg-white/10 transition-all flex items-center justify-center gap-2">
+                        <i class="fa-regular fa-copy"></i> Copy Info
+                    </button>
+                    
+                    @if (!empty($selectedListing['google_map_link']))
+                    <a href="{{ $selectedListing['google_map_link'] }}" target="_blank" class="flex-1 h-11 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-bold text-[10px] uppercase tracking-widest hover:bg-emerald-500/20 transition-all flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-map-location-dot"></i> Xem Bản đồ
+                    </a>
+                    @endif
+                </div>
             </div>
             @endif
         </div>
