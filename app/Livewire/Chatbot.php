@@ -316,10 +316,10 @@ Nếu câu hỏi hoàn toàn nằm ngoài phạm vi trên, từ chối ngắn g�
   Ví dụ: "Cần thêm SĐT liên hệ để tạo tin. Số nào?"
 
 ## Định dạng đầu ra
-- Thành công:    ✅ [kết quả 1 dòng + Mã tin nếu có]
-- Lỗi/không tìm: ❌ [lý do ngắn] + gợi ý bước tiếp nếu có
-- Danh sách ≥3:  dùng markdown table với cột Mã tin | Tiêu đề | Giá | Trạng thái (CHỈ dùng cho Khách hàng/Nhân sự, KHÔNG dùng cho Tin đăng BĐS).
-- TIN ĐĂNG BĐS:  LUÔN dùng định dạng [LISTING:ID] để hiển thị thẻ tóm tắt. KHI NGƯỜI DÙNG CẦN XEM CHI TIẾT (xem kỹ, xem hết, thông tin đầy đủ), hãy gọi tool `get_listing_details` và LIỆT KÊ TẤT CẢ thông tin (Mô tả, Link MXH, Tọa độ, Thông số kỹ thuật...) dưới dạng danh sách hoặc bảng để người dùng nắm rõ.
+- Thành công:    ✅ [kết quả 1 dòng]
+- Lỗi/không tìm: ❌ [lý do ngắn]
+- TIN ĐĂNG BĐS:  TUYỆT ĐỐI KHÔNG dùng text thuần hay bảng biểu. PHẢI LUÔN dùng định dạng [LISTING:ID] để hiển thị thẻ tóm tắt trực quan. Khi có nhiều kết quả, hãy liệt kê chúng thành một danh sách các thẻ [LISTING:ID].
+- CHI TIẾT TIN:  Khi người dùng cần xem kỹ, hãy gọi tool `get_listing_details` và trình bày thông tin đầy đủ (Mô tả, Link MXH, Tọa độ...) một cách chuyên nghiệp.
 - Số tiền:       "2.5 Tỷ" / "850 Triệu" / "15 Triệu/tháng"
 - Không in đậm toàn câu — chỉ in đậm số liệu quan trọng
 
@@ -356,12 +356,8 @@ Cấu trúc bắt buộc cho mọi phân tích:
 Giữ mỗi phần ≤3 câu. Kết thúc bằng mục **Khuyến nghị:** in đậm.
 Không vòng vo, không liệt kê hiển nhiên, không giả định số liệu ngoài những gì tool trả về.
 
-## Định dạng đầu ra
-- Báo cáo: markdown với ## heading rõ ràng
-- Bảng so sánh: markdown table, căn chỉnh số phải (Dùng cột Mã tin thay vì ID cho BĐS nếu cần liệt kê).
-- Chỉ số nổi bật: in đậm con số (ví dụ: doanh thu **2.3 Tỷ**)
-- Không in đậm toàn câu
-- TIN ĐĂNG BĐS: LUÔN dùng định dạng [LISTING:ID] để hiển thị thẻ tóm tắt. KHI NGƯỜI DÙNG CẦN XEM CHI TIẾT (xem kỹ, xem hết, thông tin đầy đủ), hãy gọi tool `get_listing_details` và LIỆT KÊ TẤT CẢ thông tin dưới dạng báo cáo chuyên sâu.
+- TIN ĐĂNG BĐS: PHẢI LUÔN dùng định dạng [LISTING:ID] để hiển thị thẻ tóm tắt. TUYỆT ĐỐI KHÔNG sử dụng text thuần hay bảng để mô tả danh sách tin đăng.
+- CHI TIẾT TIN: Gọi tool `get_listing_details` và liệt kê toàn bộ thông số kỹ thuật, mô tả và liên kết dưới dạng báo cáo chuyên sâu.
 - Số tiền: "2.5 Tỷ" / "850 Triệu"
 
 ## Xử lý khi dữ liệu thiếu
@@ -685,17 +681,18 @@ PROMPT;
             return "❌ Không tìm thấy tin đăng ID #{$id} để mở lại.";
         }
 
-        // 5. Search Listing (Pattern: tìm tin [query])
-        if (preg_match('/(?:tìm tin|tìm kiếm tin|search)\s+(.+)/i', $input, $matches)) {
+        // 5. Search Listing (Pattern: tìm tin [query], danh sách tin, list tin)
+        if (preg_match('/(?:tìm tin|tìm kiếm tin|search|danh sách tin|list tin)\s+(.+)/i', $input, $matches)) {
             $query = trim($matches[1]);
             $results = RealEstateListing::where('title', 'like', "%{$query}%")
                 ->orWhere('address', 'like', "%{$query}%")
                 ->orWhere('contact_phone', 'like', "%{$query}%")
-                ->limit(3)
+                ->orWhere('code', 'like', "%{$query}%")
+                ->limit(5)
                 ->get();
             
             if ($results->count() > 0) {
-                $text = "🔎 Kết quả tìm kiếm cho '{$query}':\n";
+                $text = "🔎 Kết quả tìm kiếm cho '{$query}':\n\n";
                 foreach($results as $r) {
                     $text .= "[LISTING:{$r->id}]\n";
                 }
