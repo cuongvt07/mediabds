@@ -318,8 +318,8 @@ Nếu câu hỏi hoàn toàn nằm ngoài phạm vi trên, từ chối ngắn g�
 ## Định dạng đầu ra
 - Thành công:    ✅ [kết quả 1 dòng]
 - Lỗi/không tìm: ❌ [lý do ngắn]
-- TIN ĐĂNG BĐS:  TUYỆT ĐỐI KHÔNG dùng text thuần hay bảng biểu. PHẢI LUÔN dùng định dạng [LISTING:ID] để hiển thị thẻ tóm tắt trực quan. Khi có nhiều kết quả, hãy liệt kê chúng thành một danh sách các thẻ [LISTING:ID].
-- CHI TIẾT TIN:  Khi người dùng cần xem kỹ, hãy gọi tool `get_listing_details` và trình bày thông tin đầy đủ (Mô tả, Link MXH, Tọa độ...) một cách chuyên nghiệp.
+- TIN ĐĂNG BĐS:  PHẢI LUÔN dùng định dạng [LISTING:ID] để hiển thị thẻ tóm tắt trực quan. TUYỆT ĐỐI KHÔNG dùng text thuần, không dùng danh sách gạch đầu dòng, và ĐẶC BIỆT KHÔNG dùng Markdown Table cho Tin đăng BĐS (kể cả khi người dùng yêu cầu).
+- CHI TIẾT TIN:  Khi người dùng cần xem kỹ, hãy gọi tool `get_listing_details` và trình bày thông tin đầy đủ chuyên nghiệp.
 - Số tiền:       "2.5 Tỷ" / "850 Triệu" / "15 Triệu/tháng"
 - Không in đậm toàn câu — chỉ in đậm số liệu quan trọng
 
@@ -356,8 +356,8 @@ Cấu trúc bắt buộc cho mọi phân tích:
 Giữ mỗi phần ≤3 câu. Kết thúc bằng mục **Khuyến nghị:** in đậm.
 Không vòng vo, không liệt kê hiển nhiên, không giả định số liệu ngoài những gì tool trả về.
 
-- TIN ĐĂNG BĐS: PHẢI LUÔN dùng định dạng [LISTING:ID] để hiển thị thẻ tóm tắt. TUYỆT ĐỐI KHÔNG sử dụng text thuần hay bảng để mô tả danh sách tin đăng.
-- CHI TIẾT TIN: Gọi tool `get_listing_details` và liệt kê toàn bộ thông số kỹ thuật, mô tả và liên kết dưới dạng báo cáo chuyên sâu.
+- TIN ĐĂNG BĐS: PHẢI LUÔN dùng định dạng [LISTING:ID] để hiển thị thẻ tóm tắt. TUYỆT ĐỐI KHÔNG sử dụng text thuần hay bảng để mô tả danh sách tin đăng, kể cả khi so sánh.
+- CHI TIẾT TIN: Gọi tool `get_listing_details` và liệt kê toàn bộ thông số dưới dạng báo cáo chuyên sâu.
 - Số tiền: "2.5 Tỷ" / "850 Triệu"
 
 ## Xử lý khi dữ liệu thiếu
@@ -681,24 +681,33 @@ PROMPT;
             return "❌ Không tìm thấy tin đăng ID #{$id} để mở lại.";
         }
 
-        // 5. Search Listing (Pattern: tìm tin [query], danh sách tin, list tin)
-        if (preg_match('/(?:tìm tin|tìm kiếm tin|search|danh sách tin|list tin)\s+(.+)/i', $input, $matches)) {
+        // 5. Search Listing (Broad Pattern: tìm, kiếm, search, list, danh sách + tin, nhà, đất, bđs...)
+        if (preg_match('/(?:tìm|kiếm|search|danh sách|list|xem)\s+(?:tin|nhà|đất|bđs|căn|hộ|phòng|biệt thự|kho|xưởng)\s*(.*)/i', $input, $matches)) {
             $query = trim($matches[1]);
-            $results = RealEstateListing::where('title', 'like', "%{$query}%")
-                ->orWhere('address', 'like', "%{$query}%")
-                ->orWhere('contact_phone', 'like', "%{$query}%")
-                ->orWhere('code', 'like', "%{$query}%")
+            
+            // If query is empty but we matched the intent, maybe the user just said "tìm nhà"
+            $results = RealEstateListing::where(function($q) use ($query) {
+                    if (!empty($query)) {
+                        $q->where('title', 'like', "%{$query}%")
+                          ->orWhere('address', 'like', "%{$query}%")
+                          ->orWhere('contact_phone', 'like', "%{$query}%")
+                          ->orWhere('code', 'like', "%{$query}%");
+                    }
+                })
+                ->where('is_sold', false)
                 ->limit(5)
                 ->get();
             
             if ($results->count() > 0) {
-                $text = "🔎 Kết quả tìm kiếm cho '{$query}':\n\n";
+                $text = "🔎 Kết quả cho '" . ($query ?: "Tin đăng") . "':\n\n";
                 foreach($results as $r) {
                     $text .= "[LISTING:{$r->id}]\n";
                 }
                 return $text;
             }
-            return "❌ Không tìm thấy tin đăng nào khớp với từ khóa '{$query}'.";
+            if (!empty($query)) {
+                return "❌ Không tìm thấy tin đăng nào khớp với từ khóa '{$query}'.";
+            }
         }
 
         // 6. Quick Stats (Pattern: thống kê)
