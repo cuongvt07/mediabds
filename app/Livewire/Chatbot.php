@@ -203,12 +203,18 @@ class Chatbot extends Component
         }
 
         // Nếu input CÓ số nhưng không có "ID/tin/đăng" — gợi ý đó là listing ID
+        // CẢI THIỆN: Loại trừ các số là một phần của giá (đi kèm tỷ/triệu)
         if (preg_match('/\b(\d{1,6})\b/', $input, $m) && !empty($ctx['last_listing_ids'])) {
             $num = (int)$m[1];
-            if (in_array($num, $ctx['last_listing_ids'])) {
-                // Đây là ID tin đăng đã nhắc — không cần bổ sung
-            } elseif ($num > 0 && $num < 100000 && !str_contains($lower, 'giá') && !str_contains($lower, 'triệu') && !str_contains($lower, 'tỷ')) {
-                $input .= "\n[System context: Số {$num} có thể là ID tin đăng hoặc khách hàng]";
+            // Kiểm tra xem số này có phải là giá không (sau nó là tỷ/triệu/m2)
+            $isPriceOrArea = preg_match('/\b' . $num . '\s*(?:tỷ|tỉ|tỷ|triệu|tr|m2|m²)\b/i', $input);
+            
+            if (!$isPriceOrArea) {
+                if (in_array($num, $ctx['last_listing_ids'])) {
+                    // Đây là ID tin đăng đã nhắc — không cần bổ sung
+                } elseif ($num > 0 && $num < 100000 && !str_contains($lower, 'giá')) {
+                    $input .= "\n[System context: Số {$num} có thể là ID tin đăng hoặc khách hàng]";
+                }
             }
         }
 
@@ -719,16 +725,51 @@ PROMPT;
             return "❌ Không tìm thấy tin đăng #{$id}.";
         }
 
-        // ✅ Pattern 3: Tìm kiếm nhanh (Listing Search)
+        // ✅ Pattern 3: Tìm kiếm thông minh (Listing Search)
+        // CẢI THIỆN: Tách giá và từ khóa địa điểm
         if (preg_match('/(?:tìm|kiếm|search|danh sách|list|xem)\s+(?:tin|nhà|đất|bđs|căn|hộ|phòng|biệt thự|kho|xưởng)?\s*(.*)/i', $input, $matches)) {
-            $query = trim($matches[1]);
-            if (!empty($query)) {
-                $results = RealEstateListing::where(function($q) use ($query) {
-                    $q->where('title', 'like', "%{$query}%")->orWhere('address', 'like', "%{$query}%")->orWhere('code', 'like', "%{$query}%")->orWhere('price', 'like', "%{$query}%");
-                })->where('is_sold', false)->limit(5)->get();
+            $queryStr = trim($matches[1]);
+            if (!empty($queryStr)) {
+                $q = RealEstateListing::query()->where('is_sold', false);
+                
+                // Trích xuất giá (ví dụ: "2 tỷ", "800 triệu")
+                $priceFound = false;
+                if (preg_match('/(\d+(?:\.\d+)?)\s*(tỷ|tỉ|triệu|tr)/i', $queryStr, $pm)) {
+                    $val = (float)$pm[1];
+                    $unit = mb_strtolower($pm[2]);
+                    $dbUnit = (str_contains($unit, 'tỷ') || str_contains($unit, 'tỉ')) ? 'Tỷ' : 'Triệu';
+                    
+                    // Lọc theo giá (khoảng +/- 10% hoặc chính xác unit)
+                    $q->where(function($sub) use ($val, $dbUnit) {
+                        $sub->where(function($s) use ($val, $dbUnit) {
+                            $s->where('price', '<=', $val)->where('price_unit', $dbUnit);
+                        });
+                        // Nếu là Tỷ, có thể tìm các tin Triệu (luôn nhỏ hơn)
+                        if ($dbUnit === 'Tỷ') {
+                            $sub->orWhere('price_unit', 'Triệu');
+                        }
+                    });
+                    
+                    // Xóa phần giá khỏi query để tìm địa chỉ
+                    $queryStr = trim(str_replace($pm[0], '', $queryStr));
+                    $priceFound = true;
+                }
+
+                if (!empty($queryStr)) {
+                    $q->where(function($sub) use ($queryStr) {
+                        $sub->where('title', 'like', "%{$queryStr}%")
+                           ->orWhere('address', 'like', "%{$queryStr}%")
+                           ->orWhere('code', 'like', "%{$queryStr}%");
+                    });
+                }
+
+                $results = $q->limit(5)->get();
                 if ($results->count() > 0) {
-                    $text = "🔎 Kết quả cho '{$query}':\n\n";
-                    foreach($results as $r) { $text .= "[LISTING:{$r->id}]\n"; $this->addToContext('last_listing_ids', $r->id); }
+                    $text = "🔎 Kết quả cho '" . ($priceFound ? $pm[0] . " " : "") . "{$queryStr}':\n\n";
+                    foreach($results as $r) { 
+                        $text .= "[LISTING:{$r->id}]\n"; 
+                        $this->addToContext('last_listing_ids', $r->id); 
+                    }
                     return $text;
                 }
             }
@@ -1021,8 +1062,21 @@ PROMPT;
                         });
                     }
                     if (!empty($args['type'])) $query->where('type', $args['type']);
-                    if (isset($args['min_price'])) $query->where('price', '>=', $args['min_price']);
-                    if (isset($args['max_price'])) $query->where('price', '<=', $args['max_price']);
+                    if (isset($args['min_price'])) {
+                        $val = $args['min_price'];
+                        $query->where(function($q) use ($val) {
+                            $q->where(function($s) use ($val) { $s->where('price', '>=', $val)->where('price_unit', 'Tỷ'); })
+                              ->orWhere(function($s) use ($val) { $s->where('price', '>=', $val * 1000)->where('price_unit', 'Triệu'); });
+                        });
+                    }
+                    if (isset($args['max_price'])) {
+                        $val = $args['max_price'];
+                        $query->where(function($q) use ($val) {
+                            $q->where(function($s) use ($val) { $s->where('price', '<=', $val)->where('price_unit', 'Tỷ'); })
+                              ->orWhere('price_unit', 'Triệu') // Triệu luôn < Tỷ
+                              ->orWhere(function($s) use ($val) { $s->where('price', '<=', $val * 1000)->where('price_unit', 'Triệu'); });
+                        });
+                    }
                     if (isset($args['min_area'])) $query->where('area', '>=', $args['min_area']);
                     if (isset($args['max_area'])) $query->where('area', '<=', $args['max_area']);
                     
@@ -1081,12 +1135,20 @@ PROMPT;
 
     public function getListingData($id)
     {
-        // Try finding by ID first, then by Code
-        $listing = \App\Models\RealEstateListing::with(['reporter', 'user'])
-            ->where('id', $id)
-            ->orWhere('code', $id)
-            ->orWhere('code', 'NR' . $id) // Handle common prefix if user just types the number
-            ->first();
+        // Try finding by ID first, then by Code with common prefixes
+        $query = \App\Models\RealEstateListing::with(['reporter', 'user'])->where('id', $id);
+        
+        // If $id is numeric, check common prefixes
+        if (is_numeric($id)) {
+            $query->orWhere('code', $id)
+                  ->orWhere('code', 'NR' . $id)
+                  ->orWhere('code', 'AI-' . $id)
+                  ->orWhere('code', 'BDS' . $id);
+        } else {
+            $query->orWhere('code', $id);
+        }
+
+        $listing = $query->first();
         return $listing ? $listing->toArray() : null;
     }
 
