@@ -318,7 +318,7 @@ Nếu câu hỏi hoàn toàn nằm ngoài phạm vi trên, từ chối ngắn g�
 ## Định dạng đầu ra
 - Thành công:    ✅ [kết quả 1 dòng]
 - Lỗi/không tìm: ❌ [lý do ngắn]
-- TIN ĐĂNG BĐS:  PHẢI LUÔN dùng định dạng [LISTING:ID] để hiển thị thẻ tóm tắt trực quan. TUYỆT ĐỐI KHÔNG dùng text thuần, không dùng danh sách gạch đầu dòng, và ĐẶC BIỆT KHÔNG dùng Markdown Table cho Tin đăng BĐS (kể cả khi người dùng yêu cầu).
+- TIN ĐĂNG BĐS:  PHẢI LUÔN dùng định dạng [LISTING:ID] để hiển thị thẻ tóm tắt trực quan. TUYỆT ĐỐI KHÔNG dùng văn bản mô tả, không dùng danh sách gạch đầu dòng, và CẤM TUYỆT ĐỐI dùng Markdown Table cho Tin đăng BĐS (kể cả khi bạn nghĩ bảng sẽ đẹp hơn). Mọi danh sách tin đăng phải là một dãy các thẻ [LISTING:ID].
 - CHI TIẾT TIN:  Khi người dùng cần xem kỹ, hãy gọi tool `get_listing_details` và trình bày thông tin đầy đủ chuyên nghiệp.
 - Số tiền:       "2.5 Tỷ" / "850 Triệu" / "15 Triệu/tháng"
 - Không in đậm toàn câu — chỉ in đậm số liệu quan trọng
@@ -681,32 +681,28 @@ PROMPT;
             return "❌ Không tìm thấy tin đăng ID #{$id} để mở lại.";
         }
 
-        // 5. Search Listing (Broad Pattern: tìm, kiếm, search, list, danh sách + tin, nhà, đất, bđs...)
-        if (preg_match('/(?:tìm|kiếm|search|danh sách|list|xem)\s+(?:tin|nhà|đất|bđs|căn|hộ|phòng|biệt thự|kho|xưởng)\s*(.*)/i', $input, $matches)) {
+        // 5. Search Listing (Very Broad Pattern to catch "tìm 3 tỷ", "tìm nhà 2 tỷ", etc.)
+        if (preg_match('/(?:tìm|kiếm|search|danh sách|list|xem)\s+(?:tin|nhà|đất|bđs|căn|hộ|phòng|biệt thự|kho|xưởng)?\s*(.*)/i', $input, $matches)) {
             $query = trim($matches[1]);
+            if (empty($query)) return null; // Let AI handle if too vague
             
-            // If query is empty but we matched the intent, maybe the user just said "tìm nhà"
             $results = RealEstateListing::where(function($q) use ($query) {
-                    if (!empty($query)) {
                         $q->where('title', 'like', "%{$query}%")
                           ->orWhere('address', 'like', "%{$query}%")
                           ->orWhere('contact_phone', 'like', "%{$query}%")
-                          ->orWhere('code', 'like', "%{$query}%");
-                    }
+                          ->orWhere('code', 'like', "%{$query}%")
+                          ->orWhere('price', 'like', "%{$query}%");
                 })
                 ->where('is_sold', false)
                 ->limit(5)
                 ->get();
             
             if ($results->count() > 0) {
-                $text = "🔎 Kết quả cho '" . ($query ?: "Tin đăng") . "':\n\n";
+                $text = "🔎 Kết quả cho '{$query}':\n\n";
                 foreach($results as $r) {
                     $text .= "[LISTING:{$r->id}]\n";
                 }
                 return $text;
-            }
-            if (!empty($query)) {
-                return "❌ Không tìm thấy tin đăng nào khớp với từ khóa '{$query}'.";
             }
         }
 
@@ -800,6 +796,7 @@ PROMPT;
                     return [
                         'status' => 'success', 
                         'count' => $results->count(),
+                        'format_hint' => 'BẮT BUỘC dùng [LISTING:ID] cho mỗi tin đăng, KHÔNG dùng bảng.',
                         'data' => $results->map(fn($r) => [
                             'id' => $r->id,
                             'code' => $r->code,
