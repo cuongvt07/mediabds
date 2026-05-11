@@ -712,12 +712,17 @@
                                         @endif
                                     </div>
 
-                                    <div class="flex-1 relative group h-32" x-data="{ isUploading: false, status: '' }">
+                                    <div class="flex-1 relative group h-32" x-data="{ isUploading: false, status: '', localPreview: null }">
                                         <input type="file" 
                                             class="absolute inset-0 opacity-0 cursor-pointer z-10"
                                             @change="
                                                 const file = $event.target.files[0];
                                                 if (!file) return;
+                                                
+                                                // Instant local preview
+                                                if (localPreview) URL.revokeObjectURL(localPreview);
+                                                localPreview = URL.createObjectURL(file);
+                                                
                                                 isUploading = true;
                                                 status = 'Đang nén...';
                                                 const compressed = await window.compressImage(file);
@@ -729,12 +734,18 @@
                                             ">
                                         <div
                                             class="bg-gray-50 hover:bg-gray-100 text-gray-500 px-6 py-4 rounded-xl border border-gray-200 border-dashed flex flex-col items-center justify-center gap-2 font-bold transition-all w-full h-full group-hover:border-blue-300 group-hover:text-blue-500 overflow-hidden relative">
-                                            <div x-show="!isUploading" class="flex flex-col items-center gap-2">
+                                            
+                                            <!-- Local Preview Overlay -->
+                                            <template x-if="localPreview">
+                                                <img :src="localPreview" class="absolute inset-0 w-full h-full object-cover opacity-50">
+                                            </template>
+
+                                            <div x-show="!isUploading" class="flex flex-col items-center gap-2 relative z-10">
                                                 <i class="fa-solid fa-cloud-arrow-up fa-lg"></i>
                                                 Tải ảnh đại diện
                                                 <span class="text-xs font-normal text-gray-400">Chọn 1 ảnh làm ảnh bìa listing</span>
                                             </div>
-                                            <div x-show="isUploading" class="flex flex-col items-center gap-2 text-blue-600" style="display: none;">
+                                            <div x-show="isUploading" class="flex flex-col items-center gap-2 text-blue-600 relative z-10" style="display: none;">
                                                 <i class="fa-solid fa-spinner fa-spin fa-2x"></i>
                                                 <span class="text-xs uppercase font-black" x-text="status"></span>
                                             </div>
@@ -755,30 +766,43 @@
                                     </button>
 
                                     <!-- Upload Local -->
-                                    <div class="flex-1 relative group" x-data="{ isUploading: false, progress: 0, status: '' }">
+                                    <div class="flex-1 relative group" x-data="{ isUploading: false, progress: 0, status: '', localPreviews: [] }">
                                         <input type="file" multiple
                                             class="absolute inset-0 opacity-0 cursor-pointer z-10"
                                             @change="
                                                 const files = Array.from($event.target.files);
                                                 if (files.length === 0) return;
+                                                
+                                                // Create local previews instantly
+                                                localPreviews.forEach(url => URL.revokeObjectURL(url));
+                                                localPreviews = files.map(f => URL.createObjectURL(f));
+                                                
                                                 isUploading = true;
                                                 progress = 0;
-                                                status = 'Đang xử lý ảnh...';
+                                                status = 'Đang nén ảnh...';
                                                 
                                                 try {
-                                                    const compressedFiles = [];
-                                                    for (let i = 0; i < files.length; i++) {
-                                                        progress = Math.round(((i + 1) / files.length) * 30); // First 30% for compression
-                                                        const result = await window.compressImage(files[i]);
-                                                        compressedFiles.push(result);
-                                                    }
+                                                    // Compress in parallel for maximum speed
+                                                    const compressedFiles = await Promise.all(files.map(async (f, i) => {
+                                                        const result = await window.compressImage(f);
+                                                        // Update progress slightly as each one finishes
+                                                        progress = Math.round(((i + 1) / files.length) * 30);
+                                                        return result;
+                                                    }));
                                                     
                                                     status = 'Đang tải lên...';
                                                     @this.uploadMultiple('tempImages', compressedFiles, 
-                                                        (uploadedNames) => { isUploading = false; progress = 100; }, 
-                                                        () => { isUploading = false; alert('Lỗi tải ảnh!'); },
+                                                        (uploadedNames) => { 
+                                                            isUploading = false; 
+                                                            progress = 100;
+                                                            localPreviews.forEach(url => URL.revokeObjectURL(url));
+                                                            localPreviews = [];
+                                                        }, 
+                                                        () => { 
+                                                            isUploading = false; 
+                                                            alert('Lỗi tải ảnh!'); 
+                                                        },
                                                         (event) => { 
-                                                            // Remaining 70% for actual upload progress
                                                             progress = 30 + Math.round((event.detail.progress / 100) * 70);
                                                         }
                                                     );
@@ -789,11 +813,21 @@
                                             ">
                                         <div
                                             class="bg-gray-50 hover:bg-gray-100 text-gray-500 px-6 py-4 rounded-xl border border-gray-200 border-dashed flex items-center justify-center gap-2 font-bold transition-all w-full h-full group-hover:border-blue-300 group-hover:text-blue-500 overflow-hidden relative min-h-[64px]">
-                                            <div x-show="!isUploading" class="flex items-center gap-2">
+                                            
+                                            <!-- Local Preview Indicator -->
+                                            <template x-if="localPreviews.length > 0">
+                                                <div class="absolute inset-0 flex gap-1 p-1 opacity-20 overflow-hidden">
+                                                    <template x-for="url in localPreviews">
+                                                        <img :src="url" class="h-full aspect-square object-cover rounded">
+                                                    </template>
+                                                </div>
+                                            </template>
+
+                                            <div x-show="!isUploading" class="flex items-center gap-2 relative z-10">
                                                 <i class="fa-solid fa-cloud-arrow-up"></i>
                                                 Tải ảnh slider từ máy tính
                                             </div>
-                                            <div x-show="isUploading" class="flex items-center gap-3 text-blue-600" style="display: none;">
+                                            <div x-show="isUploading" class="flex items-center gap-3 text-blue-600 relative z-10" style="display: none;">
                                                 <i class="fa-solid fa-circle-notch fa-spin"></i>
                                                 <span class="text-xs font-black uppercase tracking-widest"><span x-text="status"></span> <span x-text="progress"></span>%</span>
                                                 <div class="absolute bottom-0 left-0 h-1 bg-blue-500 transition-all duration-300" :style="'width: ' + progress + '%'"></div>
@@ -1752,57 +1786,60 @@
                 });
             };
 
-            // Improved Image Compression Utility with Fallback
+            // Improved Image Compression Utility with Parallel processing support
             window.compressImage = async function(file, maxWidth = 1600, maxHeight = 1600, quality = 0.7) {
                 return new Promise((resolve) => {
-                    // Fallback to original file if not an image
                     if (!file.type.startsWith('image/')) {
                         return resolve(file);
                     }
 
-                    const reader = new FileReader();
-                    reader.readAsDataURL(file);
-                    reader.onload = (event) => {
-                        const img = new Image();
-                        img.onerror = () => resolve(file); // Fallback on error
-                        img.onload = () => {
-                            try {
-                                const canvas = document.createElement('canvas');
-                                let width = img.width;
-                                let height = img.height;
-
-                                if (width > height) {
-                                    if (width > maxWidth) {
-                                        height *= maxWidth / width;
-                                        width = maxWidth;
-                                    }
-                                } else {
-                                    if (height > maxHeight) {
-                                        width *= maxHeight / height;
-                                        height = maxHeight;
-                                    }
-                                }
-
-                                canvas.width = width;
-                                canvas.height = height;
-                                const ctx = canvas.getContext('2d');
-                                ctx.drawImage(img, 0, 0, width, height);
-
-                                canvas.toBlob((blob) => {
-                                    if (!blob) return resolve(file); // Fallback if blob creation fails
-                                    resolve(new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".jpg", {
-                                        type: 'image/jpeg',
-                                        lastModified: Date.now()
-                                    }));
-                                }, 'image/jpeg', quality);
-                            } catch (e) {
-                                console.error('Compression error:', e);
-                                resolve(file); // Fallback on catch
-                            }
-                        };
-                        img.src = event.target.result;
+                    const img = new Image();
+                    const objectUrl = URL.createObjectURL(file);
+                    
+                    img.onerror = () => {
+                        URL.revokeObjectURL(objectUrl);
+                        resolve(file);
                     };
-                    reader.onerror = () => resolve(file); // Fallback on reader error
+
+                    img.onload = () => {
+                        URL.revokeObjectURL(objectUrl);
+                        try {
+                            const canvas = document.createElement('canvas');
+                            let width = img.width;
+                            let height = img.height;
+
+                            if (width > height) {
+                                if (width > maxWidth) {
+                                    height *= maxWidth / width;
+                                    width = maxWidth;
+                                }
+                            } else {
+                                if (height > maxHeight) {
+                                    width *= maxHeight / height;
+                                    height = maxHeight;
+                                }
+                            }
+
+                            canvas.width = width;
+                            canvas.height = height;
+                            const ctx = canvas.getContext('2d');
+                            ctx.imageSmoothingEnabled = true;
+                            ctx.imageSmoothingQuality = 'high';
+                            ctx.drawImage(img, 0, 0, width, height);
+
+                            canvas.toBlob((blob) => {
+                                if (!blob) return resolve(file);
+                                resolve(new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".jpg", {
+                                    type: 'image/jpeg',
+                                    lastModified: Date.now()
+                                }));
+                            }, 'image/jpeg', quality);
+                        } catch (e) {
+                            console.error('Compression error:', e);
+                            resolve(file);
+                        }
+                    };
+                    img.src = objectUrl;
                 });
             };
         </script>
