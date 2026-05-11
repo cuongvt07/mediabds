@@ -712,14 +712,16 @@
                                         @endif
                                     </div>
 
-                                    <div class="flex-1 relative group h-32" x-data="{ isUploading: false }">
+                                    <div class="flex-1 relative group h-32" x-data="{ isUploading: false, status: '' }">
                                         <input type="file" 
                                             class="absolute inset-0 opacity-0 cursor-pointer z-10"
                                             @change="
                                                 const file = $event.target.files[0];
                                                 if (!file) return;
                                                 isUploading = true;
+                                                status = 'Đang nén...';
                                                 const compressed = await window.compressImage(file);
+                                                status = 'Đang tải lên...';
                                                 @this.upload('tempAvatar', compressed, 
                                                     (uploadedName) => { isUploading = false; }, 
                                                     () => { isUploading = false; alert('Lỗi tải ảnh!'); }
@@ -734,7 +736,7 @@
                                             </div>
                                             <div x-show="isUploading" class="flex flex-col items-center gap-2 text-blue-600" style="display: none;">
                                                 <i class="fa-solid fa-spinner fa-spin fa-2x"></i>
-                                                <span class="text-xs uppercase font-black">Đang xử lý & Tải lên...</span>
+                                                <span class="text-xs uppercase font-black" x-text="status"></span>
                                             </div>
                                         </div>
                                     </div>
@@ -753,7 +755,7 @@
                                     </button>
 
                                     <!-- Upload Local -->
-                                    <div class="flex-1 relative group" x-data="{ isUploading: false, progress: 0 }">
+                                    <div class="flex-1 relative group" x-data="{ isUploading: false, progress: 0, status: '' }">
                                         <input type="file" multiple
                                             class="absolute inset-0 opacity-0 cursor-pointer z-10"
                                             @change="
@@ -761,21 +763,29 @@
                                                 if (files.length === 0) return;
                                                 isUploading = true;
                                                 progress = 0;
+                                                status = 'Đang xử lý ảnh...';
                                                 
-                                                const compressedFiles = [];
-                                                for (let i = 0; i < files.length; i++) {
-                                                    progress = Math.round((i / files.length) * 50); // First 50% for compression
-                                                    compressedFiles.push(await window.compressImage(files[i]));
-                                                }
-                                                
-                                                @this.uploadMultiple('tempImages', compressedFiles, 
-                                                    (uploadedNames) => { isUploading = false; progress = 100; }, 
-                                                    () => { isUploading = false; alert('Lỗi tải ảnh!'); },
-                                                    (event) => { 
-                                                        // Remaining 50% for actual upload progress
-                                                        progress = 50 + Math.round(event.detail.progress / 2);
+                                                try {
+                                                    const compressedFiles = [];
+                                                    for (let i = 0; i < files.length; i++) {
+                                                        progress = Math.round(((i + 1) / files.length) * 30); // First 30% for compression
+                                                        const result = await window.compressImage(files[i]);
+                                                        compressedFiles.push(result);
                                                     }
-                                                );
+                                                    
+                                                    status = 'Đang tải lên...';
+                                                    @this.uploadMultiple('tempImages', compressedFiles, 
+                                                        (uploadedNames) => { isUploading = false; progress = 100; }, 
+                                                        () => { isUploading = false; alert('Lỗi tải ảnh!'); },
+                                                        (event) => { 
+                                                            // Remaining 70% for actual upload progress
+                                                            progress = 30 + Math.round((event.detail.progress / 100) * 70);
+                                                        }
+                                                    );
+                                                } catch (e) {
+                                                    console.error('Upload error:', e);
+                                                    isUploading = false;
+                                                }
                                             ">
                                         <div
                                             class="bg-gray-50 hover:bg-gray-100 text-gray-500 px-6 py-4 rounded-xl border border-gray-200 border-dashed flex items-center justify-center gap-2 font-bold transition-all w-full h-full group-hover:border-blue-300 group-hover:text-blue-500 overflow-hidden relative min-h-[64px]">
@@ -785,7 +795,7 @@
                                             </div>
                                             <div x-show="isUploading" class="flex items-center gap-3 text-blue-600" style="display: none;">
                                                 <i class="fa-solid fa-circle-notch fa-spin"></i>
-                                                <span class="text-xs font-black uppercase tracking-widest">Đang xử lý <span x-text="progress"></span>%</span>
+                                                <span class="text-xs font-black uppercase tracking-widest"><span x-text="status"></span> <span x-text="progress"></span>%</span>
                                                 <div class="absolute bottom-0 left-0 h-1 bg-blue-500 transition-all duration-300" :style="'width: ' + progress + '%'"></div>
                                             </div>
                                         </div>
@@ -1742,44 +1752,57 @@
                 });
             };
 
-            // Image Compression Utility
+            // Improved Image Compression Utility with Fallback
             window.compressImage = async function(file, maxWidth = 1600, maxHeight = 1600, quality = 0.7) {
                 return new Promise((resolve) => {
+                    // Fallback to original file if not an image
+                    if (!file.type.startsWith('image/')) {
+                        return resolve(file);
+                    }
+
                     const reader = new FileReader();
                     reader.readAsDataURL(file);
                     reader.onload = (event) => {
                         const img = new Image();
-                        img.src = event.target.result;
+                        img.onerror = () => resolve(file); // Fallback on error
                         img.onload = () => {
-                            const canvas = document.createElement('canvas');
-                            let width = img.width;
-                            let height = img.height;
+                            try {
+                                const canvas = document.createElement('canvas');
+                                let width = img.width;
+                                let height = img.height;
 
-                            if (width > height) {
-                                if (width > maxWidth) {
-                                    height *= maxWidth / width;
-                                    width = maxWidth;
+                                if (width > height) {
+                                    if (width > maxWidth) {
+                                        height *= maxWidth / width;
+                                        width = maxWidth;
+                                    }
+                                } else {
+                                    if (height > maxHeight) {
+                                        width *= maxHeight / height;
+                                        height = maxHeight;
+                                    }
                                 }
-                            } else {
-                                if (height > maxHeight) {
-                                    width *= maxHeight / height;
-                                    height = maxHeight;
-                                }
+
+                                canvas.width = width;
+                                canvas.height = height;
+                                const ctx = canvas.getContext('2d');
+                                ctx.drawImage(img, 0, 0, width, height);
+
+                                canvas.toBlob((blob) => {
+                                    if (!blob) return resolve(file); // Fallback if blob creation fails
+                                    resolve(new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".jpg", {
+                                        type: 'image/jpeg',
+                                        lastModified: Date.now()
+                                    }));
+                                }, 'image/jpeg', quality);
+                            } catch (e) {
+                                console.error('Compression error:', e);
+                                resolve(file); // Fallback on catch
                             }
-
-                            canvas.width = width;
-                            canvas.height = height;
-                            const ctx = canvas.getContext('2d');
-                            ctx.drawImage(img, 0, 0, width, height);
-
-                            canvas.toBlob((blob) => {
-                                resolve(new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".jpg", {
-                                    type: 'image/jpeg',
-                                    lastModified: Date.now()
-                                }));
-                            }, 'image/jpeg', quality);
                         };
+                        img.src = event.target.result;
                     };
+                    reader.onerror = () => resolve(file); // Fallback on reader error
                 });
             };
         </script>
