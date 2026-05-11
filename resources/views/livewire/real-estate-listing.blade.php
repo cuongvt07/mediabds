@@ -871,15 +871,30 @@
                                         @endif
                                     </div>
 
-                                    <div class="flex-1 relative group h-32">
-                                        <input type="file" wire:model="tempAvatar"
-                                            class="absolute inset-0 opacity-0 cursor-pointer z-10">
+                                    <div class="flex-1 relative group h-32" x-data="{ isUploading: false }">
+                                        <input type="file" 
+                                            class="absolute inset-0 opacity-0 cursor-pointer z-10"
+                                            @change="
+                                                const file = $event.target.files[0];
+                                                if (!file) return;
+                                                isUploading = true;
+                                                const compressed = await window.compressImage(file);
+                                                @this.upload('tempAvatar', compressed, 
+                                                    (uploadedName) => { isUploading = false; }, 
+                                                    () => { isUploading = false; alert('Lỗi tải ảnh!'); }
+                                                );
+                                            ">
                                         <div
-                                            class="bg-gray-50 hover:bg-gray-100 text-gray-500 px-6 py-4 rounded-xl border border-gray-200 border-dashed flex flex-col items-center justify-center gap-2 font-bold transition-all w-full h-full group-hover:border-blue-300 group-hover:text-blue-500">
-                                            <i class="fa-solid fa-cloud-arrow-up fa-lg"></i>
-                                            Tải ảnh đại diện
-                                            <span class="text-xs font-normal text-gray-400">Chọn 1 ảnh làm ảnh bìa
-                                                listing</span>
+                                            class="bg-gray-50 hover:bg-gray-100 text-gray-500 px-6 py-4 rounded-xl border border-gray-200 border-dashed flex flex-col items-center justify-center gap-2 font-bold transition-all w-full h-full group-hover:border-blue-300 group-hover:text-blue-500 overflow-hidden relative">
+                                            <div x-show="!isUploading" class="flex flex-col items-center gap-2">
+                                                <i class="fa-solid fa-cloud-arrow-up fa-lg"></i>
+                                                Tải ảnh đại diện
+                                                <span class="text-xs font-normal text-gray-400">Chọn 1 ảnh làm ảnh bìa listing</span>
+                                            </div>
+                                            <div x-show="isUploading" class="flex flex-col items-center gap-2 text-blue-600" style="display: none;">
+                                                <i class="fa-solid fa-spinner fa-spin fa-2x"></i>
+                                                <span class="text-xs uppercase font-black">Đang xử lý & Tải lên...</span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -897,13 +912,41 @@
                                     </button>
 
                                     <!-- Upload Local -->
-                                    <div class="flex-1 relative group">
-                                        <input type="file" wire:model="tempImages" multiple
-                                            class="absolute inset-0 opacity-0 cursor-pointer z-10">
+                                    <div class="flex-1 relative group" x-data="{ isUploading: false, progress: 0 }">
+                                        <input type="file" multiple
+                                            class="absolute inset-0 opacity-0 cursor-pointer z-10"
+                                            @change="
+                                                const files = Array.from($event.target.files);
+                                                if (files.length === 0) return;
+                                                isUploading = true;
+                                                progress = 0;
+                                                
+                                                const compressedFiles = [];
+                                                for (let i = 0; i < files.length; i++) {
+                                                    progress = Math.round((i / files.length) * 50); // First 50% for compression
+                                                    compressedFiles.push(await window.compressImage(files[i]));
+                                                }
+                                                
+                                                @this.uploadMultiple('tempImages', compressedFiles, 
+                                                    (uploadedNames) => { isUploading = false; progress = 100; }, 
+                                                    () => { isUploading = false; alert('Lỗi tải ảnh!'); },
+                                                    (event) => { 
+                                                        // Remaining 50% for actual upload progress
+                                                        progress = 50 + Math.round(event.detail.progress / 2);
+                                                    }
+                                                );
+                                            ">
                                         <div
-                                            class="bg-gray-50 hover:bg-gray-100 text-gray-500 px-6 py-4 rounded-xl border border-gray-200 border-dashed flex items-center justify-center gap-2 font-bold transition-all w-full h-full group-hover:border-blue-300 group-hover:text-blue-500">
-                                            <i class="fa-solid fa-cloud-arrow-up"></i>
-                                            Tải ảnh slider từ máy tính
+                                            class="bg-gray-50 hover:bg-gray-100 text-gray-500 px-6 py-4 rounded-xl border border-gray-200 border-dashed flex items-center justify-center gap-2 font-bold transition-all w-full h-full group-hover:border-blue-300 group-hover:text-blue-500 overflow-hidden relative min-h-[64px]">
+                                            <div x-show="!isUploading" class="flex items-center gap-2">
+                                                <i class="fa-solid fa-cloud-arrow-up"></i>
+                                                Tải ảnh slider từ máy tính
+                                            </div>
+                                            <div x-show="isUploading" class="flex items-center gap-3 text-blue-600" style="display: none;">
+                                                <i class="fa-solid fa-circle-notch fa-spin"></i>
+                                                <span class="text-xs font-black uppercase tracking-widest">Đang xử lý <span x-text="progress"></span>%</span>
+                                                <div class="absolute bottom-0 left-0 h-1 bg-blue-500 transition-all duration-300" :style="'width: ' + progress + '%'"></div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -1855,6 +1898,47 @@
 
                     const val = this.value === '' ? null : this.value;
                     window.Livewire.find(livewireId).set(wireProperty, val);
+                });
+            };
+
+            // Image Compression Utility
+            window.compressImage = async function(file, maxWidth = 1600, maxHeight = 1600, quality = 0.7) {
+                return new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.readAsDataURL(file);
+                    reader.onload = (event) => {
+                        const img = new Image();
+                        img.src = event.target.result;
+                        img.onload = () => {
+                            const canvas = document.createElement('canvas');
+                            let width = img.width;
+                            let height = img.height;
+
+                            if (width > height) {
+                                if (width > maxWidth) {
+                                    height *= maxWidth / width;
+                                    width = maxWidth;
+                                }
+                            } else {
+                                if (height > maxHeight) {
+                                    width *= maxHeight / height;
+                                    height = maxHeight;
+                                }
+                            }
+
+                            canvas.width = width;
+                            canvas.height = height;
+                            const ctx = canvas.getContext('2d');
+                            ctx.drawImage(img, 0, 0, width, height);
+
+                            canvas.toBlob((blob) => {
+                                resolve(new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".jpg", {
+                                    type: 'image/jpeg',
+                                    lastModified: Date.now()
+                                }));
+                            }, 'image/jpeg', quality);
+                        };
+                    };
                 });
             };
         </script>
