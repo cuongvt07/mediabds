@@ -1168,11 +1168,13 @@ class RealEstateListing extends Component
                     $query->whereIn('property_type', $user->property_types);
                 }
 
-                // Filter by CTV Rank price limits
-                $invitesCount = $user->sentInviteLogs()->count();
-                $ctvRank = \App\Models\CtvRank::where('min_invites', '<=', $invitesCount)
-                    ->orderBy('min_invites', 'desc')
-                    ->first();
+                // Filter by CTV Rank price limits - Cache the rank data for the user
+                $ctvRank = \Illuminate\Support\Facades\Cache::remember('user_rank_' . $user->id, 300, function() use ($user) {
+                    $invitesCount = $user->sentInviteLogs()->count();
+                    return \App\Models\CtvRank::where('min_invites', '<=', $invitesCount)
+                        ->orderBy('min_invites', 'desc')
+                        ->first();
+                });
 
                 if ($ctvRank) {
                     if (!empty($ctvRank->min_price)) {
@@ -1282,10 +1284,26 @@ class RealEstateListing extends Component
                 ->onEachSide(0);
         });
 
+        // Only load customers and users when the popup is open to keep component lightweight
+        $salesUsers = [];
+        $allCustomers = [];
+        
+        if ($this->showCreatePopup || $this->selectedListingId) {
+            $salesUsers = \Illuminate\Support\Facades\Cache::remember('sales_users_list', 600, function() {
+                return User::orderBy('name')->get(['id', 'name', 'phone']);
+            });
+
+            // For customers, we still load all but we cache it. 
+            // In the future, this should be an AJAX search.
+            $allCustomers = \Illuminate\Support\Facades\Cache::remember('all_customers_list', 300, function() {
+                return \App\Models\Customer::orderBy('name')->get(['id', 'name', 'phone']);
+            });
+        }
+
         return view('livewire.real-estate-listing', [
             'listings' => $listings,
-            'salesUsers' => User::orderBy('name')->get(['id', 'name', 'phone']),
-            'allCustomers' => \App\Models\Customer::orderBy('name')->get(['id', 'name', 'phone']),
+            'salesUsers' => $salesUsers,
+            'allCustomers' => $allCustomers,
         ])->layout('components.layouts.blog');
     }
 
