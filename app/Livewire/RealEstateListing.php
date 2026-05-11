@@ -1433,6 +1433,12 @@ class RealEstateListing extends Component
         $this->importFile = null;
     }
 
+    public function downloadImportTemplate()
+    {
+        if (!$this->isAdmin) return;
+        return Excel::download(new \App\Exports\ListingsTemplateExport, 'mau_import_tin_dang.xlsx');
+    }
+
     public function importListings()
     {
         if (!$this->isAdmin) return;
@@ -1452,5 +1458,6 @@ class RealEstateListing extends Component
             $this->dispatch('toast', ['message' => 'Lỗi khi nhập dữ liệu: ' . $e->getMessage(), 'type' => 'error']);
         }
     }
+
 }
 

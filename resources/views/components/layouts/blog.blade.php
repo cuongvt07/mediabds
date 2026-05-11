@@ -159,6 +159,62 @@
             </div>
         </template>
     </div>
+    <!-- Global Floating AI Assistant -->
+    <div x-data="{ chatOpen: false }" 
+         x-init="
+            $watch('chatOpen', value => {
+                if(value) {
+                    $nextTick(() => { window.dispatchEvent(new CustomEvent('chat-opened')) });
+                }
+            })
+         "
+         class="fixed top-24 right-6 z-[100] flex flex-col items-end gap-4">
+        
+        <!-- Chat Popup -->
+        <div x-show="chatOpen" 
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="opacity-0 translate-y-10 scale-95"
+             x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+             x-transition:leave="transition ease-in duration-200"
+             x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+             x-transition:leave-end="opacity-0 translate-y-10 scale-95"
+             class="w-[95vw] md:w-[450px] h-[70vh] md:h-[600px] bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col mb-4 relative"
+             style="display: none;">
+            
+            <!-- Popup Header -->
+            <div class="px-4 py-2 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
+                <div class="flex items-center gap-2">
+                    <div class="w-7 h-7 rounded-lg bg-slate-900 flex items-center justify-center text-white">
+                        <i class="fa-solid fa-robot text-xs"></i>
+                    </div>
+                    <span class="text-xs font-bold text-slate-900">Trợ lý AI Antigravity</span>
+                </div>
+                <button @click="chatOpen = false" class="text-slate-400 hover:text-slate-900 transition-colors">
+                    <i class="fa-solid fa-circle-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Chatbot Component -->
+            <div class="flex-1 overflow-hidden">
+                @livewire('chatbot', ['isPopup' => true])
+            </div>
+        </div>
+
+        <!-- Floating Button -->
+        <button @click="chatOpen = !chatOpen" 
+                class="w-14 h-14 bg-slate-900 hover:bg-black text-white rounded-full shadow-xl flex items-center justify-center transition-all hover:-translate-y-1 active:scale-90 group border-4 border-white ring-1 ring-slate-200 relative">
+            
+            <template x-if="!chatOpen">
+                <i class="fa-solid fa-comment-dots text-xl group-hover:animate-bounce"></i>
+            </template>
+            <template x-if="chatOpen">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </template>
+            
+            <!-- Notification Dot (Optional) -->
+            <span class="absolute top-0 right-0 w-3 h-3 bg-red-500 border-2 border-white rounded-full animate-pulse"></span>
+        </button>
+    </div>
 </body>
 
 </html>

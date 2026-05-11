@@ -308,166 +308,7 @@
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pb-20">
             @foreach ($listings as $listing)
-                <div wire:key="{{ $listing['id'] }}-{{ $listing['updated_at'] }}"
-                    wire:click="viewListingDetail({{ $listing['id'] }})"
-                    class="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow border border-gray-100 overflow-hidden flex flex-col md:flex-row h-auto md:h-52 group cursor-pointer relative animate-[fadeIn_0.3s_ease-out]">
-                    
-                    <!-- Left: Image (30%) -->
-                    <div class="w-full h-48 md:w-[30%] md:h-full bg-gray-200 relative overflow-hidden shrink-0">
-                        <img src="{{ !empty($listing['avatar']) ? $listing['avatar'] : (!empty($listing['images']) && count($listing['images']) > 0 ? $listing['images'][0] : 'https://placehold.co/400x300?text=No+Img') }}"
-                            class="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                            loading="lazy" alt="{{ $listing['title'] }}">
-
-                        <!-- Type & Code Badges -->
-                        <div class="absolute top-2 left-2 flex flex-col gap-1 z-10">
-                            <span class="bg-blue-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider shadow-sm">
-                                {{ $listing['type'] }}
-                            </span>
-                            @if (!empty($listing['contact_type']))
-                                <span class="bg-emerald-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider shadow-sm">
-                                    {{ $listing['contact_type'] }}
-                                </span>
-                            @endif
-                            @if (!empty($listing['code']))
-                                <span class="bg-slate-800 text-white text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider shadow-sm">
-                                    {{ $listing['code'] }}
-                                </span>
-                            @endif
-                            @if ($listing['is_sold'])
-                                <span class="bg-red-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider shadow-sm flex items-center gap-1">
-                                    <i class="fa-solid fa-check"></i> ĐÃ BÁN
-                                </span>
-                            @endif
-                        </div>
-
-                        <!-- Video Overlay -->
-                        @if(!empty($listing['youtube_link']))
-                            <div class="absolute inset-0 flex items-center justify-center bg-black/10 group-hover:bg-black/20 transition-colors pointer-events-none">
-                                <div class="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white ring-1 ring-white/50">
-                                    <i class="fa-solid fa-play ml-0.5"></i>
-                                </div>
-                            </div>
-                        @endif
-                    </div>
-
-                    <!-- Right: Info (70%) -->
-                    <div class="w-full md:w-[70%] p-3 md:p-4 flex flex-col justify-between relative overflow-hidden">
-                        <div>
-                            <div class="flex justify-between items-start gap-2 mb-1.5">
-                                <h3 class="font-bold text-slate-800 text-sm md:text-base leading-tight line-clamp-2 group-hover:text-blue-600 transition-colors" title="{{ $listing['title'] }}">
-                                    {{ $listing['title'] }}
-                                </h3>
-                                
-                                {{-- Quick Actions --}}
-                                <div class="flex items-center gap-1.5 shrink-0" x-data="{ copied: false }">
-                                    <button @click.stop="
-                                                const text = `🏠 {{ $listing['title'] }} \n📍 Vị trí: {{ implode(', ', array_filter([$listing['address'], $listing['ward_name'], $listing['district_name'], $listing['province_name']])) }} \n💰 Giá: {{ number_format($listing['price'], 0, ',', '.') }} {{ $listing['price_unit'] == 1 ? 'VNĐ' : ($listing['price_unit'] == 2 ? 'VNĐ/tháng' : 'VNĐ/m2') }} \n📐 Diện tích: {{ floatval($listing['area']) }} m² \n------------------ \n📋 Thông tin chi tiết: \n- Tầng: {{ $listing['floors'] ?? 0 }} \n- Phòng ngủ: {{ $listing['bedrooms'] ?? 0 }} \n- Toilet: {{ $listing['toilets'] ?? 0 }} \n- Hướng: {{ \App\Livewire\RealEstateListing::DIRECTIONS[$listing['direction']] ?? 'N/A' }} \n- Mặt tiền: {{ floatval($listing['front_width']) }}m \n- Lộ giới: {{ floatval($listing['road_width']) }}m \n------------------ \n📝 Mô tả: \n{{ $listing['description'] }}`;
-                                                navigator.clipboard.writeText(text);
-                                                copied = true;
-                                                setTimeout(() => copied = false, 2000);
-                                            "
-                                            class="w-7 h-7 flex items-center justify-center rounded-lg text-emerald-600 hover:bg-emerald-50 transition-colors bg-gray-50 md:bg-transparent"
-                                            title="Copy QC">
-                                        <i class="fa-regular fa-copy" x-show="!copied"></i>
-                                        <i class="fa-solid fa-check" x-show="copied" style="display: none;"></i>
-                                    </button>
-                                    @if ($isAdmin)
-                                        <button wire:click.stop="editListing({{ $listing['id'] }})"
-                                            class="w-7 h-7 flex items-center justify-center rounded-lg text-blue-600 hover:bg-blue-50 transition-colors bg-gray-50 md:bg-transparent">
-                                            <i class="fa-regular fa-pen-to-square"></i>
-                                        </button>
-                                        <button wire:click.stop="deleteListing({{ $listing['id'] }})"
-                                            wire:confirm="Bạn có chắc chắn muốn xóa tin đăng này? Thao tác này có thể hoàn tác bởi Admin."
-                                            class="w-7 h-7 flex items-center justify-center rounded-lg text-red-600 hover:bg-red-50 transition-colors bg-gray-50 md:bg-transparent">
-                                            <i class="fa-regular fa-trash-can"></i>
-                                        </button>
-                                    @endif
-                                </div>
-                            </div>
-
-                            <p class="text-xs text-gray-500 font-medium truncate flex items-center gap-1 mb-2">
-                                <i class="fa-solid fa-location-dot text-gray-400"></i>
-                                {{ implode(', ', array_filter([$listing['ward_name'], $listing['district_name'], $listing['province_name']])) }}
-                            </p>
-
-                            <div class="flex items-center gap-3 mb-2">
-                                <span class="font-black text-red-600 text-base">
-                                    {{ number_format($listing['price'], 0, ',', '.') }}
-                                    <span class="text-[10px] font-normal text-gray-400">
-                                        {{ $listing['price_unit'] == 1 ? 'VNĐ' : ($listing['price_unit'] == 2 ? 'VNĐ/tháng' : 'VNĐ/m2') }}
-                                    </span>
-                                </span>
-                                <span class="w-px h-3 bg-gray-200"></span>
-                                <span class="text-sm font-bold text-slate-700">{{ floatval($listing['area']) }} m²</span>
-                            </div>
-
-                            {{-- Facts --}}
-                            <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-gray-500 font-medium mb-3">
-                                <span class="bg-indigo-50 text-indigo-600 px-1.5 py-0.5 rounded font-bold uppercase transition-colors">
-                                    {{ \App\Livewire\RealEstateListing::PROPERTY_TYPES[$listing['property_type']] ?? 'Khác' }}
-                                </span>
-                                @if($listing['floors']) <span><i class="fa-solid fa-layer-group text-gray-400 mr-1"></i>{{ $listing['floors'] }} T</span> @endif
-                                @if($listing['bedrooms']) <span><i class="fa-solid fa-bed text-gray-400 mr-1"></i>{{ $listing['bedrooms'] }} PN</span> @endif
-                                @if($listing['toilets']) <span><i class="fa-solid fa-restroom text-gray-400 mr-1"></i>{{ $listing['toilets'] }} WC</span> @endif
-                                @if($listing['direction']) <span><i class="fa-regular fa-compass text-gray-400 mr-1"></i>{{ \App\Livewire\RealEstateListing::DIRECTIONS[$listing['direction']] ?? 'N/A' }}</span> @endif
-                                @if($listing['front_width']) <span><i class="fa-solid fa-ruler-horizontal text-gray-400 mr-1"></i>MT: {{ floatval($listing['front_width']) }}m</span> @endif
-                                @if($listing['road_width']) <span><i class="fa-solid fa-road text-gray-400 mr-1"></i>Lộ: {{ floatval($listing['road_width']) }}m</span> @endif
-                            </div>
-                        </div>
-
-                        {{-- Footer: Reporter & Timestamp --}}
-                        <div class="mt-auto pt-3 border-t border-gray-50 flex justify-between items-center text-[10px] font-medium">
-                            @if (!empty($listing['reporter']))
-                                <div class="flex items-center gap-1.5 cursor-pointer hover:bg-blue-50 p-1 rounded transition-colors" wire:click.stop="showReporterListings({{ $listing['reporter']['id'] }}, '{{ addslashes($listing['reporter']['name']) }}')">
-                                    <div class="relative shrink-0">
-                                        @if (!empty($listing['reporter']['avatar']))
-                                            <img src="{{ url('storage/' . $listing['reporter']['avatar']) }}" 
-                                                 class="w-5 h-5 rounded-md object-cover ring-1 ring-gray-100 shadow-sm">
-                                        @else
-                                            <div class="w-5 h-5 rounded-md bg-blue-100 text-blue-600 flex items-center justify-center text-[8px] font-black">
-                                                {{ mb_substr($listing['reporter']['name'], 0, 1) }}
-                                            </div>
-                                        @endif
-                                        <div class="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-blue-600 rounded-full border border-white"></div>
-                                    </div>
-                                    <div class="flex flex-col min-w-0">
-                                        <span class="text-slate-800 font-bold truncate max-w-[80px] leading-tight">{{ $listing['reporter']['name'] }}</span>
-                                        <span class="text-[8px] text-blue-500 uppercase tracking-tighter leading-none">Nguồn</span>
-                                    </div>
-                                </div>
-                            @elseif(!empty($listing['user']))
-                                <div class="flex items-center gap-1.5">
-                                    <div class="shrink-0">
-                                        @if (!empty($listing['user']['avatar']))
-                                            <img src="{{ url('storage/' . $listing['user']['avatar']) }}" 
-                                                 class="w-5 h-5 rounded-md object-cover ring-1 ring-gray-100 shadow-sm">
-                                        @else
-                                            <div class="w-5 h-5 rounded-md bg-slate-100 text-slate-600 flex items-center justify-center text-[8px] font-black">
-                                                {{ mb_substr($listing['user']['name'], 0, 1) }}
-                                            </div>
-                                        @endif
-                                    </div>
-                                    <span class="text-slate-500 font-bold truncate max-w-[80px] leading-tight">{{ $listing['user']['name'] }}</span>
-                                </div>
-                            @endif
-                            <div class="flex items-center gap-2">
-                                @if (!empty($listing['facebook_link']))
-                                    <a href="{{ $listing['facebook_link'] }}" target="_blank" class="text-blue-600 hover:text-blue-800 transition-colors" title="Facebook New">
-                                        <i class="fa-brands fa-facebook"></i>
-                                    </a>
-                                @endif
-                                @if (!empty($listing['facebook_video_link']))
-                                    <a href="{{ $listing['facebook_video_link'] }}" target="_blank" class="text-blue-400 hover:text-blue-600 transition-colors" title="Facebook Video">
-                                        <i class="fa-brands fa-facebook"></i>
-                                    </a>
-                                @endif
-                                <span class="text-gray-400 italic">
-                                    {{ \Carbon\Carbon::parse($listing['created_at'])->diffForHumans() }}
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <x-listing-card :listing="$listing" :isAdmin="$isAdmin" mode="grid" />
             @endforeach
         </div>
 
@@ -1980,8 +1821,12 @@
                             <p class="text-xs text-emerald-800 leading-relaxed font-medium">
                                 <i class="fa-solid fa-circle-info mr-1"></i>
                                 Vui lòng sử dụng file Excel (.xlsx) hoặc CSV. File cần có các cột tiêu đề: 
-                                <span class="font-bold">tieu_de, loai, loai_bds, dia_chi, dien_tich, gia, don_vi_gia, mo_ta, phone</span>.
+                                <span class="font-bold">tieu_de, loai, loai_bds, dia_chi, dien_tich, gia, don_vi_gia, mo_ta, phone, ma_tinh</span>.
                             </p>
+                            <button wire:click="downloadImportTemplate" 
+                                class="mt-3 flex items-center gap-2 text-xs font-bold text-emerald-700 hover:text-emerald-900 bg-white px-3 py-1.5 rounded-lg border border-emerald-200 transition-all shadow-sm">
+                                <i class="fa-solid fa-download"></i> Tải file mẫu (.xlsx)
+                            </button>
                         </div>
 
                         <div class="relative group">
@@ -2068,64 +1913,64 @@
             </div>
         </div>
     @endif
-
     {{-- Reporter Listings Popup --}}
     @if ($showReporterListingsPopup)
-        <div class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end md:items-center justify-center z-[110] p-0 md:p-4 transition-all duration-300 overflow-hidden">
-            <div class="bg-white rounded-t-[2.5rem] md:rounded-2xl shadow-2xl w-full max-w-5xl flex flex-col max-h-[85dvh] md:max-h-[90dvh] animate-[slideUp_0.4s_cubic-bezier(0.16,1,0.3,1)] overflow-hidden">
-                <div class="flex justify-between items-center px-6 py-4 border-b border-gray-200 bg-gray-50 rounded-t-2xl">
-                    <h2 class="text-xl font-black text-gray-800 uppercase flex items-center gap-2">
-                        <span class="bg-blue-100 text-blue-600 p-2 rounded-lg"><i class="fa-solid fa-list"></i></span>
+        <div class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center z-[110] p-4">
+            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl flex flex-col max-h-[90dvh] overflow-hidden animate-in zoom-in-95 duration-200">
+                <div class="flex justify-between items-center px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+                    <h3 class="text-xl font-black text-gray-800 flex items-center gap-2 uppercase">
+                        <i class="fa-solid fa-list-ul text-blue-600"></i>
                         {{ $reporterNameForListings }}
-                    </h2>
-                    <button wire:click="closeReporterListingsPopup" class="text-gray-400 hover:text-red-500 transition-colors w-8 h-8 flex items-center justify-center rounded-full hover:bg-red-50">
-                        <i class="fa-solid fa-times fa-lg"></i>
+                    </h3>
+                    <button wire:click="closeReporterListingsPopup" class="text-gray-400 hover:text-red-500 transition-colors">
+                        <i class="fa-solid fa-times text-xl"></i>
                     </button>
                 </div>
-                
-                <div class="p-4 overflow-y-auto flex-1 custom-scrollbar">
-                    @if(count($reporterListings) > 0)
+
+                <div class="flex-1 overflow-y-auto p-6 custom-scrollbar bg-slate-50/30">
+                    @if (empty($reporterListings))
+                        <div class="flex flex-col items-center justify-center py-20 text-gray-400">
+                            <i class="fa-solid fa-folder-open text-5xl mb-4 opacity-20"></i>
+                            <p class="font-bold">Không tìm thấy tin đăng nào.</p>
+                        </div>
+                    @else
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            @foreach ($reporterListings as $listing)
-                                <div wire:click="viewListingDetail({{ $listing['id'] }})"
-                                    class="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow border border-gray-100 overflow-hidden flex h-32 group cursor-pointer relative">
-                                    <div class="w-1/3 h-full bg-gray-200 relative overflow-hidden shrink-0">
-                                        <img src="{{ !empty($listing['avatar']) ? $listing['avatar'] : (!empty($listing['images']) && count($listing['images']) > 0 ? $listing['images'][0] : 'https://placehold.co/400x300?text=No+Img') }}"
-                                            class="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" loading="lazy" alt="{{ $listing['title'] }}">
-                                        @if ($listing['is_sold'])
-                                            <div class="absolute top-1 left-1 bg-red-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider shadow-sm flex items-center gap-1">
-                                                <i class="fa-solid fa-check"></i> ĐÃ BÁN
-                                            </div>
-                                        @endif
+                            @foreach ($reporterListings as $rl)
+                                <div wire:click="viewListingDetail({{ $rl['id'] }})"
+                                    class="bg-white p-3 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all cursor-pointer flex gap-3 group">
+                                    <div class="w-20 h-20 rounded-lg overflow-hidden shrink-0 bg-gray-100">
+                                        <img src="{{ !empty($rl['avatar']) ? $rl['avatar'] : (!empty($rl['images']) && count($rl['images']) > 0 ? $rl['images'][0] : 'https://placehold.co/100x100?text=No+Img') }}"
+                                            class="w-full h-full object-cover transition-transform group-hover:scale-110">
                                     </div>
-                                    <div class="w-2/3 p-3 flex flex-col justify-between">
-                                        <h3 class="font-bold text-slate-800 text-sm leading-tight line-clamp-2 group-hover:text-blue-600 transition-colors" title="{{ $listing['title'] }}">
-                                            {{ $listing['title'] }}
-                                        </h3>
-                                        <p class="text-xs text-gray-500 font-medium truncate mb-1">
-                                            <i class="fa-solid fa-location-dot text-gray-400"></i>
-                                            {{ implode(', ', array_filter([$listing['ward_name'] ?? '', $listing['district_name'] ?? '', $listing['province_name'] ?? ''])) }}
-                                        </p>
-                                        <div class="flex items-center gap-2">
-                                            <span class="font-black text-red-600 text-sm">
-                                                {{ number_format($listing['price'], 0, ',', '.') }}
-                                                <span class="text-[10px] font-normal text-gray-400">
-                                                    {{ $listing['price_unit'] == 1 ? 'VNĐ' : ($listing['price_unit'] == 2 ? 'VNĐ/tháng' : 'VNĐ/m2') }}
+                                    <div class="flex-1 min-w-0 flex flex-col justify-between">
+                                        <div>
+                                            <h4 class="font-bold text-gray-800 text-sm line-clamp-1 group-hover:text-blue-600 transition-colors">{{ $rl['title'] }}</h4>
+                                            <p class="text-[10px] text-gray-500 line-clamp-1 mt-0.5">
+                                                <i class="fa-solid fa-location-dot mr-1"></i>
+                                                {{ implode(', ', array_filter([$rl['ward_name'], $rl['district_name'], $rl['province_name']])) }}
+                                            </p>
+                                        </div>
+                                        <div class="flex items-center justify-between mt-2">
+                                            <span class="text-xs font-black text-red-600">
+                                                {{ number_format($rl['price'], 0, ',', '.') }}
+                                                <span class="text-[8px] font-normal text-gray-400">
+                                                    {{ $rl['price_unit'] == 1 ? 'VNĐ' : ($rl['price_unit'] == 2 ? 'VNĐ/tháng' : 'VNĐ/m2') }}
                                                 </span>
                                             </span>
-                                            <span class="w-px h-3 bg-gray-200"></span>
-                                            <span class="text-xs font-bold text-slate-700">{{ floatval($listing['area']) }} m²</span>
+                                            <span class="text-[10px] font-bold text-gray-600">{{ floatval($rl['area']) }} m²</span>
                                         </div>
                                     </div>
                                 </div>
                             @endforeach
                         </div>
-                    @else
-                        <div class="text-center py-10 text-gray-500">
-                            <i class="fa-solid fa-box-open fa-3x mb-3 text-gray-300"></i>
-                            <p class="font-bold">Không có tin đăng nào.</p>
-                        </div>
                     @endif
+                </div>
+
+                <div class="p-4 border-t border-gray-100 bg-gray-50 flex justify-end">
+                    <button wire:click="closeReporterListingsPopup"
+                        class="px-6 py-2 rounded-xl bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold transition-all active:scale-95">
+                        Đóng
+                    </button>
                 </div>
             </div>
         </div>
