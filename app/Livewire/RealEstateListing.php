@@ -7,6 +7,7 @@ use App\Models\RealEstateListingSale;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Cache;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use Livewire\WithPagination;
@@ -19,17 +20,18 @@ class RealEstateListing extends Component
 {
     use WithPagination, WithFileUploads;
 
-    public $locationData = null;
+    protected $locationData = null;
 
     protected function getLocationData()
     {
         if ($this->locationData === null) {
-            $path = 'locations/all_vietnam.json';
-            if (Storage::disk('local')->exists($path)) {
-                $this->locationData = json_decode(Storage::disk('local')->get($path), true);
-            } else {
-                $this->locationData = [];
-            }
+            $this->locationData = Cache::remember('vietnam_locations_full', 86400, function() {
+                $path = 'locations/all_vietnam.json';
+                if (Storage::disk('local')->exists($path)) {
+                    return json_decode(Storage::disk('local')->get($path), true);
+                }
+                return [];
+            });
         }
         return $this->locationData;
     }

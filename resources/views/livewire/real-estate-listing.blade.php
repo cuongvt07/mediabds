@@ -317,6 +317,15 @@
     @if ($showCreatePopup)
         <div class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end md:items-center justify-center z-50 p-0 md:p-4 transition-all duration-300 overflow-hidden">
             <div
+                x-data="{ 
+                    localAvatar: null, 
+                    isUploadingAvatar: false, 
+                    avatarStatus: '', 
+                    localSlider: [], 
+                    isUploadingSlider: false, 
+                    sliderProgress: 0, 
+                    sliderStatus: '' 
+                }"
                 class="bg-white rounded-t-[2.5rem] md:rounded-2xl shadow-2xl w-full max-w-5xl flex flex-col max-h-[85dvh] md:max-h-[90dvh] animate-[slideUp_0.4s_cubic-bezier(0.16,1,0.3,1)] overflow-hidden">
 
                 <div
@@ -678,41 +687,55 @@
                                 <div class="flex gap-4 items-start">
                                     <div
                                         class="w-32 h-32 bg-gray-100 rounded-lg border border-gray-300 flex-shrink-0 relative overflow-hidden group">
-                                        @if ($tempAvatar)
-                                            @php
-                                                $extension = strtolower($tempAvatar->getClientOriginalExtension());
-                                                $isPreviewable = in_array($extension, ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp']);
-                                            @endphp
-                                            @if ($isPreviewable)
-                                                <img src="{{ $tempAvatar->temporaryUrl() }}"
-                                                    class="w-full h-full object-cover">
+                                        
+                                        <!-- Instant Local Preview -->
+                                        <template x-if="localAvatar">
+                                            <div class="w-full h-full relative">
+                                                <img :src="localAvatar" class="w-full h-full object-cover">
+                                                <div x-show="isUploadingAvatar" class="absolute inset-0 bg-black/40 flex items-center justify-center">
+                                                    <i class="fa-solid fa-circle-notch fa-spin text-white"></i>
+                                                </div>
+                                            </div>
+                                        </template>
+
+                                        <!-- Server Side / Existing Preview -->
+                                        <div x-show="!localAvatar" class="w-full h-full">
+                                            @if ($tempAvatar)
+                                                @php
+                                                    $extension = strtolower($tempAvatar->getClientOriginalExtension());
+                                                    $isPreviewable = in_array($extension, ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp']);
+                                                @endphp
+                                                @if ($isPreviewable)
+                                                    <img src="{{ $tempAvatar->temporaryUrl() }}"
+                                                        class="w-full h-full object-cover">
+                                                @else
+                                                    <div class="w-full h-full flex flex-col items-center justify-center bg-slate-800 text-[#00D1FF] p-2 text-center">
+                                                        <i class="fa-solid fa-file-image fa-2x mb-1"></i>
+                                                        <span class="text-[10px] font-black uppercase tracking-tighter">{{ $extension }}</span>
+                                                        <span class="text-[8px] opacity-60 uppercase font-bold">No Preview</span>
+                                                    </div>
+                                                @endif
+                                                <button type="button" wire:click="$set('tempAvatar', null)"
+                                                    class="absolute top-1 right-1 bg-red-500 text-white w-5 h-5 rounded-full text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <i class="fa-solid fa-times"></i>
+                                                </button>
+                                            @elseif ($avatar)
+                                                <img src="{{ $avatar }}" class="w-full h-full object-cover">
+                                                <button type="button" wire:click="removeAvatar"
+                                                    class="absolute top-1 right-1 bg-red-500 text-white w-5 h-5 rounded-full text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <i class="fa-solid fa-times"></i>
+                                                </button>
                                             @else
-                                                <div class="w-full h-full flex flex-col items-center justify-center bg-slate-800 text-[#00D1FF] p-2 text-center">
-                                                    <i class="fa-solid fa-file-image fa-2x mb-1"></i>
-                                                    <span class="text-[10px] font-black uppercase tracking-tighter">{{ $extension }}</span>
-                                                    <span class="text-[8px] opacity-60 uppercase font-bold">No Preview</span>
+                                                <div
+                                                    class="w-full h-full flex flex-col items-center justify-center text-gray-400">
+                                                    <i class="fa-solid fa-image fa-2x mb-1"></i>
+                                                    <span class="text-[10px]">Chưa có ảnh</span>
                                                 </div>
                                             @endif
-                                            <button type="button" wire:click="$set('tempAvatar', null)"
-                                                class="absolute top-1 right-1 bg-red-500 text-white w-5 h-5 rounded-full text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <i class="fa-solid fa-times"></i>
-                                            </button>
-                                        @elseif ($avatar)
-                                            <img src="{{ $avatar }}" class="w-full h-full object-cover">
-                                            <button type="button" wire:click="removeAvatar"
-                                                class="absolute top-1 right-1 bg-red-500 text-white w-5 h-5 rounded-full text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <i class="fa-solid fa-times"></i>
-                                            </button>
-                                        @else
-                                            <div
-                                                class="w-full h-full flex flex-col items-center justify-center text-gray-400">
-                                                <i class="fa-solid fa-image fa-2x mb-1"></i>
-                                                <span class="text-[10px]">Chưa có ảnh</span>
-                                            </div>
-                                        @endif
+                                        </div>
                                     </div>
 
-                                    <div class="flex-1 relative group h-32" x-data="{ isUploading: false, status: '', localPreview: null }">
+                                    <div class="flex-1 relative group h-32">
                                         <input type="file" 
                                             class="absolute inset-0 opacity-0 cursor-pointer z-10"
                                             @change="
@@ -720,34 +743,41 @@
                                                 if (!file) return;
                                                 
                                                 // Instant local preview
-                                                if (localPreview) URL.revokeObjectURL(localPreview);
-                                                localPreview = URL.createObjectURL(file);
+                                                if (localAvatar) URL.revokeObjectURL(localAvatar);
+                                                localAvatar = URL.createObjectURL(file);
                                                 
-                                                isUploading = true;
-                                                status = 'Đang nén...';
+                                                isUploadingAvatar = true;
+                                                avatarStatus = 'Đang nén...';
                                                 const compressed = await window.compressImage(file);
-                                                status = 'Đang tải lên...';
+                                                avatarStatus = 'Đang tải lên...';
                                                 @this.upload('tempAvatar', compressed, 
-                                                    (uploadedName) => { isUploading = false; }, 
-                                                    () => { isUploading = false; alert('Lỗi tải ảnh!'); }
+                                                    (uploadedName) => { 
+                                                        isUploadingAvatar = false; 
+                                                        localAvatar = null; // Let server take over after re-render
+                                                    }, 
+                                                    () => { 
+                                                        isUploadingAvatar = false; 
+                                                        localAvatar = null;
+                                                        alert('Lỗi tải ảnh!'); 
+                                                    }
                                                 );
                                             ">
                                         <div
                                             class="bg-gray-50 hover:bg-gray-100 text-gray-500 px-6 py-4 rounded-xl border border-gray-200 border-dashed flex flex-col items-center justify-center gap-2 font-bold transition-all w-full h-full group-hover:border-blue-300 group-hover:text-blue-500 overflow-hidden relative">
                                             
-                                            <!-- Local Preview Overlay -->
-                                            <template x-if="localPreview">
-                                                <img :src="localPreview" class="absolute inset-0 w-full h-full object-cover opacity-50">
+                                            <!-- Local Preview Overlay (Subtle) -->
+                                            <template x-if="localAvatar">
+                                                <img :src="localAvatar" class="absolute inset-0 w-full h-full object-cover opacity-20">
                                             </template>
 
-                                            <div x-show="!isUploading" class="flex flex-col items-center gap-2 relative z-10">
+                                            <div x-show="!isUploadingAvatar" class="flex flex-col items-center gap-2 relative z-10">
                                                 <i class="fa-solid fa-cloud-arrow-up fa-lg"></i>
                                                 Tải ảnh đại diện
                                                 <span class="text-xs font-normal text-gray-400">Chọn 1 ảnh làm ảnh bìa listing</span>
                                             </div>
-                                            <div x-show="isUploading" class="flex flex-col items-center gap-2 text-blue-600 relative z-10" style="display: none;">
-                                                <i class="fa-solid fa-spinner fa-spin fa-2x"></i>
-                                                <span class="text-xs uppercase font-black" x-text="status"></span>
+                                            <div x-show="isUploadingAvatar" class="flex flex-col items-center gap-2 text-blue-600 relative z-10" style="display: none;">
+                                                <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>
+                                                <span class="text-xs uppercase font-black" x-text="avatarStatus"></span>
                                             </div>
                                         </div>
                                     </div>
@@ -766,7 +796,7 @@
                                     </button>
 
                                     <!-- Upload Local -->
-                                    <div class="flex-1 relative group" x-data="{ isUploading: false, progress: 0, status: '', localPreviews: [] }">
+                                    <div class="flex-1 relative group">
                                         <input type="file" multiple
                                             class="absolute inset-0 opacity-0 cursor-pointer z-10"
                                             @change="
@@ -774,121 +804,131 @@
                                                 if (files.length === 0) return;
                                                 
                                                 // Create local previews instantly
-                                                localPreviews.forEach(url => URL.revokeObjectURL(url));
-                                                localPreviews = files.map(f => URL.createObjectURL(f));
+                                                localSlider.forEach(url => URL.revokeObjectURL(url));
+                                                localSlider = files.map(f => URL.createObjectURL(f));
                                                 
-                                                isUploading = true;
-                                                progress = 0;
-                                                status = 'Đang nén ảnh...';
+                                                isUploadingSlider = true;
+                                                sliderProgress = 0;
+                                                sliderStatus = 'Đang nén ảnh...';
                                                 
                                                 try {
                                                     // Compress in parallel for maximum speed
                                                     const compressedFiles = await Promise.all(files.map(async (f, i) => {
                                                         const result = await window.compressImage(f);
                                                         // Update progress slightly as each one finishes
-                                                        progress = Math.round(((i + 1) / files.length) * 30);
+                                                        sliderProgress = Math.round(((i + 1) / files.length) * 30);
                                                         return result;
                                                     }));
                                                     
-                                                    status = 'Đang tải lên...';
+                                                    sliderStatus = 'Đang tải lên...';
                                                     @this.uploadMultiple('tempImages', compressedFiles, 
                                                         (uploadedNames) => { 
-                                                            isUploading = false; 
-                                                            progress = 100;
-                                                            localPreviews.forEach(url => URL.revokeObjectURL(url));
-                                                            localPreviews = [];
+                                                            isUploadingSlider = false; 
+                                                            sliderProgress = 100;
+                                                            localSlider.forEach(url => URL.revokeObjectURL(url));
+                                                            localSlider = [];
                                                         }, 
                                                         () => { 
-                                                            isUploading = false; 
+                                                            isUploadingSlider = false; 
+                                                            localSlider = [];
                                                             alert('Lỗi tải ảnh!'); 
                                                         },
                                                         (event) => { 
-                                                            progress = 30 + Math.round((event.detail.progress / 100) * 70);
+                                                            sliderProgress = 30 + Math.round((event.detail.progress / 100) * 70);
                                                         }
                                                     );
                                                 } catch (e) {
                                                     console.error('Upload error:', e);
-                                                    isUploading = false;
+                                                    isUploadingSlider = false;
+                                                    localSlider = [];
                                                 }
                                             ">
                                         <div
                                             class="bg-gray-50 hover:bg-gray-100 text-gray-500 px-6 py-4 rounded-xl border border-gray-200 border-dashed flex items-center justify-center gap-2 font-bold transition-all w-full h-full group-hover:border-blue-300 group-hover:text-blue-500 overflow-hidden relative min-h-[64px]">
                                             
                                             <!-- Local Preview Indicator -->
-                                            <template x-if="localPreviews.length > 0">
+                                            <template x-if="localSlider.length > 0">
                                                 <div class="absolute inset-0 flex gap-1 p-1 opacity-20 overflow-hidden">
-                                                    <template x-for="url in localPreviews">
+                                                    <template x-for="url in localSlider">
                                                         <img :src="url" class="h-full aspect-square object-cover rounded">
                                                     </template>
                                                 </div>
                                             </template>
 
-                                            <div x-show="!isUploading" class="flex items-center gap-2 relative z-10">
+                                            <div x-show="!isUploadingSlider" class="flex items-center gap-2 relative z-10">
                                                 <i class="fa-solid fa-cloud-arrow-up"></i>
                                                 Tải ảnh slider từ máy tính
                                             </div>
-                                            <div x-show="isUploading" class="flex items-center gap-3 text-blue-600 relative z-10" style="display: none;">
+                                            <div x-show="isUploadingSlider" class="flex items-center gap-3 text-blue-600 relative z-10" style="display: none;">
                                                 <i class="fa-solid fa-circle-notch fa-spin"></i>
-                                                <span class="text-xs font-black uppercase tracking-widest"><span x-text="status"></span> <span x-text="progress"></span>%</span>
-                                                <div class="absolute bottom-0 left-0 h-1 bg-blue-500 transition-all duration-300" :style="'width: ' + progress + '%'"></div>
+                                                <span class="text-xs font-black uppercase tracking-widest"><span x-text="sliderStatus"></span> <span x-text="sliderProgress"></span>%</span>
+                                                <div class="absolute bottom-0 left-0 h-1 bg-blue-500 transition-all duration-300" :style="'width: ' + sliderProgress + '%'"></div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
 
-                                <!-- Previews -->
-                                @if (!empty($images) || !empty($tempImages))
-                                    <div class="grid grid-cols-4 sm:grid-cols-6 gap-4">
-                                        <!-- Existing Images -->
-                                        @foreach ($images as $index => $img)
-                                            <div
-                                                class="relative aspect-square rounded-lg overflow-hidden border border-gray-200 group">
-                                                <img src="{{ $img }}" class="w-full h-full object-cover">
-
-                                                <div
-                                                    class="absolute inset-0 bg-black/40 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
-                                                    <button type="button"
-                                                        wire:click="setAvatarFromImage({{ $index }})"
-                                                        class="bg-white text-blue-600 text-[10px] font-bold px-2 py-1 rounded shadow-sm hover:bg-blue-50"
-                                                        title="Đặt làm ảnh đại diện">
-                                                        <i class="fa-solid fa-star"></i> Avatar
-                                                    </button>
-                                                    <button type="button"
-                                                        wire:click="removeImage({{ $index }})"
-                                                        class="bg-red-500 text-white w-6 h-6 rounded-full text-xs flex items-center justify-center hover:bg-red-600">
-                                                        <i class="fa-solid fa-times"></i>
-                                                    </button>
-                                                </div>
+                                 <!-- Previews -->
+                                 <div class="grid grid-cols-4 sm:grid-cols-6 gap-4" x-show="localSlider.length > 0 || {{ count($images) + count($tempImages) }} > 0">
+                                    <!-- Local Slider Previews (Instant) -->
+                                    <template x-for="url in localSlider">
+                                        <div class="relative aspect-square rounded-lg overflow-hidden border border-blue-400 ring-2 ring-blue-500/50 group animate-pulse">
+                                            <img :src="url" class="w-full h-full object-cover opacity-70">
+                                            <div class="absolute inset-0 flex flex-col items-center justify-center bg-blue-600/10">
+                                                <i class="fa-solid fa-circle-notch fa-spin text-blue-600"></i>
                                             </div>
-                                        @endforeach
+                                        </div>
+                                    </template>
 
-                                        <!-- Temp Images -->
-                                        @foreach ($tempImages as $index => $file)
-                                            @php
-                                                $extension = strtolower($file->getClientOriginalExtension());
-                                                $isPreviewable = in_array($extension, ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp']);
-                                            @endphp
+                                    <!-- Existing Images -->
+                                    @foreach ($images as $index => $img)
+                                        <div
+                                            class="relative aspect-square rounded-lg overflow-hidden border border-gray-200 group">
+                                            <img src="{{ $img }}" class="w-full h-full object-cover">
+
                                             <div
-                                                class="relative aspect-square rounded-lg overflow-hidden border border-blue-200 ring-2 ring-blue-500 group">
-                                                <!-- Just display image without spinner if loaded, livewire handles tempUrl -->
-                                                @if ($isPreviewable)
-                                                    <img src="{{ $file->temporaryUrl() }}"
-                                                        class="absolute inset-0 w-full h-full object-cover">
-                                                @else
-                                                    <div class="absolute inset-0 flex flex-col items-center justify-center bg-slate-800 text-[#00D1FF] p-2 text-center">
-                                                        <i class="fa-solid fa-file-image fa-xl mb-1"></i>
-                                                        <span class="text-[10px] font-black uppercase tracking-tighter">{{ $extension }}</span>
-                                                    </div>
-                                                @endif
+                                                class="absolute inset-0 bg-black/40 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
                                                 <button type="button"
-                                                    wire:click="removeTempImage({{ $index }})"
-                                                    class="absolute top-1 right-1 bg-red-500 text-white w-6 h-6 rounded-full text-xs flex items-center justify-center opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                                    wire:click="setAvatarFromImage({{ $index }})"
+                                                    class="bg-white text-blue-600 text-[10px] font-bold px-2 py-1 rounded shadow-sm hover:bg-blue-50"
+                                                    title="Đặt làm ảnh đại diện">
+                                                    <i class="fa-solid fa-star"></i> Avatar
+                                                </button>
+                                                <button type="button"
+                                                    wire:click="removeImage({{ $index }})"
+                                                    class="bg-red-500 text-white w-6 h-6 rounded-full text-xs flex items-center justify-center hover:bg-red-600">
                                                     <i class="fa-solid fa-times"></i>
                                                 </button>
                                             </div>
-                                        @endforeach
-                                    </div>
-                                @endif
+                                        </div>
+                                    @endforeach
+
+                                    <!-- Temp Images -->
+                                    @foreach ($tempImages as $index => $file)
+                                        @php
+                                            $extension = strtolower($file->getClientOriginalExtension());
+                                            $isPreviewable = in_array($extension, ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp']);
+                                        @endphp
+                                        <div
+                                            class="relative aspect-square rounded-lg overflow-hidden border border-blue-200 ring-2 ring-blue-500 group">
+                                            <!-- Just display image without spinner if loaded, livewire handles tempUrl -->
+                                            @if ($isPreviewable)
+                                                <img src="{{ $file->temporaryUrl() }}"
+                                                    class="absolute inset-0 w-full h-full object-cover">
+                                            @else
+                                                <div class="absolute inset-0 flex flex-col items-center justify-center bg-slate-800 text-[#00D1FF] p-2 text-center">
+                                                    <i class="fa-solid fa-file-image fa-xl mb-1"></i>
+                                                    <span class="text-[10px] font-black uppercase tracking-tighter">{{ $extension }}</span>
+                                                </div>
+                                            @endif
+                                            <button type="button"
+                                                wire:click="removeTempImage({{ $index }})"
+                                                class="absolute top-1 right-1 bg-red-500 text-white w-6 h-6 rounded-full text-xs flex items-center justify-center opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                                <i class="fa-solid fa-times"></i>
+                                            </button>
+                                        </div>
+                                    @endforeach
+                                 </div>
                             </div>
                         </div>
 
