@@ -324,7 +324,85 @@
                     localSlider: [], 
                     isUploadingSlider: false, 
                     sliderProgress: 0, 
-                    sliderStatus: '' 
+                    sliderStatus: '',
+
+                    async handleAvatarUpload(e) {
+                        const file = e.target.files[0];
+                        if (!file) return;
+
+                        if (this.localAvatar) URL.revokeObjectURL(this.localAvatar);
+                        this.localAvatar = URL.createObjectURL(file);
+                        this.isUploadingAvatar = true;
+                        this.avatarStatus = 'Đang xử lý...';
+
+                        setTimeout(async () => {
+                            try {
+                                this.avatarStatus = 'Đang nén ảnh...';
+                                const compressed = await window.compressImage(file, 1200, 1200, 0.6);
+                                this.avatarStatus = 'Đang tải lên...';
+                                @this.upload('tempAvatar', compressed, 
+                                    (url) => { 
+                                        this.isUploadingAvatar = false; 
+                                        this.avatarStatus = 'Hoàn tất';
+                                        setTimeout(() => { this.avatarStatus = ''; }, 2000);
+                                    }, 
+                                    () => { 
+                                        this.isUploadingAvatar = false; 
+                                        this.localAvatar = null;
+                                        alert('Lỗi tải ảnh đại diện!'); 
+                                    }
+                                );
+                            } catch (err) {
+                                this.isUploadingAvatar = false;
+                            }
+                        }, 100);
+                    },
+
+                    async handleSliderUpload(e) {
+                        const files = Array.from(e.target.files);
+                        if (files.length === 0) return;
+                        
+                        const newPreviews = files.map(f => URL.createObjectURL(f));
+                        this.localSlider = [...this.localSlider, ...newPreviews];
+                        this.isUploadingSlider = true;
+                        this.sliderStatus = 'Đang xử lý...';
+                        
+                        setTimeout(async () => {
+                            try {
+                                this.sliderStatus = 'Đang nén ' + files.length + ' ảnh...';
+                                const compressedFiles = [];
+                                for (let i = 0; i < files.length; i++) {
+                                    const compressed = await window.compressImage(files[i], 1600, 1600, 0.7);
+                                    compressedFiles.push(compressed);
+                                    this.sliderProgress = Math.round(((i + 1) / files.length) * 30);
+                                }
+                                
+                                this.sliderStatus = 'Đang tải lên...';
+                                @this.uploadMultiple('tempImages', compressedFiles, 
+                                    (uploadedNames) => { 
+                                        this.isUploadingSlider = false; 
+                                        this.sliderProgress = 100;
+                                        this.sliderStatus = 'Hoàn tất';
+                                        setTimeout(() => { 
+                                            this.localSlider = []; 
+                                            this.sliderStatus = '';
+                                        }, 1000);
+                                    }, 
+                                    () => { 
+                                        this.isUploadingSlider = false; 
+                                        this.localSlider = [];
+                                        alert('Lỗi tải ảnh slider!'); 
+                                    },
+                                    (event) => { 
+                                        this.sliderProgress = 30 + Math.round((event.detail.progress / 100) * 70);
+                                    }
+                                );
+                            } catch (e) {
+                                this.isUploadingSlider = false;
+                                this.localSlider = [];
+                            }
+                        }, 100);
+                    }
                 }"
                 class="bg-white rounded-t-[2.5rem] md:rounded-2xl shadow-2xl w-full max-w-5xl flex flex-col max-h-[85dvh] md:max-h-[90dvh] animate-[slideUp_0.4s_cubic-bezier(0.16,1,0.3,1)] overflow-hidden">
 
@@ -692,8 +770,9 @@
                                         <template x-if="localAvatar">
                                             <div class="w-full h-full relative">
                                                 <img :src="localAvatar" class="w-full h-full object-cover">
-                                                <div x-show="isUploadingAvatar" class="absolute inset-0 bg-black/40 flex items-center justify-center">
-                                                    <i class="fa-solid fa-circle-notch fa-spin text-white"></i>
+                                                <!-- Subtle loading indicator at the bottom only -->
+                                                <div x-show="isUploadingAvatar" class="absolute bottom-0 left-0 right-0 h-1 bg-blue-500/30">
+                                                    <div class="h-full bg-blue-600 animate-[progress_2s_ease-in-out_infinite]" style="width: 50%"></div>
                                                 </div>
                                             </div>
                                         </template>
@@ -738,30 +817,7 @@
                                     <div class="flex-1 relative group h-32">
                                         <input type="file" 
                                             class="absolute inset-0 opacity-0 cursor-pointer z-10"
-                                            @change="
-                                                const file = $event.target.files[0];
-                                                if (!file) return;
-                                                
-                                                // Instant local preview
-                                                if (localAvatar) URL.revokeObjectURL(localAvatar);
-                                                localAvatar = URL.createObjectURL(file);
-                                                
-                                                isUploadingAvatar = true;
-                                                avatarStatus = 'Đang nén...';
-                                                const compressed = await window.compressImage(file);
-                                                avatarStatus = 'Đang tải lên...';
-                                                @this.upload('tempAvatar', compressed, 
-                                                    (uploadedName) => { 
-                                                        isUploadingAvatar = false; 
-                                                        localAvatar = null; // Let server take over after re-render
-                                                    }, 
-                                                    () => { 
-                                                        isUploadingAvatar = false; 
-                                                        localAvatar = null;
-                                                        alert('Lỗi tải ảnh!'); 
-                                                    }
-                                                );
-                                            ">
+                                         @change="handleAvatarUpload($event)">
                                         <div
                                             class="bg-gray-50 hover:bg-gray-100 text-gray-500 px-6 py-4 rounded-xl border border-gray-200 border-dashed flex flex-col items-center justify-center gap-2 font-bold transition-all w-full h-full group-hover:border-blue-300 group-hover:text-blue-500 overflow-hidden relative">
                                             
@@ -775,9 +831,8 @@
                                                 Tải ảnh đại diện
                                                 <span class="text-xs font-normal text-gray-400">Chọn 1 ảnh làm ảnh bìa listing</span>
                                             </div>
-                                            <div x-show="isUploadingAvatar" class="flex flex-col items-center gap-2 text-blue-600 relative z-10" style="display: none;">
-                                                <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>
-                                                <span class="text-xs uppercase font-black" x-text="avatarStatus"></span>
+                                            <div x-show="isUploadingAvatar" class="flex flex-col items-center gap-1 text-blue-600 relative z-10" style="display: none;">
+                                                <span class="text-[10px] font-black uppercase tracking-tighter" x-text="avatarStatus"></span>
                                             </div>
                                         </div>
                                     </div>
@@ -796,50 +851,6 @@
                                     </button>
 
                                     <!-- Upload Local -->
-                                    <div class="flex-1 relative group">
-                                        <input type="file" multiple
-                                            class="absolute inset-0 opacity-0 cursor-pointer z-10"
-                                            @change="
-                                                const files = Array.from($event.target.files);
-                                                if (files.length === 0) return;
-                                                
-                                                // Create local previews instantly
-                                                localSlider.forEach(url => URL.revokeObjectURL(url));
-                                                localSlider = files.map(f => URL.createObjectURL(f));
-                                                
-                                                isUploadingSlider = true;
-                                                sliderProgress = 0;
-                                                sliderStatus = 'Đang nén ảnh...';
-                                                
-                                                try {
-                                                    // Compress in parallel for maximum speed
-                                                    const compressedFiles = await Promise.all(files.map(async (f, i) => {
-                                                        const result = await window.compressImage(f);
-                                                        // Update progress slightly as each one finishes
-                                                        sliderProgress = Math.round(((i + 1) / files.length) * 30);
-                                                        return result;
-                                                    }));
-                                                    
-                                                    sliderStatus = 'Đang tải lên...';
-                                                    @this.uploadMultiple('tempImages', compressedFiles, 
-                                                        (uploadedNames) => { 
-                                                            isUploadingSlider = false; 
-                                                            sliderProgress = 100;
-                                                            localSlider.forEach(url => URL.revokeObjectURL(url));
-                                                            localSlider = [];
-                                                        }, 
-                                                        () => { 
-                                                            isUploadingSlider = false; 
-                                                            localSlider = [];
-                                                            alert('Lỗi tải ảnh!'); 
-                                                        },
-                                                        (event) => { 
-                                                            sliderProgress = 30 + Math.round((event.detail.progress / 100) * 70);
-                                                        }
-                                                    );
-                                                } catch (e) {
-                                                    console.error('Upload error:', e);
-                                                    isUploadingSlider = false;
                                                     localSlider = [];
                                                 }
                                             ">
@@ -872,10 +883,11 @@
                                  <div class="grid grid-cols-4 sm:grid-cols-6 gap-4" x-show="localSlider.length > 0 || {{ count($images) + count($tempImages) }} > 0">
                                     <!-- Local Slider Previews (Instant) -->
                                     <template x-for="url in localSlider">
-                                        <div class="relative aspect-square rounded-lg overflow-hidden border border-blue-400 ring-2 ring-blue-500/50 group animate-pulse">
-                                            <img :src="url" class="w-full h-full object-cover opacity-70">
-                                            <div class="absolute inset-0 flex flex-col items-center justify-center bg-blue-600/10">
-                                                <i class="fa-solid fa-circle-notch fa-spin text-blue-600"></i>
+                                        <div class="relative aspect-square rounded-lg overflow-hidden border border-gray-200 group">
+                                            <img :src="url" class="w-full h-full object-cover">
+                                            <!-- Subtle progress bar -->
+                                            <div x-show="isUploadingSlider" class="absolute bottom-0 left-0 right-0 h-1 bg-gray-200">
+                                                <div class="h-full bg-blue-600 transition-all duration-300" :style="'width: ' + sliderProgress + '%'"></div>
                                             </div>
                                         </div>
                                     </template>
@@ -996,7 +1008,7 @@
                     <button wire:click="closeCreatePopup"
                         class="px-5 py-2.5 rounded-xl text-gray-600 hover:bg-gray-200 font-bold transition-colors">Hủy
                         bỏ</button>
-                    <button type="button" wire:click="saveListing" wire:loading.attr="disabled"
+                    <button type="button" wire:click="saveListing" wire:loading.attr="disabled" wire:target="saveListing"
                         class="px-6 py-2.5 rounded-xl bg-blue-600 text-white hover:bg-blue-700 font-bold shadow-lg hover:shadow-blue-500/30 transform active:scale-95 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
                         <i class="fa-solid fa-paper-plane" wire:loading.remove wire:target="saveListing"></i>
                         <i class="fa-solid fa-spinner fa-spin" wire:loading wire:target="saveListing"></i>
