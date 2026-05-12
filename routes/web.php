@@ -27,6 +27,8 @@ Route::get('/', function () {
 
 Route::get('/media', FileManager::class)->middleware(['auth', 'admin'])->name('media');
 Route::get('/listings', RealEstateListing::class)->middleware('auth')->name('listings');
+Route::post('/listings/upload-image', [\App\Http\Controllers\QuickImageUploadController::class, 'store'])
+    ->middleware('auth')->name('listings.upload-image');
 Route::get('/accounts', \App\Livewire\AccountManagement::class)->middleware(['auth', 'admin'])->name('accounts');
 Route::get('/accounts/detail/{id}', \App\Livewire\AccountDetail::class)->middleware(['auth', 'admin'])->name('account.detail');
 Route::get('/ctv-ranks', \App\Livewire\CtvRankManagement::class)->middleware(['auth', 'admin'])->name('ctv.ranks');
