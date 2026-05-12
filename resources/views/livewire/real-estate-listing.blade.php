@@ -851,9 +851,10 @@
                                     </button>
 
                                     <!-- Upload Local -->
-                                                    localSlider = [];
-                                                }
-                                            ">
+                                    <div class="flex-1 relative group">
+                                        <input type="file" multiple
+                                            class="absolute inset-0 opacity-0 cursor-pointer z-10"
+                                            @change="handleSliderUpload($event)">
                                         <div
                                             class="bg-gray-50 hover:bg-gray-100 text-gray-500 px-6 py-4 rounded-xl border border-gray-200 border-dashed flex items-center justify-center gap-2 font-bold transition-all w-full h-full group-hover:border-blue-300 group-hover:text-blue-500 overflow-hidden relative min-h-[64px]">
                                             
