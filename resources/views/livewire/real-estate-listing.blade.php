@@ -317,21 +317,17 @@
     @if ($showCreatePopup)
         <div class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end md:items-center justify-center z-50 p-0 md:p-4 transition-all duration-300 overflow-hidden">
             <div
-                x-data="{ 
-                    localAvatar: null, 
-                    isUploadingAvatar: false, 
-                    avatarStatus: '', 
-                    localSlider: [], 
-                    isUploadingSlider: false, 
-                    sliderProgress: 0, 
+                x-data="{
+                    isUploadingAvatar: false,
+                    avatarStatus: '',
+                    isUploadingSlider: false,
+                    sliderProgress: 0,
                     sliderStatus: '',
 
                     async handleAvatarUpload(e) {
                         const file = e.target.files[0];
                         if (!file) return;
 
-                        if (this.localAvatar) URL.revokeObjectURL(this.localAvatar);
-                        this.localAvatar = URL.createObjectURL(file);
                         this.isUploadingAvatar = true;
                         this.avatarStatus = 'Đang xử lý...';
 
@@ -339,21 +335,22 @@
                             try {
                                 this.avatarStatus = 'Đang nén ảnh...';
                                 const compressed = await window.compressImage(file, 1200, 1200, 0.6);
-                                this.avatarStatus = 'Đang tải lên...';
-                                @this.upload('tempAvatar', compressed, 
-                                    (url) => { 
-                                        this.isUploadingAvatar = false; 
-                                        this.avatarStatus = 'Hoàn tất';
+                                this.avatarStatus = 'Đang tải lên cloud...';
+                                @this.upload('tempAvatar', compressed,
+                                    (url) => {
+                                        this.isUploadingAvatar = false;
+                                        this.avatarStatus = 'Hoàn tất ✓';
                                         setTimeout(() => { this.avatarStatus = ''; }, 2000);
-                                    }, 
-                                    () => { 
-                                        this.isUploadingAvatar = false; 
-                                        this.localAvatar = null;
-                                        alert('Lỗi tải ảnh đại diện!'); 
+                                    },
+                                    () => {
+                                        this.isUploadingAvatar = false;
+                                        this.avatarStatus = '';
+                                        alert('Lỗi tải ảnh đại diện!');
                                     }
                                 );
                             } catch (err) {
                                 this.isUploadingAvatar = false;
+                                this.avatarStatus = '';
                             }
                         }, 100);
                     },
@@ -361,12 +358,11 @@
                     async handleSliderUpload(e) {
                         const files = Array.from(e.target.files);
                         if (files.length === 0) return;
-                        
-                        const newPreviews = files.map(f => URL.createObjectURL(f));
-                        this.localSlider = [...this.localSlider, ...newPreviews];
+
                         this.isUploadingSlider = true;
+                        this.sliderProgress = 0;
                         this.sliderStatus = 'Đang xử lý...';
-                        
+
                         setTimeout(async () => {
                             try {
                                 this.sliderStatus = 'Đang nén ' + files.length + ' ảnh...';
@@ -376,30 +372,32 @@
                                     compressedFiles.push(compressed);
                                     this.sliderProgress = Math.round(((i + 1) / files.length) * 30);
                                 }
-                                
-                                this.sliderStatus = 'Đang tải lên...';
-                                @this.uploadMultiple('tempImages', compressedFiles, 
-                                    (uploadedNames) => { 
-                                        this.isUploadingSlider = false; 
+
+                                this.sliderStatus = 'Đang tải lên cloud...';
+                                @this.uploadMultiple('tempImages', compressedFiles,
+                                    (uploadedNames) => {
+                                        this.isUploadingSlider = false;
                                         this.sliderProgress = 100;
-                                        this.sliderStatus = 'Hoàn tất';
-                                        setTimeout(() => { 
-                                            this.localSlider = []; 
+                                        this.sliderStatus = 'Hoàn tất ✓';
+                                        setTimeout(() => {
                                             this.sliderStatus = '';
-                                        }, 1000);
-                                    }, 
-                                    () => { 
-                                        this.isUploadingSlider = false; 
-                                        this.localSlider = [];
-                                        alert('Lỗi tải ảnh slider!'); 
+                                            this.sliderProgress = 0;
+                                        }, 2000);
                                     },
-                                    (event) => { 
+                                    () => {
+                                        this.isUploadingSlider = false;
+                                        this.sliderStatus = '';
+                                        this.sliderProgress = 0;
+                                        alert('Lỗi tải ảnh slider!');
+                                    },
+                                    (event) => {
                                         this.sliderProgress = 30 + Math.round((event.detail.progress / 100) * 70);
                                     }
                                 );
                             } catch (e) {
                                 this.isUploadingSlider = false;
-                                this.localSlider = [];
+                                this.sliderStatus = '';
+                                this.sliderProgress = 0;
                             }
                         }, 100);
                     }
@@ -765,74 +763,65 @@
                                 <div class="flex gap-4 items-start">
                                     <div
                                         class="w-32 h-32 bg-gray-100 rounded-lg border border-gray-300 flex-shrink-0 relative overflow-hidden group">
-                                        
-                                        <!-- Instant Local Preview -->
-                                        <template x-if="localAvatar">
-                                            <div class="w-full h-full relative">
-                                                <img :src="localAvatar" class="w-full h-full object-cover">
-                                                <!-- Subtle loading indicator at the bottom only -->
-                                                <div x-show="isUploadingAvatar" class="absolute bottom-0 left-0 right-0 h-1 bg-blue-500/30">
-                                                    <div class="h-full bg-blue-600 animate-[progress_2s_ease-in-out_infinite]" style="width: 50%"></div>
-                                                </div>
-                                            </div>
-                                        </template>
 
-                                        <!-- Server Side / Existing Preview -->
-                                        <div x-show="!localAvatar" class="w-full h-full">
-                                            @if ($tempAvatar)
-                                                @php
-                                                    $extension = strtolower($tempAvatar->getClientOriginalExtension());
-                                                    $isPreviewable = in_array($extension, ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp']);
-                                                @endphp
-                                                @if ($isPreviewable)
-                                                    <img src="{{ $tempAvatar->temporaryUrl() }}"
-                                                        class="w-full h-full object-cover">
-                                                @else
-                                                    <div class="w-full h-full flex flex-col items-center justify-center bg-slate-800 text-[#00D1FF] p-2 text-center">
-                                                        <i class="fa-solid fa-file-image fa-2x mb-1"></i>
-                                                        <span class="text-[10px] font-black uppercase tracking-tighter">{{ $extension }}</span>
-                                                        <span class="text-[8px] opacity-60 uppercase font-bold">No Preview</span>
-                                                    </div>
-                                                @endif
-                                                <button type="button" wire:click="$set('tempAvatar', null)"
-                                                    class="absolute top-1 right-1 bg-red-500 text-white w-5 h-5 rounded-full text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    <i class="fa-solid fa-times"></i>
-                                                </button>
-                                            @elseif ($avatar)
-                                                <img src="{{ $avatar }}" class="w-full h-full object-cover">
-                                                <button type="button" wire:click="removeAvatar"
-                                                    class="absolute top-1 right-1 bg-red-500 text-white w-5 h-5 rounded-full text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    <i class="fa-solid fa-times"></i>
-                                                </button>
+                                        <!-- Uploading Indicator -->
+                                        <div x-show="isUploadingAvatar" class="absolute inset-0 flex flex-col items-center justify-center bg-white/90 z-20" style="display: none;">
+                                            <i class="fa-solid fa-cloud-arrow-up fa-2x text-blue-500 animate-bounce mb-2"></i>
+                                            <span class="text-[10px] font-black uppercase tracking-tighter text-blue-600" x-text="avatarStatus"></span>
+                                        </div>
+
+                                        <!-- Server Side Preview (only after upload) -->
+                                        @if ($tempAvatar)
+                                            @php
+                                                $extension = strtolower($tempAvatar->getClientOriginalExtension());
+                                                $isPreviewable = in_array($extension, ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp']);
+                                            @endphp
+                                            @if ($isPreviewable)
+                                                <img src="{{ $tempAvatar->temporaryUrl() }}"
+                                                    class="w-full h-full object-cover">
                                             @else
-                                                <div
-                                                    class="w-full h-full flex flex-col items-center justify-center text-gray-400">
-                                                    <i class="fa-solid fa-image fa-2x mb-1"></i>
-                                                    <span class="text-[10px]">Chưa có ảnh</span>
+                                                <div class="w-full h-full flex flex-col items-center justify-center bg-slate-800 text-[#00D1FF] p-2 text-center">
+                                                    <i class="fa-solid fa-file-image fa-2x mb-1"></i>
+                                                    <span class="text-[10px] font-black uppercase tracking-tighter">{{ $extension }}</span>
+                                                    <span class="text-[8px] opacity-60 uppercase font-bold">No Preview</span>
                                                 </div>
                                             @endif
-                                        </div>
+                                            <button type="button" wire:click="$set('tempAvatar', null)"
+                                                class="absolute top-1 right-1 bg-red-500 text-white w-5 h-5 rounded-full text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <i class="fa-solid fa-times"></i>
+                                            </button>
+                                        @elseif ($avatar)
+                                            <img src="{{ $avatar }}" class="w-full h-full object-cover">
+                                            <button type="button" wire:click="removeAvatar"
+                                                class="absolute top-1 right-1 bg-red-500 text-white w-5 h-5 rounded-full text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <i class="fa-solid fa-times"></i>
+                                            </button>
+                                        @else
+                                            <div
+                                                class="w-full h-full flex flex-col items-center justify-center text-gray-400">
+                                                <i class="fa-solid fa-image fa-2x mb-1"></i>
+                                                <span class="text-[10px]">Chưa có ảnh</span>
+                                            </div>
+                                        @endif
                                     </div>
 
                                     <div class="flex-1 relative group h-32">
-                                        <input type="file" 
+                                        <input type="file"
                                             class="absolute inset-0 opacity-0 cursor-pointer z-10"
-                                         @change="handleAvatarUpload($event)">
+                                            :disabled="isUploadingAvatar"
+                                            @change="handleAvatarUpload($event)">
                                         <div
-                                            class="bg-gray-50 hover:bg-gray-100 text-gray-500 px-6 py-4 rounded-xl border border-gray-200 border-dashed flex flex-col items-center justify-center gap-2 font-bold transition-all w-full h-full group-hover:border-blue-300 group-hover:text-blue-500 overflow-hidden relative">
-                                            
-                                            <!-- Local Preview Overlay (Subtle) -->
-                                            <template x-if="localAvatar">
-                                                <img :src="localAvatar" class="absolute inset-0 w-full h-full object-cover opacity-20">
-                                            </template>
+                                            class="bg-gray-50 hover:bg-gray-100 text-gray-500 px-6 py-4 rounded-xl border border-gray-200 border-dashed flex flex-col items-center justify-center gap-2 font-bold transition-all w-full h-full group-hover:border-blue-300 group-hover:text-blue-500 overflow-hidden relative"
+                                            :class="isUploadingAvatar && 'border-blue-400 bg-blue-50'">
 
                                             <div x-show="!isUploadingAvatar" class="flex flex-col items-center gap-2 relative z-10">
                                                 <i class="fa-solid fa-cloud-arrow-up fa-lg"></i>
                                                 Tải ảnh đại diện
                                                 <span class="text-xs font-normal text-gray-400">Chọn 1 ảnh làm ảnh bìa listing</span>
                                             </div>
-                                            <div x-show="isUploadingAvatar" class="flex flex-col items-center gap-1 text-blue-600 relative z-10" style="display: none;">
-                                                <span class="text-[10px] font-black uppercase tracking-tighter" x-text="avatarStatus"></span>
+                                            <div x-show="isUploadingAvatar" class="flex flex-col items-center gap-2 text-blue-600 relative z-10" style="display: none;">
+                                                <i class="fa-solid fa-circle-notch fa-spin fa-lg"></i>
+                                                <span class="text-xs font-black uppercase tracking-tighter" x-text="avatarStatus"></span>
                                             </div>
                                         </div>
                                     </div>
@@ -854,18 +843,11 @@
                                     <div class="flex-1 relative group">
                                         <input type="file" multiple
                                             class="absolute inset-0 opacity-0 cursor-pointer z-10"
+                                            :disabled="isUploadingSlider"
                                             @change="handleSliderUpload($event)">
                                         <div
-                                            class="bg-gray-50 hover:bg-gray-100 text-gray-500 px-6 py-4 rounded-xl border border-gray-200 border-dashed flex items-center justify-center gap-2 font-bold transition-all w-full h-full group-hover:border-blue-300 group-hover:text-blue-500 overflow-hidden relative min-h-[64px]">
-                                            
-                                            <!-- Local Preview Indicator -->
-                                            <template x-if="localSlider.length > 0">
-                                                <div class="absolute inset-0 flex gap-1 p-1 opacity-20 overflow-hidden">
-                                                    <template x-for="url in localSlider">
-                                                        <img :src="url" class="h-full aspect-square object-cover rounded">
-                                                    </template>
-                                                </div>
-                                            </template>
+                                            class="bg-gray-50 hover:bg-gray-100 text-gray-500 px-6 py-4 rounded-xl border border-gray-200 border-dashed flex items-center justify-center gap-2 font-bold transition-all w-full h-full group-hover:border-blue-300 group-hover:text-blue-500 overflow-hidden relative min-h-[64px]"
+                                            :class="isUploadingSlider && 'border-blue-400 bg-blue-50'">
 
                                             <div x-show="!isUploadingSlider" class="flex items-center gap-2 relative z-10">
                                                 <i class="fa-solid fa-cloud-arrow-up"></i>
@@ -880,18 +862,9 @@
                                     </div>
                                 </div>
 
-                                 <!-- Previews -->
-                                 <div class="grid grid-cols-4 sm:grid-cols-6 gap-4" x-show="localSlider.length > 0 || {{ count($images) + count($tempImages) }} > 0">
-                                    <!-- Local Slider Previews (Instant) -->
-                                    <template x-for="url in localSlider">
-                                        <div class="relative aspect-square rounded-lg overflow-hidden border border-gray-200 group">
-                                            <img :src="url" class="w-full h-full object-cover">
-                                            <!-- Subtle progress bar -->
-                                            <div x-show="isUploadingSlider" class="absolute bottom-0 left-0 right-0 h-1 bg-gray-200">
-                                                <div class="h-full bg-blue-600 transition-all duration-300" :style="'width: ' + sliderProgress + '%'"></div>
-                                            </div>
-                                        </div>
-                                    </template>
+                                 <!-- Previews (only after cloud upload) -->
+                                 @if(count($images) + count($tempImages) > 0)
+                                 <div class="grid grid-cols-4 sm:grid-cols-6 gap-4">
 
                                     <!-- Existing Images -->
                                     @foreach ($images as $index => $img)
@@ -942,6 +915,7 @@
                                         </div>
                                     @endforeach
                                  </div>
+                                 @endif
                             </div>
                         </div>
 
