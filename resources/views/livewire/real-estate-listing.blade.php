@@ -317,129 +317,91 @@
     @if ($showCreatePopup)
         <div class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end md:items-center justify-center z-50 p-0 md:p-4 transition-all duration-300 overflow-hidden">
             <div
-                x-data="{
-                    localAvatar: null,
-                    pendingAvatarFile: null,
-                    isUploadingAvatar: false,
-                    avatarStatus: '',
-                    localSlider: [],
-                    pendingSliderFiles: [],
-                    isUploadingSlider: false,
-                    sliderProgress: 0,
+                x-data="{ 
+                    localAvatar: null, 
+                    isUploadingAvatar: false, 
+                    avatarStatus: '', 
+                    localSlider: [], 
+                    isUploadingSlider: false, 
+                    sliderProgress: 0, 
                     sliderStatus: '',
-                    isSaving: false,
 
-                    handleAvatarUpload(e) {
+                    async handleAvatarUpload(e) {
                         const file = e.target.files[0];
                         if (!file) return;
+
                         if (this.localAvatar) URL.revokeObjectURL(this.localAvatar);
                         this.localAvatar = URL.createObjectURL(file);
-                        this.pendingAvatarFile = file;
-                        e.target.value = '';
+                        this.isUploadingAvatar = true;
+                        this.avatarStatus = 'Đang xử lý...';
+
+                        setTimeout(async () => {
+                            try {
+                                this.avatarStatus = 'Đang nén ảnh...';
+                                const compressed = await window.compressImage(file, 1200, 1200, 0.6);
+                                this.avatarStatus = 'Đang tải lên...';
+                                @this.upload('tempAvatar', compressed, 
+                                    (url) => { 
+                                        this.isUploadingAvatar = false; 
+                                        this.avatarStatus = 'Hoàn tất';
+                                        setTimeout(() => { this.avatarStatus = ''; }, 2000);
+                                    }, 
+                                    () => { 
+                                        this.isUploadingAvatar = false; 
+                                        this.localAvatar = null;
+                                        alert('Lỗi tải ảnh đại diện!'); 
+                                    }
+                                );
+                            } catch (err) {
+                                this.isUploadingAvatar = false;
+                            }
+                        }, 100);
                     },
 
-                    removeLocalAvatar() {
-                        if (this.localAvatar) URL.revokeObjectURL(this.localAvatar);
-                        this.localAvatar = null;
-                        this.pendingAvatarFile = null;
-                    },
-
-                    handleSliderUpload(e) {
+                    async handleSliderUpload(e) {
                         const files = Array.from(e.target.files);
                         if (files.length === 0) return;
-                        for (const f of files) {
-                            this.localSlider.push(URL.createObjectURL(f));
-                            this.pendingSliderFiles.push(f);
-                        }
-                        e.target.value = '';
-                    },
-
-                    removeLocalSlider(idx) {
-                        if (this.localSlider[idx]) URL.revokeObjectURL(this.localSlider[idx]);
-                        this.localSlider.splice(idx, 1);
-                        this.pendingSliderFiles.splice(idx, 1);
-                    },
-
-                    async uploadOne(file) {
-                        const fd = new FormData();
-                        fd.append('file', file, file.name);
-                        const token = document.querySelector('meta[name=&quot;csrf-token&quot;]')?.content || '';
-                        const res = await fetch('{{ route('listings.upload-image') }}', {
-                            method: 'POST',
-                            headers: { 'X-CSRF-TOKEN': token, 'Accept': 'application/json' },
-                            body: fd,
-                            credentials: 'same-origin',
-                        });
-                        if (!res.ok) throw new Error('Upload failed (' + res.status + ')');
-                        const data = await res.json();
-                        if (!data.url) throw new Error('Missing url in response');
-                        return data.url;
-                    },
-
-                    async saveAll() {
-                        if (this.isSaving) return;
-                        this.isSaving = true;
-                        try {
-                            const newImageUrls = [];
-                            let newAvatarUrl = null;
-
-                            if (this.pendingAvatarFile) {
-                                this.isUploadingAvatar = true;
-                                this.avatarStatus = 'Đang nén...';
-                                const compressed = await window.compressImage(this.pendingAvatarFile, 1200, 1200, 0.6);
-                                this.avatarStatus = 'Đang tải lên...';
-                                newAvatarUrl = await this.uploadOne(compressed);
-                                this.avatarStatus = 'Hoàn tất';
-                            }
-
-                            const total = this.pendingSliderFiles.length;
-                            if (total > 0) {
-                                this.isUploadingSlider = true;
-                                this.sliderProgress = 0;
-                                this.sliderStatus = 'Đang nén ' + total + ' ảnh...';
-                                const compressedAll = [];
-                                for (let i = 0; i < total; i++) {
-                                    const c = await window.compressImage(this.pendingSliderFiles[i], 1600, 1600, 0.7);
-                                    compressedAll.push(c);
-                                    this.sliderProgress = Math.round(((i + 1) / total) * 30);
+                        
+                        const newPreviews = files.map(f => URL.createObjectURL(f));
+                        this.localSlider = [...this.localSlider, ...newPreviews];
+                        this.isUploadingSlider = true;
+                        this.sliderStatus = 'Đang xử lý...';
+                        
+                        setTimeout(async () => {
+                            try {
+                                this.sliderStatus = 'Đang nén ' + files.length + ' ảnh...';
+                                const compressedFiles = [];
+                                for (let i = 0; i < files.length; i++) {
+                                    const compressed = await window.compressImage(files[i], 1600, 1600, 0.7);
+                                    compressedFiles.push(compressed);
+                                    this.sliderProgress = Math.round(((i + 1) / files.length) * 30);
                                 }
+                                
                                 this.sliderStatus = 'Đang tải lên...';
-                                let done = 0;
-                                const results = await Promise.all(compressedAll.map(async (cf) => {
-                                    const url = await this.uploadOne(cf);
-                                    done += 1;
-                                    this.sliderProgress = 30 + Math.round((done / total) * 70);
-                                    return url;
-                                }));
-                                newImageUrls.push(...results);
-                                this.sliderStatus = 'Hoàn tất';
+                                @this.uploadMultiple('tempImages', compressedFiles, 
+                                    (uploadedNames) => { 
+                                        this.isUploadingSlider = false; 
+                                        this.sliderProgress = 100;
+                                        this.sliderStatus = 'Hoàn tất';
+                                        setTimeout(() => { 
+                                            this.localSlider = []; 
+                                            this.sliderStatus = '';
+                                        }, 1000);
+                                    }, 
+                                    () => { 
+                                        this.isUploadingSlider = false; 
+                                        this.localSlider = [];
+                                        alert('Lỗi tải ảnh slider!'); 
+                                    },
+                                    (event) => { 
+                                        this.sliderProgress = 30 + Math.round((event.detail.progress / 100) * 70);
+                                    }
+                                );
+                            } catch (e) {
+                                this.isUploadingSlider = false;
+                                this.localSlider = [];
                             }
-
-                            if (newAvatarUrl) {
-                                await @this.set('avatar', newAvatarUrl, true);
-                            }
-                            if (newImageUrls.length > 0) {
-                                const current = @this.get('images') || [];
-                                await @this.set('images', [...current, ...newImageUrls], true);
-                            }
-
-                            this.removeLocalAvatar();
-                            for (const u of this.localSlider) URL.revokeObjectURL(u);
-                            this.localSlider = [];
-                            this.pendingSliderFiles = [];
-
-                            await @this.call('saveListing');
-                        } catch (err) {
-                            console.error(err);
-                            alert('Lỗi: ' + (err.message || 'Không thể lưu tin đăng'));
-                        } finally {
-                            this.isSaving = false;
-                            this.isUploadingAvatar = false;
-                            this.isUploadingSlider = false;
-                            this.avatarStatus = '';
-                            this.sliderStatus = '';
-                            this.sliderProgress = 0;
-                        }
+                        }, 100);
                     }
                 }"
                 class="bg-white rounded-t-[2.5rem] md:rounded-2xl shadow-2xl w-full max-w-5xl flex flex-col max-h-[85dvh] md:max-h-[90dvh] animate-[slideUp_0.4s_cubic-bezier(0.16,1,0.3,1)] overflow-hidden">
@@ -808,10 +770,7 @@
                                         <template x-if="localAvatar">
                                             <div class="w-full h-full relative">
                                                 <img :src="localAvatar" class="w-full h-full object-cover">
-                                                <button type="button" @click="removeLocalAvatar()"
-                                                    class="absolute top-1 right-1 bg-red-500 text-white w-5 h-5 rounded-full text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                                                    <i class="fa-solid fa-times"></i>
-                                                </button>
+                                                <!-- Subtle loading indicator at the bottom only -->
                                                 <div x-show="isUploadingAvatar" class="absolute bottom-0 left-0 right-0 h-1 bg-blue-500/30">
                                                     <div class="h-full bg-blue-600 animate-[progress_2s_ease-in-out_infinite]" style="width: 50%"></div>
                                                 </div>
@@ -820,9 +779,28 @@
 
                                         <!-- Server Side / Existing Preview -->
                                         <div x-show="!localAvatar" class="w-full h-full">
-                                            @if ($avatar)
+                                            @if ($tempAvatar)
+                                                @php
+                                                    $extension = strtolower($tempAvatar->getClientOriginalExtension());
+                                                    $isPreviewable = in_array($extension, ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp']);
+                                                @endphp
+                                                @if ($isPreviewable)
+                                                    <img src="{{ $tempAvatar->temporaryUrl() }}"
+                                                        class="w-full h-full object-cover">
+                                                @else
+                                                    <div class="w-full h-full flex flex-col items-center justify-center bg-slate-800 text-[#00D1FF] p-2 text-center">
+                                                        <i class="fa-solid fa-file-image fa-2x mb-1"></i>
+                                                        <span class="text-[10px] font-black uppercase tracking-tighter">{{ $extension }}</span>
+                                                        <span class="text-[8px] opacity-60 uppercase font-bold">No Preview</span>
+                                                    </div>
+                                                @endif
+                                                <button type="button" wire:click="$set('tempAvatar', null)"
+                                                    class="absolute top-1 right-1 bg-red-500 text-white w-5 h-5 rounded-full text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <i class="fa-solid fa-times"></i>
+                                                </button>
+                                            @elseif ($avatar)
                                                 <img src="{{ $avatar }}" class="w-full h-full object-cover">
-                                                <button type="button" wire:click="$set('avatar', null)"
+                                                <button type="button" wire:click="removeAvatar"
                                                     class="absolute top-1 right-1 bg-red-500 text-white w-5 h-5 rounded-full text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                                                     <i class="fa-solid fa-times"></i>
                                                 </button>
@@ -903,15 +881,12 @@
                                 </div>
 
                                  <!-- Previews -->
-                                 <div class="grid grid-cols-4 sm:grid-cols-6 gap-4" x-show="localSlider.length > 0 || {{ count($images) }} > 0">
+                                 <div class="grid grid-cols-4 sm:grid-cols-6 gap-4" x-show="localSlider.length > 0 || {{ count($images) + count($tempImages) }} > 0">
                                     <!-- Local Slider Previews (Instant) -->
-                                    <template x-for="(url, idx) in localSlider" :key="url">
-                                        <div class="relative aspect-square rounded-lg overflow-hidden border border-blue-200 ring-2 ring-blue-400 group">
+                                    <template x-for="url in localSlider">
+                                        <div class="relative aspect-square rounded-lg overflow-hidden border border-gray-200 group">
                                             <img :src="url" class="w-full h-full object-cover">
-                                            <button type="button" @click="removeLocalSlider(idx)"
-                                                class="absolute top-1 right-1 bg-red-500 text-white w-6 h-6 rounded-full text-xs flex items-center justify-center opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                                                <i class="fa-solid fa-times"></i>
-                                            </button>
+                                            <!-- Subtle progress bar -->
                                             <div x-show="isUploadingSlider" class="absolute bottom-0 left-0 right-0 h-1 bg-gray-200">
                                                 <div class="h-full bg-blue-600 transition-all duration-300" :style="'width: ' + sliderProgress + '%'"></div>
                                             </div>
@@ -941,6 +916,31 @@
                                         </div>
                                     @endforeach
 
+                                    <!-- Temp Images -->
+                                    @foreach ($tempImages as $index => $file)
+                                        @php
+                                            $extension = strtolower($file->getClientOriginalExtension());
+                                            $isPreviewable = in_array($extension, ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp']);
+                                        @endphp
+                                        <div
+                                            class="relative aspect-square rounded-lg overflow-hidden border border-blue-200 ring-2 ring-blue-500 group">
+                                            <!-- Just display image without spinner if loaded, livewire handles tempUrl -->
+                                            @if ($isPreviewable)
+                                                <img src="{{ $file->temporaryUrl() }}"
+                                                    class="absolute inset-0 w-full h-full object-cover">
+                                            @else
+                                                <div class="absolute inset-0 flex flex-col items-center justify-center bg-slate-800 text-[#00D1FF] p-2 text-center">
+                                                    <i class="fa-solid fa-file-image fa-xl mb-1"></i>
+                                                    <span class="text-[10px] font-black uppercase tracking-tighter">{{ $extension }}</span>
+                                                </div>
+                                            @endif
+                                            <button type="button"
+                                                wire:click="removeTempImage({{ $index }})"
+                                                class="absolute top-1 right-1 bg-red-500 text-white w-6 h-6 rounded-full text-xs flex items-center justify-center opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                                <i class="fa-solid fa-times"></i>
+                                            </button>
+                                        </div>
+                                    @endforeach
                                  </div>
                             </div>
                         </div>
@@ -1006,17 +1006,14 @@
                 </div>
 
                 <div class="p-6 pb-12 md:pb-6 border-t border-gray-200 flex justify-end space-x-3 bg-gray-50 rounded-b-2xl">
-                    <button type="button" @click="removeLocalAvatar(); localSlider.forEach(u => URL.revokeObjectURL(u)); localSlider = []; pendingSliderFiles = []; $wire.closeCreatePopup()"
-                        :disabled="isSaving"
-                        class="px-5 py-2.5 rounded-xl text-gray-600 hover:bg-gray-200 font-bold transition-colors disabled:opacity-50">Hủy
+                    <button wire:click="closeCreatePopup"
+                        class="px-5 py-2.5 rounded-xl text-gray-600 hover:bg-gray-200 font-bold transition-colors">Hủy
                         bỏ</button>
-                    <button type="button" @click="saveAll()" :disabled="isSaving"
+                    <button type="button" wire:click="saveListing" wire:loading.attr="disabled" wire:target="saveListing"
                         class="px-6 py-2.5 rounded-xl bg-blue-600 text-white hover:bg-blue-700 font-bold shadow-lg hover:shadow-blue-500/30 transform active:scale-95 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                        <i class="fa-solid fa-paper-plane" x-show="!isSaving"></i>
-                        <i class="fa-solid fa-spinner fa-spin" x-show="isSaving" style="display: none;"></i>
-                        <span x-show="!isSaving">{{ $selectedListingId ? 'Lưu Thay Đổi' : 'Đăng Tin Nhà Đất' }}</span>
-                        <span x-show="isSaving" style="display: none;"
-                            x-text="sliderStatus || avatarStatus || 'Đang lưu...'"></span>
+                        <i class="fa-solid fa-paper-plane" wire:loading.remove wire:target="saveListing"></i>
+                        <i class="fa-solid fa-spinner fa-spin" wire:loading wire:target="saveListing"></i>
+                        {{ $selectedListingId ? 'Lưu Thay Đổi' : 'Đăng Tin Nhà Đất' }}
                     </button>
                 </div>
 

@@ -532,6 +532,45 @@ class RealEstateListing extends Component
             $this->code = $this->generateListingCode($this->property_type ?? 110); // Default to Other if not set
         }
 
+        // Process images with Media Sync
+        if (count($this->tempImages) > 0) {
+            foreach ($this->tempImages as $temp) {
+                // ===== UNIQUE FILENAME TO PREVENT OVERWRITES =====
+                $originalName = $temp->getClientOriginalName();
+                $filenameOnly = pathinfo($originalName, PATHINFO_FILENAME);
+                $extension = $temp->getClientOriginalExtension();
+
+                // Sanitize + Add unique suffix (timestamp + random)
+                $safeFilename = preg_replace('/[^a-zA-Z0-9._-]/', '_', $filenameOnly);
+                $uniqueSuffix = time() . '_' . substr(uniqid(), -4);
+                $filename = $safeFilename . '_' . $uniqueSuffix . '.' . $extension;
+
+                // Match Media Manager structure: YYYY/MM/UniqueFilename
+                $path = $temp->storeAs(date('Y/m'), $filename, ['disk' => 's3', 'visibility' => 'public']);
+
+                $publicUrl = config('filesystems.disks.s3.endpoint') . '/' . config('filesystems.disks.s3.bucket') . '/' . $path;
+
+                // Create File Record for Media Manager
+                $file = \App\Models\File::create([
+                    'folder_id' => null, // Root folder or specific listing folder
+                    'name' => $filename, // Store UNIQUE filename (not original)
+                    'path' => $path,
+                    'disk' => 's3',
+                    'mime_type' => $temp->getMimeType(),
+                    'size' => $temp->getSize(),
+                    'metadata' => [
+                        'source' => 'real_estate_quick_upload',
+                        'public_url' => $publicUrl
+                    ]
+                ]);
+
+                // Use the URL from the File model or generate it
+                // We use the public URL directly to ensure it works
+                $this->images[] = $publicUrl;
+            }
+            $this->tempImages = [];
+        }
+
         $data = [
             'title' => $this->title,
             'type' => $this->type,
