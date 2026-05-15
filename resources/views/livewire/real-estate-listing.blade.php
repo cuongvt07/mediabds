@@ -324,10 +324,15 @@
                     sliderProgress: 0,
                     sliderStatus: '',
 
+                    localAvatarPreview: null,
+                    localSliderPreviews: [],
+
                     async handleAvatarUpload(e) {
                         const file = e.target.files[0];
                         if (!file) return;
 
+                        // Instant Local Preview
+                        this.localAvatarPreview = URL.createObjectURL(file);
                         this.isUploadingAvatar = true;
                         this.avatarStatus = 'Đang xử lý...';
 
@@ -340,17 +345,22 @@
                                     (url) => {
                                         this.isUploadingAvatar = false;
                                         this.avatarStatus = 'Hoàn tất ✓';
-                                        setTimeout(() => { this.avatarStatus = ''; }, 2000);
+                                        setTimeout(() => { 
+                                            this.avatarStatus = ''; 
+                                            this.localAvatarPreview = null;
+                                        }, 2000);
                                     },
                                     () => {
                                         this.isUploadingAvatar = false;
                                         this.avatarStatus = '';
+                                        this.localAvatarPreview = null;
                                         alert('Lỗi tải ảnh đại diện!');
                                     }
                                 );
                             } catch (err) {
                                 this.isUploadingAvatar = false;
                                 this.avatarStatus = '';
+                                this.localAvatarPreview = null;
                             }
                         }, 100);
                     },
@@ -358,6 +368,10 @@
                     async handleSliderUpload(e) {
                         const files = Array.from(e.target.files);
                         if (files.length === 0) return;
+
+                        // Instant Local Previews
+                        const newPreviews = files.map(f => URL.createObjectURL(f));
+                        this.localSliderPreviews = [...this.localSliderPreviews, ...newPreviews];
 
                         this.isUploadingSlider = true;
                         this.sliderProgress = 0;
@@ -382,12 +396,14 @@
                                         setTimeout(() => {
                                             this.sliderStatus = '';
                                             this.sliderProgress = 0;
-                                        }, 2000);
+                                            this.localSliderPreviews = [];
+                                        }, 500);
                                     },
                                     () => {
                                         this.isUploadingSlider = false;
                                         this.sliderStatus = '';
                                         this.sliderProgress = 0;
+                                        this.localSliderPreviews = [];
                                         alert('Lỗi tải ảnh slider!');
                                     },
                                     (event) => {
@@ -398,6 +414,7 @@
                                 this.isUploadingSlider = false;
                                 this.sliderStatus = '';
                                 this.sliderProgress = 0;
+                                this.localSliderPreviews = [];
                             }
                         }, 100);
                     }
@@ -770,33 +787,12 @@
                                             <span class="text-[10px] font-black uppercase tracking-tighter text-blue-600" x-text="avatarStatus"></span>
                                         </div>
 
+                                        <!-- Instant Local Preview -->
+                                        <template x-if="localAvatarPreview">
+                                            <img :src="localAvatarPreview" class="w-full h-full object-cover">
+                                        </template>
+
                                         <!-- Server Side Preview (only after upload) -->
-                                        @if ($tempAvatar)
-                                            @php
-                                                $extension = strtolower($tempAvatar->getClientOriginalExtension());
-                                                $isPreviewable = in_array($extension, ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp']);
-                                            @endphp
-                                            @if ($isPreviewable)
-                                                <img src="{{ $tempAvatar->temporaryUrl() }}"
-                                                    class="w-full h-full object-cover">
-                                            @else
-                                                <div class="w-full h-full flex flex-col items-center justify-center bg-slate-800 text-[#00D1FF] p-2 text-center">
-                                                    <i class="fa-solid fa-file-image fa-2x mb-1"></i>
-                                                    <span class="text-[10px] font-black uppercase tracking-tighter">{{ $extension }}</span>
-                                                    <span class="text-[8px] opacity-60 uppercase font-bold">No Preview</span>
-                                                </div>
-                                            @endif
-                                            <button type="button" wire:click="$set('tempAvatar', null)"
-                                                class="absolute top-1 right-1 bg-red-500 text-white w-5 h-5 rounded-full text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <i class="fa-solid fa-times"></i>
-                                            </button>
-                                        @elseif ($avatar)
-                                            <img src="{{ $avatar }}" class="w-full h-full object-cover">
-                                            <button type="button" wire:click="removeAvatar"
-                                                class="absolute top-1 right-1 bg-red-500 text-white w-5 h-5 rounded-full text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <i class="fa-solid fa-times"></i>
-                                            </button>
-                                        @else
                                             <div
                                                 class="w-full h-full flex flex-col items-center justify-center text-gray-400">
                                                 <i class="fa-solid fa-image fa-2x mb-1"></i>
@@ -889,22 +885,38 @@
                                         </div>
                                     @endforeach
 
-                                    <!-- Temp Images -->
+                                     <!-- Local Previews (Instant) -->
+                                    <template x-for="(localUrl, idx) in localSliderPreviews" :key="'local-'+idx">
+                                        <div class="relative aspect-square rounded-lg overflow-hidden border border-blue-400 ring-2 ring-blue-500/20 group">
+                                            <img :src="localUrl" class="absolute inset-0 w-full h-full object-cover opacity-50">
+                                            <div class="absolute inset-0 flex items-center justify-center">
+                                                <i class="fa-solid fa-circle-notch fa-spin text-blue-500"></i>
+                                            </div>
+                                        </div>
+                                    </template>
+
+                                    <!-- Temp Images (After Server Upload) -->
                                     @foreach ($tempImages as $index => $file)
                                         @php
-                                            $extension = strtolower($file->getClientOriginalExtension());
-                                            $isPreviewable = in_array($extension, ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp']);
+                                            try {
+                                                $tempUrl = $file->temporaryUrl();
+                                                $extension = strtolower($file->getClientOriginalExtension());
+                                                $isPreviewable = in_array($extension, ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp']);
+                                            } catch (\Exception $e) {
+                                                $tempUrl = null;
+                                                $isPreviewable = false;
+                                            }
                                         @endphp
                                         <div
                                             class="relative aspect-square rounded-lg overflow-hidden border border-blue-200 ring-2 ring-blue-500 group">
                                             <!-- Just display image without spinner if loaded, livewire handles tempUrl -->
-                                            @if ($isPreviewable)
-                                                <img src="{{ $file->temporaryUrl() }}"
+                                            @if ($isPreviewable && $tempUrl)
+                                                <img src="{{ $tempUrl }}"
                                                     class="absolute inset-0 w-full h-full object-cover">
                                             @else
                                                 <div class="absolute inset-0 flex flex-col items-center justify-center bg-slate-800 text-[#00D1FF] p-2 text-center">
                                                     <i class="fa-solid fa-file-image fa-xl mb-1"></i>
-                                                    <span class="text-[10px] font-black uppercase tracking-tighter">{{ $extension }}</span>
+                                                    <span class="text-[10px] font-black uppercase tracking-tighter">{{ $extension ?? 'ERR' }}</span>
                                                 </div>
                                             @endif
                                             <button type="button"
