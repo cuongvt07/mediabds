@@ -793,12 +793,48 @@
                                         </template>
 
                                         <!-- Server Side Preview (only after upload) -->
-                                            <div
-                                                class="w-full h-full flex flex-col items-center justify-center text-gray-400">
-                                                <i class="fa-solid fa-image fa-2x mb-1"></i>
-                                                <span class="text-[10px]">Chưa có ảnh</span>
+                                        <template x-if="!localAvatarPreview">
+                                            <div class="w-full h-full">
+                                                @if ($tempAvatar)
+                                                    @php
+                                                        try {
+                                                            $tempUrl = $tempAvatar->temporaryUrl();
+                                                            $extension = strtolower($tempAvatar->getClientOriginalExtension());
+                                                            $isPreviewable = in_array($extension, ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp']);
+                                                        } catch (\Exception $e) {
+                                                            $tempUrl = null;
+                                                            $isPreviewable = false;
+                                                        }
+                                                    @endphp
+                                                    @if ($isPreviewable && $tempUrl)
+                                                        <img src="{{ $tempUrl }}"
+                                                            class="w-full h-full object-cover">
+                                                    @else
+                                                        <div class="w-full h-full flex flex-col items-center justify-center bg-slate-800 text-[#00D1FF] p-2 text-center">
+                                                            <i class="fa-solid fa-file-image fa-2x mb-1"></i>
+                                                            <span class="text-[10px] font-black uppercase tracking-tighter">{{ $extension ?? 'ERR' }}</span>
+                                                        </div>
+                                                    @endif
+                                                    <button type="button" wire:click="$set('tempAvatar', null)"
+                                                        @click="localAvatarPreview = null"
+                                                        class="absolute top-1 right-1 bg-red-500 text-white w-5 h-5 rounded-full text-xs flex items-center justify-center opacity-100 transition-opacity z-30">
+                                                        <i class="fa-solid fa-times"></i>
+                                                    </button>
+                                                @elseif ($avatar)
+                                                    <img src="{{ $avatar }}" class="w-full h-full object-cover">
+                                                    <button type="button" wire:click="removeAvatar"
+                                                        @click="localAvatarPreview = null"
+                                                        class="absolute top-1 right-1 bg-red-500 text-white w-5 h-5 rounded-full text-xs flex items-center justify-center opacity-100 transition-opacity z-30">
+                                                        <i class="fa-solid fa-times"></i>
+                                                    </button>
+                                                @else
+                                                    <div class="w-full h-full flex flex-col items-center justify-center text-gray-400">
+                                                        <i class="fa-solid fa-image fa-2x mb-1"></i>
+                                                        <span class="text-[10px]">Chưa có ảnh</span>
+                                                    </div>
+                                                @endif
                                             </div>
-                                        @endif
+                                        </template>
                                     </div>
 
                                     <div class="flex-1 relative group h-32">
