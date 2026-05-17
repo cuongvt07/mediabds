@@ -259,7 +259,7 @@ class RealEstateListing extends Component
             }
 
             // Forced delay to ensure S3/CDN consistency
-            usleep(4000000); 
+            sleep(60); 
 
             $this->tempImages = [];
         }
@@ -299,7 +299,7 @@ class RealEstateListing extends Component
                 ]);
 
                 // Forced delay to ensure S3/CDN consistency
-                usleep(4000000);
+                sleep(60);
 
                 $this->avatar = $publicUrl;
                 $this->tempAvatar = null;
