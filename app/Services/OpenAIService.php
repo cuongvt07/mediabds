@@ -53,11 +53,12 @@ class OpenAIService
                 'model' => $modelUsed,
                 'messages' => $messages,
                 'stream' => true,
-                'parallel_tool_calls' => true, // [PHASE 3] tool gọi song song
             ];
             if (!empty($tools)) {
                 $payload['tools'] = $tools;
                 $payload['tool_choice'] = 'auto';
+                // [FIX] parallel_tool_calls CHỈ hợp lệ khi có tools — gửi không có tools → OpenAI trả 400
+                $payload['parallel_tool_calls'] = true;
             }
 
             $response = Http::withToken($this->apiKey)
