@@ -199,6 +199,18 @@
                 </div>
             @endif
             <div class="flex items-center gap-2">
+                {{-- Zalo connect button(s) — 1 nút mỗi SĐT --}}
+                @php $zaloPhones = \App\Models\RealEstateListing::parseContactPhones($listing['contact_phone'] ?? null); @endphp
+                @foreach($zaloPhones as $zp)
+                    <a href="https://zalo.me/{{ $zp }}" target="_blank"
+                       @click.stop
+                       class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-[#0068ff]/10 text-[#0068ff] hover:bg-[#0068ff] hover:text-white transition-colors text-[10px] font-bold"
+                       title="Nhắn Zalo {{ $zp }}">
+                        <i class="fa-solid fa-comment-dots"></i>
+                        Zalo{{ count($zaloPhones) > 1 ? ' ' . $loop->iteration : '' }}
+                    </a>
+                @endforeach
+
                 @if (!empty($listing['facebook_link']))
                     <a href="{{ $listing['facebook_link'] }}" target="_blank" class="text-blue-600 hover:text-blue-800 transition-colors" title="Facebook New">
                         <i class="fa-brands fa-facebook"></i>

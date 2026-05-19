@@ -42,6 +42,15 @@ class Chatbot extends Component
 
     public string $streamingResponse = '';
 
+    // [STEP C/E] Theo dõi metadata của lượt chạy hiện tại để lưu vào chat_messages
+    // PHẢI public — Livewire 3 chỉ serialize public properties giữa các request,
+    // mà sendMessage và generateAIResponse là 2 request khác nhau (dispatch event).
+    public array $currentRunMeta = [];
+    public ?int $lastAssistantMessageId = null;
+    public ?int $feedbackOpenForMessageId = null;
+    public string $feedbackNote = '';
+    public string $feedbackCategory = '';
+
     public function mount()
     {
         $this->loadRules();
@@ -60,7 +69,8 @@ class Chatbot extends Component
         if ($dbMessages->count() > 0) {
             $this->messages = $dbMessages->map(fn($m) => [
                 'role' => $m->role,
-                'content' => $m->content
+                'content' => $m->content,
+                'message_id' => $m->id,
             ])->toArray();
 
             // Khôi phục entity context từ lịch sử gần nhất
@@ -147,6 +157,64 @@ class Chatbot extends Component
             \App\Models\ChatMessage::create(['user_id' => auth()->id(), 'role' => 'assistant', 'content' => $intentHandled]);
             $this->userInput = '';
             return;
+        }
+
+        // ═══════════════════════════════════════════════════════════════════
+        // [STEP C] INTENT CLASSIFIER — pre-flight check
+        // Nếu câu mơ hồ → bot HỎI LẠI ngay, KHÔNG gọi tool main bừa
+        // ═══════════════════════════════════════════════════════════════════
+        $skipClassifier = empty($this->chatFiles) ? false : true; // có file đính kèm → bỏ qua, đi thẳng vào AI chính
+        if (!$skipClassifier && strlen(trim($userMessage)) > 2) {
+            $classification = app(\App\Services\ChatbotIntentClassifier::class)->classify($userMessage, [
+                'user_role' => auth()->user()?->isAdmin() ? 'Admin' : 'CTV',
+                'user_id' => auth()->id(),
+                'recent_entities' => $this->buildRecentEntitiesHint(),
+                'pending_clarification' => $this->conversationContext['pending_clarification'] ?? null,
+            ]);
+
+            // Nếu cần làm rõ → bot hỏi lại, lưu pending_clarification, KHÔNG gọi AI chính
+            if ($classification['needs_clarification'] && !empty($classification['clarification_question'])) {
+                $q = $classification['clarification_question'];
+                $this->messages[] = ['role' => 'user', 'content' => $userMessage];
+                $this->messages[] = ['role' => 'assistant', 'content' => "🤔 {$q}"];
+                \App\Models\ChatMessage::create(['user_id' => auth()->id(), 'role' => 'user', 'content' => $userMessage]);
+                \App\Models\ChatMessage::create(['user_id' => auth()->id(), 'role' => 'assistant', 'content' => "🤔 {$q}"]);
+                $this->conversationContext['pending_clarification'] = $q;
+                $this->userInput = '';
+                return;
+            }
+
+            // Nếu out_of_scope → từ chối ngay, không tốn AI chính
+            if ($classification['intent'] === 'out_of_scope' && $classification['confidence'] >= 0.7) {
+                $refuse = "❌ Câu hỏi nằm ngoài phạm vi hệ thống (BĐS / khách hàng / CTV / doanh thu / lưu trữ). Bạn vui lòng hỏi việc trong hệ thống nhé.";
+                $this->messages[] = ['role' => 'user', 'content' => $userMessage];
+                $this->messages[] = ['role' => 'assistant', 'content' => $refuse];
+                \App\Models\ChatMessage::create(['user_id' => auth()->id(), 'role' => 'user', 'content' => $userMessage]);
+                \App\Models\ChatMessage::create(['user_id' => auth()->id(), 'role' => 'assistant', 'content' => $refuse]);
+                $this->userInput = '';
+                return;
+            }
+
+            // Confident → enrich message để AI biết classifier đã hint gì
+            $enrichedMessage .= "\n\n[CLASSIFIER HINT]\nintent={$classification['intent']}, target_tool=" . ($classification['target_tool'] ?? 'auto')
+                . ", scope_hint=" . ($classification['scope_hint'] ?? 'auto')
+                . ", entities=" . json_encode($classification['extracted_entities'] ?? [], JSON_UNESCAPED_UNICODE);
+
+            // Reset pending_clarification vì user đã trả lời đủ rõ
+            if ($classification['confidence'] >= 0.7) {
+                $this->conversationContext['pending_clarification'] = null;
+            }
+
+            // [STEP E] Track classifier result vào metadata để feedback có thể audit
+            $this->currentRunMeta = [
+                'intent' => $classification['intent'],
+                'confidence' => $classification['confidence'],
+                'target_tool' => $classification['target_tool'],
+                'scope_hint' => $classification['scope_hint'],
+                'tool_calls' => [],
+            ];
+        } else {
+            $this->currentRunMeta = ['tool_calls' => []];
         }
 
         $fileInfo = "";
@@ -251,6 +319,9 @@ class Chatbot extends Component
         $mode = $this->detectModeAdvanced($userMessage);
         $this->dispatch('mode-detected', mode: $mode);
 
+        // [PHASE 2] Chọn model dựa trên mode (SMART → gpt-4o, FAST → gpt-4o-mini)
+        $modelForRun = $openAIService->pickModelForMode($mode);
+
         $context = $this->buildSmartSystemContext($mode);
         $tools = $this->getAvailableTools('ALL');
 
@@ -268,9 +339,17 @@ class Chatbot extends Component
         $toolCalls = $openAIService->streamChat($apiMessages, function($chunk) {
             $this->streamingResponse .= $chunk;
             $this->stream(to: 'assistant-reply', content: $chunk);
-        }, $tools);
+        }, $tools, $modelForRun);
 
         if (!empty($toolCalls)) {
+            // [STEP E] Lưu tool_calls vào meta cho audit
+            foreach ($toolCalls as $tc) {
+                $this->currentRunMeta['tool_calls'][] = [
+                    'name' => $tc['function']['name'] ?? '?',
+                    'args' => json_decode($tc['function']['arguments'] ?? '{}', true),
+                ];
+            }
+
             // [MỚI] Cập nhật conversation context sau khi tool được gọi
             $this->updateConversationContextFromTools($toolCalls);
 
@@ -329,7 +408,7 @@ class Chatbot extends Component
                 $openAIService->streamChat($apiMessages, function($chunk) {
                     $this->streamingResponse .= $chunk;
                     $this->stream(to: 'assistant-reply', content: $chunk);
-                });
+                }, [], $modelForRun);
             } else {
                 $feedback = "\n✅ " . trim($toolFeedback);
                 $this->streamingResponse .= $feedback;
@@ -341,12 +420,94 @@ class Chatbot extends Component
             // [MỚI] Cập nhật context từ response trước khi lưu
             $this->extractEntitiesFromResponse($this->streamingResponse);
 
-            $this->messages[] = ['role' => 'assistant', 'content' => $this->streamingResponse];
-            \App\Models\ChatMessage::create(['user_id' => auth()->id(), 'role' => 'assistant', 'content' => $this->streamingResponse]);
+            // [STEP E] Lưu metadata (intent, model, tool_calls) vào chat_messages để feedback audit được
+            $meta = array_merge($this->currentRunMeta, [
+                'mode' => $mode,
+                'model' => $modelForRun,
+            ]);
+            $row = \App\Models\ChatMessage::create([
+                'user_id' => auth()->id(),
+                'role' => 'assistant',
+                'content' => $this->streamingResponse,
+                'metadata' => $meta,
+            ]);
+            $this->lastAssistantMessageId = $row->id;
+            $this->messages[] = ['role' => 'assistant', 'content' => $this->streamingResponse, 'message_id' => $row->id];
         }
 
         $this->isTyping = false;
         $this->streamingResponse = '';
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // [STEP E] FEEDBACK LOOP — user vote 👍/👎 mỗi response của bot
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /**
+     * Mở form feedback chi tiết cho 1 message (khi user chọn 👎).
+     */
+    public function openFeedback(int $messageId): void
+    {
+        $this->feedbackOpenForMessageId = $messageId;
+        $this->feedbackNote = '';
+        $this->feedbackCategory = '';
+    }
+
+    public function closeFeedback(): void
+    {
+        $this->feedbackOpenForMessageId = null;
+        $this->feedbackNote = '';
+        $this->feedbackCategory = '';
+    }
+
+    /**
+     * Vote nhanh: rating = 1 (👍) hoặc -1 (👎). Nếu -1 → mở form để chọn category.
+     */
+    public function voteFeedback(int $messageId, int $rating): void
+    {
+        // [FIX] Clamp rating về {-1, 1} — chống client manipulation
+        if ($rating !== 1 && $rating !== -1) return;
+
+        $msg = \App\Models\ChatMessage::find($messageId);
+        if (!$msg || $msg->user_id !== auth()->id() || $msg->role !== 'assistant') return;
+
+        $meta = $msg->metadata ?? [];
+        \App\Models\ChatFeedback::updateOrCreate(
+            ['chat_message_id' => $messageId, 'user_id' => auth()->id()],
+            [
+                'rating' => $rating,
+                'intent_at_time' => $meta['intent'] ?? null,
+                'confidence_at_time' => $meta['confidence'] ?? null,
+                'tool_calls_meta' => $meta['tool_calls'] ?? null,
+            ]
+        );
+
+        if ($rating === 1) {
+            $this->dispatch('toast', ['message' => 'Cảm ơn phản hồi của bạn!', 'type' => 'success']);
+        } else {
+            // Mở form để user chọn nhóm lỗi
+            $this->openFeedback($messageId);
+        }
+    }
+
+    /**
+     * Submit feedback chi tiết với category + note (sau khi user vote 👎).
+     */
+    public function submitFeedbackDetail(): void
+    {
+        if (!$this->feedbackOpenForMessageId) return;
+        $allowed = array_keys(\App\Models\ChatFeedback::ERROR_CATEGORIES);
+        $cat = in_array($this->feedbackCategory, $allowed) ? $this->feedbackCategory : 'other';
+
+        \App\Models\ChatFeedback::where('chat_message_id', $this->feedbackOpenForMessageId)
+            ->where('user_id', auth()->id())
+            ->update([
+                'error_category' => $cat,
+                'note' => mb_substr(trim($this->feedbackNote), 0, 1000),
+            ]);
+
+        $this->dispatch('toast', ['message' => 'Đã ghi nhận phản hồi. Cảm ơn bạn!', 'type' => 'success']);
+        $this->closeFeedback();
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -499,20 +660,38 @@ class Chatbot extends Component
         // Hash context để invalidate cache khi context thay đổi
         $ctxHash = md5(json_encode($this->conversationContext));
 
-        return Cache::remember("chatbot_ctx_{$mode}_{$userId}_{$ctxHash}", 120, function() use ($mode) {
+        return Cache::remember("chatbot_ctx_{$mode}_{$userId}_{$ctxHash}", 120, function() use ($mode, $userId) {
             $stats = $this->getSystemStats();
             $prompt = ($mode === 'FAST') ? $this->getFastPrompt() : $this->getSmartPrompt();
 
             // [MỚI] Inject conversation memory vào system context
             $memoryBlock = $this->buildMemoryBlock();
 
-            return "{$prompt}\n\n{$memoryBlock}\n\n[DỮ LIỆU HỆ THỐNG]\n{$stats}";
+            // [STEP D] Inject user profile để bot biết người đang hỏi là ai và scope quyền
+            $profileSvc = app(\App\Services\ChatbotUserProfileService::class);
+            $profileBlock = $profileSvc->buildPromptBlock($profileSvc->snapshot(auth()->user()));
+
+            return "{$prompt}\n\n{$profileBlock}\n\n{$memoryBlock}\n\n[DỮ LIỆU HỆ THỐNG]\n{$stats}";
         });
     }
 
     // ════════════════════════════════════════════════════════════════════
     // [MỚI] buildMemoryBlock — tóm tắt "bộ nhớ ngắn hạn" cho AI
     // ════════════════════════════════════════════════════════════════════
+    /**
+     * [STEP C] Tạo hint ngắn về entities gần đây để classifier hiểu đại từ.
+     */
+    protected function buildRecentEntitiesHint(): string
+    {
+        $ctx = $this->conversationContext;
+        $parts = [];
+        if (!empty($ctx['last_listing_ids'])) $parts[] = 'listings=#' . implode(',#', $ctx['last_listing_ids']);
+        if (!empty($ctx['last_customer_ids'])) $parts[] = 'customers=#' . implode(',#', $ctx['last_customer_ids']);
+        if (!empty($ctx['last_user_ids'])) $parts[] = 'users=#' . implode(',#', $ctx['last_user_ids']);
+        if (!empty($ctx['last_intent'])) $parts[] = 'last_action=' . $ctx['last_intent'];
+        return empty($parts) ? 'không có' : implode('; ', $parts);
+    }
+
     protected function buildMemoryBlock(): string
     {
         $ctx = $this->conversationContext;
@@ -579,7 +758,7 @@ class Chatbot extends Component
     // ════════════════════════════════════════════════════════════════════════
     protected function extractEntitiesFromResult(string $toolName, array $result): void
     {
-        if ($result['status'] !== 'success') return;
+        if (($result['status'] ?? null) !== 'success') return;
 
         if (isset($result['data']) && is_array($result['data'])) {
             // search_listings trả về array các listings
@@ -646,6 +825,20 @@ Nếu ngoài phạm vi → từ chối ngắn gọn bằng 1 câu.
   VD: "Cần thêm SĐT để tạo tin. Số nào?"
 - Nếu ĐỦ thông tin → gọi tool NGAY, không hỏi lại.
 
+## CHỌN TOOL — Bảng quyết định nhanh
+| User hỏi gì                                  | Tool nên dùng              |
+|---------------------------------------------|----------------------------|
+| "có bao nhiêu tin X", "tổng giá trị", "TB"  | search_listings (aggregate_only=true) |
+| "tin nào TB / cao nhất / rẻ nhất khu vực Y" | market_analysis            |
+| "phân bổ tin theo loại / khu vực / tháng"   | aggregate_listings_stats   |
+| "so sánh tin #A với #B"                     | compare_listings           |
+| "ai bán nhiều nhất", "top CTV"              | top_performers             |
+| "doanh thu tháng / quý / năm"               | revenue_report             |
+| "khách nào lâu chưa chăm sóc", "phễu khách" | customer_funnel            |
+| "tìm tin ở Q.1, 2 tỷ"                       | search_listings (mặc định) |
+
+QUAN TRỌNG: ưu tiên tool aggregate hơn là kéo list rồi tự đếm. Nếu user chỉ cần con số → KHÔNG kéo records.
+
 ## Phong cách — Fast mode
 - Trả lời TRỰC TIẾP. Không mở đầu bằng "Xin chào", "Tất nhiên", "Để tôi...".
 - Không giải thích quy trình suy nghĩ.
@@ -655,6 +848,7 @@ Nếu ngoài phạm vi → từ chối ngắn gọn bằng 1 câu.
 - Lỗi/không tìm:   ❌ [lý do ngắn + hướng xử lý]
 - TIN ĐĂNG BĐS:    LUÔN dùng [LISTING:ID]. KHÔNG dùng bảng, KHÔNG dùng danh sách text.
 - Số tiền:         "2.5 Tỷ" / "850 Triệu" / "15 Triệu/tháng"
+- Số liệu thống kê: in đậm các con số quan trọng (tổng, TB, top).
 - Không in đậm toàn câu — chỉ in đậm số liệu quan trọng{$rules}
 PROMPT;
     }
@@ -678,16 +872,23 @@ Chỉ phân tích dữ liệu trong hệ thống: tin đăng, khách hàng, doan
 - Nếu câu hỏi mơ hồ → gọi tool để lấy dữ liệu trước, sau đó phân tích.
 - Nếu thiếu dữ liệu → thừa nhận và đề xuất góc phân tích thay thế.
 
-## Phong cách — Smart mode
-Cấu trúc cho phân tích:
-  1. **Quan sát** — dữ liệu nói gì? (≤3 câu)
-  2. **Nhận xét** — tại sao lại như vậy? (≤3 câu)
-  3. **Khuyến nghị** — nên làm gì tiếp? (≤3 câu)
+## CHIẾN LƯỢC THU THẬP DỮ LIỆU (ƯU TIÊN)
+1. **Gọi NHIỀU tool song song trong 1 lượt** nếu cần nhiều góc nhìn (vd: vừa `market_analysis` vừa `aggregate_listings_stats` để đối chiếu).
+2. Ưu tiên tool **aggregate** (`aggregate_listings_stats`, `market_analysis`, `revenue_report`, `top_performers`) thay vì kéo từng tin rồi tự đếm.
+3. Khi user yêu cầu so sánh nhiều BĐS → dùng `compare_listings` (đã tính sẵn giá/m², ai rẻ nhất, ai best value).
+4. Khi cần báo cáo theo thời gian → dùng `revenue_report` với granularity phù hợp (month cho >3 tháng, day cho <1 tháng).
+5. Phân tích phễu KH → `customer_funnel` để có ngay top khách bị bỏ quên.
+
+## Cấu trúc trả lời cho PHÂN TÍCH
+  1. **Quan sát** — số liệu chính nói gì? (≤3 câu, in đậm số quan trọng)
+  2. **Nhận xét** — tại sao? bất thường ở đâu? so với kỳ trước/khu vực khác? (≤3 câu)
+  3. **Khuyến nghị** — 1-3 hành động cụ thể có thể làm ngay.
 
 ## Định dạng
 - TIN ĐĂNG BĐS: LUÔN dùng [LISTING:ID]. KHÔNG dùng bảng hay danh sách text.
-- Số tiền: "2.5 Tỷ" / "850 Triệu"
-- Không dự báo ngoài dữ liệu hệ thống.{$rules}
+- Số tiền: "2.5 Tỷ" / "850 Triệu" / "12.5 Triệu/m²"
+- Số liệu top/rank: dùng danh sách số (1. **Tên** — số liệu)
+- KHÔNG dự báo ngoài dữ liệu hệ thống. KHÔNG bịa số.{$rules}
 PROMPT;
     }
 
@@ -837,10 +1038,12 @@ PROMPT;
     {
         $this->streamingResponse = '';
         $this->isTyping = true;
+        // [PHASE 2] HITL resume — dùng smart model nếu intent gần đây cần phân tích, mặc định fast
+        $modelForRun = $openAIService->pickModelForMode('FAST');
         $toolCalls = $openAIService->streamChat($apiMessages, function($chunk) {
             $this->streamingResponse .= $chunk;
             $this->stream(to: 'assistant-reply', content: $this->streamingResponse, replace: true);
-        }, $tools);
+        }, $tools, $modelForRun);
         if (!empty($toolCalls)) {
             foreach ($toolCalls as $toolCall) {
                 $toolResult = $this->executeTool($toolCall['function']['name'], json_decode($toolCall['function']['arguments'], true));
@@ -926,17 +1129,17 @@ PROMPT;
                 'type' => 'function',
                 'function' => [
                     'name' => 'search_listings',
-                    'description' => 'Tìm kiếm nâng cao và phân tích danh sách tin đăng theo nhiều tiêu chí (giá, diện tích, sắp xếp).',
+                    'description' => 'Tìm kiếm tin đăng theo nhiều tiêu chí (giá tính bằng TỶ, diện tích m², khu vực, hướng…). Hỗ trợ aggregate_only=true để CHỈ lấy nhanh count + min/max/avg/sum giá (không kéo records — dùng khi user hỏi "có bao nhiêu", "tổng giá trị", "trung bình"). Hỗ trợ page để phân trang.',
                     'parameters' => [
                         'type' => 'object',
                         'properties' => [
                             'query' => ['type' => 'string', 'description' => 'Từ khóa tìm kiếm (địa chỉ, tiêu đề, mã tin)'],
                             'type' => ['type' => 'string', 'enum' => ['Cần bán', 'Cho thuê', 'Cần mua'], 'description' => 'Loại hình'],
                             'property_type' => ['type' => 'string', 'description' => 'Loại BĐS (Biệt thự, Căn hộ, Đất, Nhà phố, Khách sạn...)'],
-                            'min_price' => ['type' => 'number', 'description' => 'Giá tối thiểu'],
-                            'max_price' => ['type' => 'number', 'description' => 'Giá tối đa'],
-                            'min_area' => ['type' => 'number', 'description' => 'Diện tích tối thiểu'],
-                            'max_area' => ['type' => 'number', 'description' => 'Diện tích tối đa'],
+                            'min_price' => ['type' => 'number', 'description' => 'Giá tối thiểu (tính bằng TỶ VND, ví dụ 2.5 = 2.5 tỷ)'],
+                            'max_price' => ['type' => 'number', 'description' => 'Giá tối đa (tính bằng TỶ VND)'],
+                            'min_area' => ['type' => 'number', 'description' => 'Diện tích tối thiểu (m²)'],
+                            'max_area' => ['type' => 'number', 'description' => 'Diện tích tối đa (m²)'],
                             'province' => ['type' => 'string', 'description' => 'Tỉnh/Thành phố'],
                             'district' => ['type' => 'string', 'description' => 'Quận/Huyện'],
                             'ward' => ['type' => 'string', 'description' => 'Phường/Xã'],
@@ -946,6 +1149,8 @@ PROMPT;
                             'sort_by' => ['type' => 'string', 'enum' => ['price', 'area', 'created_at'], 'description' => 'Trường sắp xếp'],
                             'sort_order' => ['type' => 'string', 'enum' => ['asc', 'desc'], 'description' => 'Thứ tự (asc/desc)'],
                             'limit' => ['type' => 'integer', 'description' => 'Số lượng kết quả (mặc định 5, tối đa 20)'],
+                            'page' => ['type' => 'integer', 'description' => 'Trang (mặc định 1) — dùng khi cần xem tiếp kết quả'],
+                            'aggregate_only' => ['type' => 'boolean', 'description' => 'TRUE = chỉ trả số liệu tổng (count, sum, avg) — KHÔNG kéo từng tin. Dùng khi user hỏi "có bao nhiêu", "tổng giá trị", "trung bình".'],
                         ]
                     ]
                 ]
@@ -1016,6 +1221,143 @@ PROMPT;
                         'properties' => (object)[]
                     ]
                 ]
+            ],
+            // ═══════════════════════════════════════════════════════════════
+            // [PHASE 1] 7 tools phân tích mới
+            // ═══════════════════════════════════════════════════════════════
+            [
+                'type' => 'function',
+                'function' => [
+                    'name' => 'aggregate_listings_stats',
+                    'description' => 'Thống kê tin đăng theo nhiều chiều (group by property_type/type/province/district/month/price_range/area_range/direction/is_sold) với metric (count, avg_price_vnd, sum_price_vnd, avg_area, sum_area). Dùng khi user hỏi "phân bổ", "tỷ lệ", "cơ cấu", "có bao nhiêu tin theo X", "đa số tin nằm ở đâu".',
+                    'parameters' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'group_by' => ['type' => 'string', 'enum' => ['property_type', 'type', 'province', 'district', 'month', 'week', 'year', 'price_range', 'area_range', 'direction', 'is_sold'], 'description' => 'Chiều nhóm'],
+                            'metric' => ['type' => 'string', 'enum' => ['count', 'avg_price_vnd', 'sum_price_vnd', 'avg_area', 'sum_area'], 'description' => 'Phép đo'],
+                            'filters' => [
+                                'type' => 'object',
+                                'properties' => [
+                                    'is_sold' => ['type' => 'boolean'],
+                                    'type' => ['type' => 'string', 'description' => 'Cần bán / Cho thuê / Cần mua'],
+                                    'province' => ['type' => 'string'],
+                                    'district' => ['type' => 'string'],
+                                    'date_from' => ['type' => 'string', 'description' => 'YYYY-MM-DD'],
+                                    'date_to' => ['type' => 'string', 'description' => 'YYYY-MM-DD'],
+                                ]
+                            ],
+                            'limit' => ['type' => 'integer', 'description' => 'Số nhóm tối đa (mặc định 15)']
+                        ],
+                        'required' => ['group_by']
+                    ]
+                ]
+            ],
+            [
+                'type' => 'function',
+                'function' => [
+                    'name' => 'compare_listings',
+                    'description' => 'So sánh 2-5 tin đăng theo giá, diện tích, giá/m², vị trí. Dùng khi user nói "so sánh tin A và tin B", "tin nào tốt hơn", "tin nào rẻ hơn".',
+                    'parameters' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'listing_ids' => ['type' => 'array', 'items' => ['type' => 'integer'], 'description' => 'Mảng 2-5 ID tin đăng'],
+                        ],
+                        'required' => ['listing_ids']
+                    ]
+                ]
+            ],
+            [
+                'type' => 'function',
+                'function' => [
+                    'name' => 'top_performers',
+                    'description' => 'Xếp hạng top CTV theo metric (revenue, sales_count, listings_posted, customers_assigned, invites) trong một thời kỳ. Dùng khi user hỏi "ai bán nhiều nhất", "CTV xuất sắc", "ai đăng nhiều tin nhất", "ai mời được nhiều người nhất".',
+                    'parameters' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'metric' => ['type' => 'string', 'enum' => ['revenue', 'sales_count', 'listings_posted', 'customers_assigned', 'invites'], 'description' => 'Tiêu chí xếp hạng'],
+                            'period' => ['type' => 'string', 'enum' => ['today', 'yesterday', 'this_week', 'last_week', 'this_month', 'last_month', 'this_quarter', 'last_quarter', 'this_year', 'last_year', 'last_30d', 'last_90d', 'all'], 'description' => 'Khung thời gian'],
+                            'limit' => ['type' => 'integer', 'description' => 'Top N (mặc định 5, tối đa 20)'],
+                        ],
+                        'required' => ['metric']
+                    ]
+                ]
+            ],
+            [
+                'type' => 'function',
+                'function' => [
+                    'name' => 'revenue_report',
+                    'description' => 'Báo cáo doanh thu hệ thống theo granularity (day/week/month/quarter/year). Có thể filter theo user_id để xem riêng 1 CTV. Dùng khi user hỏi "doanh thu tháng X", "doanh thu năm nay", "báo cáo doanh thu", "GMV", "doanh số".',
+                    'parameters' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'granularity' => ['type' => 'string', 'enum' => ['day', 'week', 'month', 'quarter', 'year'], 'description' => 'Đơn vị tổng hợp'],
+                            'period' => ['type' => 'string', 'enum' => ['this_week', 'last_week', 'this_month', 'last_month', 'this_quarter', 'last_quarter', 'this_year', 'last_year', 'last_30d', 'last_90d', 'all'], 'description' => 'Khung thời gian'],
+                            'user_id' => ['type' => 'integer', 'description' => 'Lọc riêng cho 1 CTV (tuỳ chọn)'],
+                        ]
+                    ]
+                ]
+            ],
+            [
+                'type' => 'function',
+                'function' => [
+                    'name' => 'market_analysis',
+                    'description' => 'Phân tích giá thị trường (min, max, avg, median, giá/m²) theo khu vực và loại BĐS. Dùng khi user hỏi "giá trung bình", "thị trường khu vực", "giá nhà ở đâu cao nhất", "giá m² trung bình".',
+                    'parameters' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'province' => ['type' => 'string', 'description' => 'Tỉnh/Thành (tuỳ chọn)'],
+                            'district' => ['type' => 'string', 'description' => 'Quận/Huyện (tuỳ chọn)'],
+                            'property_type' => ['type' => 'string', 'description' => 'Loại BĐS (Căn hộ, Nhà phố, Đất nền...)'],
+                            'only_active' => ['type' => 'boolean', 'description' => 'Chỉ tính tin chưa bán (mặc định true)'],
+                        ]
+                    ]
+                ]
+            ],
+            [
+                'type' => 'function',
+                'function' => [
+                    'name' => 'customer_funnel',
+                    'description' => 'Phân tích phễu khách hàng: phân bổ theo trạng thái, theo progress công việc, số task tồn đọng, khách bị bỏ quên (>14 ngày không có hoạt động). Dùng khi user hỏi "khách hàng nào lâu chưa chăm sóc", "phễu khách", "tình trạng khách hàng".',
+                    'parameters' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'user_id' => ['type' => 'integer', 'description' => 'Lọc riêng 1 CTV (tuỳ chọn)'],
+                        ]
+                    ]
+                ]
+            ],
+            [
+                'type' => 'function',
+                'function' => [
+                    'name' => 'bulk_listings_summary',
+                    'description' => 'Lấy nhanh thông tin tối thiểu cho nhiều tin đăng cùng lúc (tối đa 30 IDs). Tiết kiệm round-trip khi cần hiển thị nhiều tin.',
+                    'parameters' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'listing_ids' => ['type' => 'array', 'items' => ['type' => 'integer']],
+                        ],
+                        'required' => ['listing_ids']
+                    ]
+                ]
+            ],
+            // ═══════════════════════════════════════════════════════════════
+            // [PHASE 4] Semantic search (RAG) — tìm tin tương tự bằng embedding
+            // ═══════════════════════════════════════════════════════════════
+            [
+                'type' => 'function',
+                'function' => [
+                    'name' => 'find_similar_listings',
+                    'description' => 'Tìm tin đăng TƯƠNG TỰ về ngữ nghĩa (không chỉ khớp từ khoá). Dùng khi user nói "tin nào giống tin #X", "có căn nào giống cái này không", hoặc mô tả tự nhiên kiểu "căn 3 phòng ngủ view sông gần trường học". CHÚ Ý: chỉ dùng khi đã chạy `php artisan chatbot:embed-listings`. Cho các filter có cấu trúc rõ (giá, diện tích) → ưu tiên search_listings.',
+                    'parameters' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'similar_to_listing_id' => ['type' => 'integer', 'description' => 'ID tin tham chiếu (tìm các tin giống tin này)'],
+                            'query' => ['type' => 'string', 'description' => 'Câu mô tả tự nhiên về tin cần tìm (chỉ dùng khi không có similar_to_listing_id)'],
+                            'limit' => ['type' => 'integer', 'description' => 'Top N (mặc định 5, tối đa 20)'],
+                            'exclude_sold' => ['type' => 'boolean', 'description' => 'Loại trừ tin đã bán (mặc định true)'],
+                        ]
+                    ]
+                ]
             ]
         ];
         return $allTools;
@@ -1023,6 +1365,31 @@ PROMPT;
 
     protected function executeTool(string $name, array $args)
     {
+        // [PHASE 3] Đo thời gian thực thi tool để theo dõi tốc độ
+        $startedAt = microtime(true);
+        try {
+            $result = $this->executeToolInner($name, $args);
+            \Illuminate\Support\Facades\Log::info('chatbot.tool', [
+                'name' => $name,
+                'elapsed_ms' => (int) ((microtime(true) - $startedAt) * 1000),
+                'status' => $result['status'] ?? 'unknown',
+                'user_id' => auth()->id(),
+            ]);
+            return $result;
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('chatbot.tool.error', [
+                'name' => $name, 'error' => $e->getMessage(), 'elapsed_ms' => (int) ((microtime(true) - $startedAt) * 1000),
+            ]);
+            return ['status' => 'error', 'message' => $e->getMessage()];
+        }
+    }
+
+    protected function executeToolInner(string $name, array $args)
+    {
+        // [STEP D] Áp scope user — CTV không thấy data người khác
+        $args = app(\App\Services\ChatbotUserProfileService::class)
+            ->applyScope(auth()->user(), $name, $args);
+
         try {
             switch ($name) {
                 case 'create_listing':
@@ -1062,24 +1429,24 @@ PROMPT;
                         });
                     }
                     if (!empty($args['type'])) $query->where('type', $args['type']);
-                    if (isset($args['min_price'])) {
-                        $val = $args['min_price'];
-                        $query->where(function($q) use ($val) {
-                            $q->where(function($s) use ($val) { $s->where('price', '>=', $val)->where('price_unit', 'Tỷ'); })
-                              ->orWhere(function($s) use ($val) { $s->where('price', '>=', $val * 1000)->where('price_unit', 'Triệu'); });
-                        });
+
+                    // [PHASE 1 FIX] Lọc giá theo VNĐ (chuẩn hoá Tỷ → triệu × 1000 → đồng), khắc phục bug cũ
+                    if (isset($args['min_price']) || isset($args['max_price'])) {
+                        $priceExpr = "price * CASE price_unit WHEN 'Tỷ' THEN 1000000000 WHEN 'Tỉ' THEN 1000000000 WHEN 'Triệu' THEN 1000000 ELSE 1 END";
+                        // Quy ước: min_price/max_price tính theo TỶ (vd 2.5 = 2.5 tỷ)
+                        if (isset($args['min_price'])) {
+                            $minVnd = (float)$args['min_price'] * 1_000_000_000;
+                            $query->whereRaw("({$priceExpr}) >= ?", [$minVnd]);
+                        }
+                        if (isset($args['max_price'])) {
+                            $maxVnd = (float)$args['max_price'] * 1_000_000_000;
+                            $query->whereRaw("({$priceExpr}) <= ?", [$maxVnd]);
+                        }
                     }
-                    if (isset($args['max_price'])) {
-                        $val = $args['max_price'];
-                        $query->where(function($q) use ($val) {
-                            $q->where(function($s) use ($val) { $s->where('price', '<=', $val)->where('price_unit', 'Tỷ'); })
-                              ->orWhere('price_unit', 'Triệu') // Triệu luôn < Tỷ
-                              ->orWhere(function($s) use ($val) { $s->where('price', '<=', $val * 1000)->where('price_unit', 'Triệu'); });
-                        });
-                    }
+
                     if (isset($args['min_area'])) $query->where('area', '>=', $args['min_area']);
                     if (isset($args['max_area'])) $query->where('area', '<=', $args['max_area']);
-                    
+
                     // Advanced Filters
                     if (!empty($args['province'])) $query->where('province_name', 'like', '%' . $args['province'] . '%');
                     if (!empty($args['district'])) $query->where('district_name', 'like', '%' . $args['district'] . '%');
@@ -1087,7 +1454,7 @@ PROMPT;
                     if (!empty($args['direction'])) $query->where('direction', 'like', '%' . $args['direction'] . '%');
                     if (isset($args['is_sold'])) $query->where('is_sold', $args['is_sold']);
                     if (!empty($args['contact_phone'])) $query->where('contact_phone', 'like', '%' . $args['contact_phone'] . '%');
-                    
+
                     if (!empty($args['property_type'])) {
                         $pTypes = [110 => 'Bất động sản khác', 102 => 'Biệt thự', 103 => 'Căn hộ', 104 => 'Đất', 105 => 'Đất nền', 106 => 'Mặt tiền', 107 => 'Nhà mặt phố', 111 => 'Nhà mặt phố', 108 => 'Nhà riêng', 109 => 'Trang trại', 112 => 'Khách sạn', 113 => 'Nhà nghỉ', 114 => 'Homestay', 115 => 'Nhà trọ'];
                         $foundType = null;
@@ -1098,11 +1465,33 @@ PROMPT;
                     }
 
                     $query->orderBy($args['sort_by'] ?? 'created_at', $args['sort_order'] ?? 'desc');
-                    $results = $query->limit(min($args['limit'] ?? 5, 20))->get(['id', 'title', 'price', 'price_unit', 'area', 'address', 'type', 'is_sold', 'code', 'property_type', 'avatar', 'images']);
-                    return ['status' => 'success', 'count' => $results->count(), 'format_hint' => 'BẮT BUỘC dùng [LISTING:ID] cho mỗi tin đăng, KHÔNG dùng bảng.', 'data' => $results->map(fn($r) => ['id' => $r->id, 'code' => $r->code, 'title' => $r->title, 'price_display' => number_format($r->price, 0, ',', '.') . ' ' . $r->price_unit, 'area' => $r->area . ' m2', 'address' => $r->address, 'status' => $r->is_sold ? 'Đã bán' : 'Còn trống'])];
+
+                    // [PHASE 1] Aggregate-only: trả nhanh count + tổng VNĐ + avg, không kéo records
+                    if (!empty($args['aggregate_only'])) {
+                        $priceExpr = "price * CASE price_unit WHEN 'Tỷ' THEN 1000000000 WHEN 'Tỉ' THEN 1000000000 WHEN 'Triệu' THEN 1000000 ELSE 1 END";
+                        $agg = (clone $query)->selectRaw("
+                            COUNT(*) as cnt,
+                            SUM({$priceExpr}) as sum_vnd,
+                            AVG({$priceExpr}) as avg_vnd,
+                            MIN({$priceExpr}) as min_vnd,
+                            MAX({$priceExpr}) as max_vnd,
+                            AVG(area) as avg_area
+                        ")->first();
+                        $fmt = fn($v) => $v >= 1e9 ? number_format($v/1e9, 2) . ' Tỷ' : ($v >= 1e6 ? number_format($v/1e6, 0) . ' Triệu' : number_format($v, 0));
+                        return ['status' => 'success', 'mode' => 'aggregate', 'count' => (int)$agg->cnt, 'sum_display' => $fmt($agg->sum_vnd ?? 0), 'avg_display' => $fmt($agg->avg_vnd ?? 0), 'min_display' => $fmt($agg->min_vnd ?? 0), 'max_display' => $fmt($agg->max_vnd ?? 0), 'avg_area_m2' => round($agg->avg_area ?? 0, 1)];
+                    }
+
+                    // [PHASE 1] Pagination + total count
+                    $page = max(1, (int)($args['page'] ?? 1));
+                    $limit = min((int)($args['limit'] ?? 5), 20);
+                    $total = (clone $query)->count();
+                    $results = $query->skip(($page - 1) * $limit)->take($limit)->get(['id', 'title', 'price', 'price_unit', 'area', 'address', 'type', 'is_sold', 'code', 'property_type', 'avatar', 'images']);
+                    return ['status' => 'success', 'count' => $results->count(), 'total_matched' => $total, 'page' => $page, 'has_more' => $total > $page * $limit, 'format_hint' => 'BẮT BUỘC dùng [LISTING:ID] cho mỗi tin đăng, KHÔNG dùng bảng.', 'data' => $results->map(fn($r) => ['id' => $r->id, 'code' => $r->code, 'title' => $r->title, 'price_display' => number_format($r->price, 0, ',', '.') . ' ' . $r->price_unit, 'area' => $r->area . ' m2', 'address' => $r->address, 'status' => $r->is_sold ? 'Đã bán' : 'Còn trống'])];
 
                 case 'get_listing_details':
-                    $listing = RealEstateListing::find($args['listing_id']);
+                    // [PHASE 3] Eager load relations để không N+1
+                    $listing = RealEstateListing::with(['user:id,name,phone', 'reporter:id,name', 'sale.soldBy:id,name'])
+                        ->find($args['listing_id']);
                     if (!$listing) return ['status' => 'error', 'message' => 'Không tìm thấy tin đăng ID: ' . $args['listing_id']];
                     return ['status' => 'success', 'data' => $listing->toArray()];
 
@@ -1124,6 +1513,59 @@ PROMPT;
 
                 case 'get_system_stats':
                     return ['status' => 'success', 'data' => $this->getSystemStats()];
+
+                // ═══════════════════════════════════════════════════════════
+                // [PHASE 1] Phân tích — uỷ thác ChatbotAnalyticsService
+                // [PHASE 3] Wrap cache 60s cho các aggregate query
+                // ═══════════════════════════════════════════════════════════
+                case 'aggregate_listings_stats':
+                    return $this->cachedAnalytics($name, $args, fn($svc, $a) => $svc->aggregateListingsStats($a));
+
+                case 'compare_listings':
+                    $result = $this->cachedAnalytics($name, $args, fn($svc, $a) => $svc->compareListings($a));
+                    if (($result['status'] ?? null) === 'success') {
+                        foreach (($result['listings'] ?? []) as $r) {
+                            if (isset($r['id'])) $this->addToContext('last_listing_ids', (int)$r['id']);
+                        }
+                    }
+                    return $result;
+
+                case 'top_performers':
+                    $result = $this->cachedAnalytics($name, $args, fn($svc, $a) => $svc->topPerformers($a));
+                    if (($result['status'] ?? null) === 'success') {
+                        foreach (($result['data'] ?? []) as $r) {
+                            if (isset($r['id'])) $this->addToContext('last_user_ids', (int)$r['id']);
+                        }
+                    }
+                    return $result;
+
+                case 'revenue_report':
+                    return $this->cachedAnalytics($name, $args, fn($svc, $a) => $svc->revenueReport($a));
+
+                case 'market_analysis':
+                    return $this->cachedAnalytics($name, $args, fn($svc, $a) => $svc->marketAnalysis($a));
+
+                case 'customer_funnel':
+                    return $this->cachedAnalytics($name, $args, fn($svc, $a) => $svc->customerFunnel($a));
+
+                case 'bulk_listings_summary':
+                    $result = app(\App\Services\ChatbotAnalyticsService::class)->bulkListingsSummary($args);
+                    if (($result['status'] ?? null) === 'success') {
+                        foreach (($result['data'] ?? []) as $r) {
+                            if (isset($r['id'])) $this->addToContext('last_listing_ids', (int)$r['id']);
+                        }
+                    }
+                    return $result;
+
+                // [PHASE 4] Semantic search
+                case 'find_similar_listings':
+                    $result = app(\App\Services\ListingEmbeddingService::class)->findSimilar($args);
+                    if (($result['status'] ?? null) === 'success') {
+                        foreach (($result['data'] ?? []) as $r) {
+                            if (isset($r['id'])) $this->addToContext('last_listing_ids', (int)$r['id']);
+                        }
+                    }
+                    return $result;
 
                 default:
                     return ['status' => 'error', 'message' => 'Tool không tồn tại.'];
@@ -1180,6 +1622,19 @@ PROMPT;
         return $data;
     }
 
+    /**
+     * [PHASE 3] Cache wrapper cho analytics tools — TTL 60s
+     * Cache key = tool_name + hash(args). Aggregate query là deterministic theo args.
+     */
+    protected function cachedAnalytics(string $toolName, array $args, callable $callable): array
+    {
+        $key = 'analytics_' . $toolName . '_' . md5(json_encode($args));
+        return Cache::remember($key, 60, function () use ($callable, $args) {
+            $svc = app(\App\Services\ChatbotAnalyticsService::class);
+            return $callable($svc, $args);
+        });
+    }
+
     protected function getSystemStats(): string
     {
         return Cache::remember('system_ctx_stats', 60, function () {
@@ -1201,7 +1656,8 @@ PROMPT;
             ['role' => 'system', 'content' => 'Tóm tắt cuộc hội thoại dưới 120 chữ. Giữ lại: ID tin đăng/khách hàng được nhắc đến, các quyết định quan trọng, thông tin đang chờ xác nhận.'],
             ['role' => 'user', 'content' => json_encode($toSummarize, JSON_UNESCAPED_UNICODE)]
         ];
-        $response = $openAIService->chat($prompt);
+        // [PHASE 2] Summarize chỉ cần model rẻ
+        $response = $openAIService->chat($prompt, [], 'gpt-4o-mini');
         $summary = $response['choices'][0]['message']['content'] ?? 'Cuộc hội thoại trước.';
         $this->messages = array_merge(
             [['role' => 'system', 'content' => '[TÓM TẮT HỘI THOẠI TRƯỚC]: ' . $summary]],

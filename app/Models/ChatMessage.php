@@ -7,10 +7,19 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ChatMessage extends Model
 {
-    protected $fillable = ['user_id', 'role', 'content'];
+    protected $fillable = ['user_id', 'role', 'content', 'metadata'];
+
+    protected $casts = [
+        'metadata' => 'array',
+    ];
 
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function feedback(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(ChatFeedback::class);
     }
 }

@@ -157,9 +157,55 @@
                                 </div>
                             @endif
                         </div>
-                        <div class="mt-1 px-1 opacity-40 group-hover:opacity-100 transition-opacity">
+                        <div class="mt-1 px-1 opacity-40 group-hover:opacity-100 transition-opacity flex items-center gap-2">
                              <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{{ $message['role'] === 'user' ? auth()->user()->name : 'AI' }} • {{ now()->format('H:i') }}</span>
+
+                             {{-- [STEP E] Feedback buttons cho message của bot --}}
+                             @if($message['role'] === 'assistant' && !empty($message['message_id']))
+                                <span class="flex items-center gap-1 text-slate-300">
+                                    <button wire:click="voteFeedback({{ $message['message_id'] }}, 1)" title="Đúng / hữu ích"
+                                            class="hover:text-emerald-500 transition-colors p-0.5">
+                                        <i class="fa-regular fa-thumbs-up text-[10px]"></i>
+                                    </button>
+                                    <button wire:click="voteFeedback({{ $message['message_id'] }}, -1)" title="Sai / cần cải thiện"
+                                            class="hover:text-red-500 transition-colors p-0.5">
+                                        <i class="fa-regular fa-thumbs-down text-[10px]"></i>
+                                    </button>
+                                </span>
+                             @endif
                         </div>
+
+                        {{-- [STEP E] Form chọn nhóm lỗi khi vote 👎 --}}
+                        @if($message['role'] === 'assistant' && !empty($message['message_id']) && $feedbackOpenForMessageId === $message['message_id'])
+                            <div class="mt-2 w-full max-w-md p-3 rounded-lg border border-slate-200 bg-white shadow-sm">
+                                <div class="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2">
+                                    Bot sai chỗ nào?
+                                </div>
+                                <div class="flex flex-wrap gap-1.5 mb-2">
+                                    @foreach(\App\Models\ChatFeedback::ERROR_CATEGORIES as $key => $label)
+                                        <button wire:click="$set('feedbackCategory', '{{ $key }}')"
+                                                class="px-2 py-1 rounded text-[10px] border transition-all
+                                                       {{ $feedbackCategory === $key ? 'bg-slate-900 text-white border-slate-900' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100' }}">
+                                            {{ $label }}
+                                        </button>
+                                    @endforeach
+                                </div>
+                                <textarea wire:model.live.debounce.300ms="feedbackNote"
+                                          placeholder="Ghi chú thêm (không bắt buộc): trả lời đúng phải là gì?"
+                                          class="w-full text-[11px] rounded border border-slate-200 px-2 py-1.5 resize-none focus:outline-none focus:border-slate-400"
+                                          rows="2"></textarea>
+                                <div class="flex justify-end gap-2 mt-2">
+                                    <button wire:click="closeFeedback"
+                                            class="px-3 py-1 rounded text-[10px] font-bold uppercase tracking-wider text-slate-500 hover:text-slate-900">
+                                        Bỏ qua
+                                    </button>
+                                    <button wire:click="submitFeedbackDetail"
+                                            class="px-3 py-1 rounded text-[10px] font-bold uppercase tracking-wider bg-slate-900 text-white hover:bg-black">
+                                        Gửi
+                                    </button>
+                                </div>
+                            </div>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -454,14 +500,15 @@
             <!-- Footer Action -->
             <div class="px-6 py-4 border-t border-white/5 bg-slate-900/50 flex flex-col gap-3">
                 <div class="flex gap-2">
-                    @if(!empty($selectedListing['contact_phone']))
-                    <a href="tel:{{ $selectedListing['contact_phone'] }}" class="flex-1 h-12 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 text-white font-black text-[10px] uppercase tracking-widest hover:shadow-[0_0_20px_rgba(37,99,235,0.4)] transition-all flex items-center justify-center gap-2 border border-blue-400/20">
-                        <i class="fa-solid fa-phone"></i> Gọi: {{ $selectedListing['contact_phone'] }}
-                    </a>
-                    <a href="https://zalo.me/{{ $selectedListing['contact_phone'] }}" target="_blank" class="flex-1 h-12 rounded-xl bg-[#0068ff] text-white font-black text-[10px] uppercase tracking-widest hover:shadow-[0_0_20px_rgba(0,104,255,0.4)] transition-all flex items-center justify-center gap-2 border border-white/10">
-                        <i class="fa-solid fa-comment-dots"></i> Nhắn Zalo
-                    </a>
-                    @endif
+                    @php $quickPhones = \App\Models\RealEstateListing::parseContactPhones($selectedListing['contact_phone'] ?? null); @endphp
+                    @foreach($quickPhones as $qp)
+                        <a href="tel:{{ $qp }}" class="flex-1 h-12 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 text-white font-black text-[10px] uppercase tracking-widest hover:shadow-[0_0_20px_rgba(37,99,235,0.4)] transition-all flex items-center justify-center gap-2 border border-blue-400/20">
+                            <i class="fa-solid fa-phone"></i> Gọi{{ count($quickPhones) > 1 ? ' ' . $loop->iteration : '' }}: {{ $qp }}
+                        </a>
+                        <a href="https://zalo.me/{{ $qp }}" target="_blank" class="flex-1 h-12 rounded-xl bg-[#0068ff] text-white font-black text-[10px] uppercase tracking-widest hover:shadow-[0_0_20px_rgba(0,104,255,0.4)] transition-all flex items-center justify-center gap-2 border border-white/10">
+                            <i class="fa-solid fa-comment-dots"></i> Zalo{{ count($quickPhones) > 1 ? ' ' . $loop->iteration : '' }}
+                        </a>
+                    @endforeach
                 </div>
                 
                 <div class="flex gap-2">

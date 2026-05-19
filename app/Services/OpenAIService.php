@@ -17,13 +17,27 @@ class OpenAIService
         $this->model = config('services.openai.model', env('OPENAI_MODEL', 'gpt-4o-mini'));
     }
 
-    public function chat(array $messages, array $tools = [])
+    /**
+     * [PHASE 2] Smart model routing — chọn model theo mode.
+     * FAST: gpt-4o-mini (rẻ, nhanh)
+     * SMART: gpt-4o (mạnh hơn về phân tích, suy luận)
+     * env override: OPENAI_FAST_MODEL / OPENAI_SMART_MODEL
+     */
+    public function pickModelForMode(string $mode): string
     {
-        return $this->executeRequest($messages, $tools, false);
+        if (strtoupper($mode) === 'SMART') {
+            return config('services.openai.smart_model', env('OPENAI_SMART_MODEL', 'gpt-4o'));
+        }
+        return config('services.openai.fast_model', env('OPENAI_FAST_MODEL', 'gpt-4o-mini'));
+    }
+
+    public function chat(array $messages, array $tools = [], ?string $modelOverride = null)
+    {
+        return $this->executeRequest($messages, $tools, false, $modelOverride);
     }
 
 
-    public function streamChat(array $messages, callable $onText, array $tools = [])
+    public function streamChat(array $messages, callable $onText, array $tools = [], ?string $modelOverride = null)
     {
         if (empty($this->apiKey)) {
             $onText("⚠️ OpenAI API Key is missing.");
@@ -31,12 +45,15 @@ class OpenAIService
         }
 
         $toolCalls = [];
+        $startTime = microtime(true);
+        $modelUsed = $modelOverride ?: $this->model;
 
         try {
             $payload = [
-                'model' => $this->model,
+                'model' => $modelUsed,
                 'messages' => $messages,
                 'stream' => true,
+                'parallel_tool_calls' => true, // [PHASE 3] tool gọi song song
             ];
             if (!empty($tools)) {
                 $payload['tools'] = $tools;
@@ -53,7 +70,8 @@ class OpenAIService
             $buffer = '';
 
             while (!$body->eof()) {
-                $chunk = $body->read(256);
+                // [PHASE 3] đọc chunk lớn hơn (1024 thay vì 256) giảm số vòng loop
+                $chunk = $body->read(1024);
                 $buffer .= $chunk;
 
                 while (($pos = strpos($buffer, "\n")) !== false) {
@@ -96,16 +114,20 @@ class OpenAIService
             $onText("⚠️ Lỗi kết nối API: " . $e->getMessage());
         }
 
+        // [PHASE 3] log performance để theo dõi tốc độ model
+        $elapsed = round(microtime(true) - $startTime, 2);
+        Log::info("OpenAI stream done", ['model' => $modelUsed, 'elapsed_s' => $elapsed, 'tool_calls' => count($toolCalls)]);
+
         return array_values($toolCalls);
     }
 
-    protected function executeRequest(array $messages, array $tools, bool $stream)
+    protected function executeRequest(array $messages, array $tools, bool $stream, ?string $modelOverride = null)
     {
         if (empty($this->apiKey)) return ['error' => 'OpenAI API Key is missing.'];
 
         try {
             $payload = [
-                'model' => $this->model,
+                'model' => $modelOverride ?: $this->model,
                 'messages' => $messages,
                 'stream' => $stream
             ];

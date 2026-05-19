@@ -35,6 +35,13 @@ return [
     'openai' => [
         'key' => env('OPENAI_API_KEY'),
         'model' => env('OPENAI_MODEL', 'gpt-4o-mini'),
+        // [PHASE 2] Smart model routing
+        'fast_model' => env('OPENAI_FAST_MODEL', 'gpt-4o-mini'),
+        'smart_model' => env('OPENAI_SMART_MODEL', 'gpt-4o'),
+        // [STEP C] Intent classifier (pre-flight)
+        'classifier_model' => env('OPENAI_CLASSIFIER_MODEL', 'gpt-4o-mini'),
+        // [PHASE 4] Embeddings
+        'embedding_model' => env('OPENAI_EMBEDDING_MODEL', 'text-embedding-3-small'),
     ],
 
 

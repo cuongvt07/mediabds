@@ -1551,11 +1551,19 @@
                     @endif
                     @if ($selectedListing['contact_phone'])
                         @if($isAdmin || in_array($selectedListing['id'], $revealedPhones))
-                            <a href="tel:{{ $selectedListing['contact_phone'] }}"
-                                class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white text-sm md:text-base font-bold transition-all flex items-center justify-center gap-2 shadow-lg hover:shadow-emerald-500/20 active:scale-95">
-                                <i class="fa-solid fa-phone-volume animate-pulse"></i>
-                                <span>Gọi Ngay</span>
-                            </a>
+                            @php $detailPhones = \App\Models\RealEstateListing::parseContactPhones($selectedListing['contact_phone']); @endphp
+                            @foreach($detailPhones as $dp)
+                                <a href="tel:{{ $dp }}"
+                                    class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white text-sm md:text-base font-bold transition-all flex items-center justify-center gap-2 shadow-lg hover:shadow-emerald-500/20 active:scale-95">
+                                    <i class="fa-solid fa-phone-volume animate-pulse"></i>
+                                    <span>Gọi{{ count($detailPhones) > 1 ? ' ' . $loop->iteration : ' Ngay' }}</span>
+                                </a>
+                                <a href="https://zalo.me/{{ $dp }}" target="_blank"
+                                    class="px-4 py-2.5 rounded-xl bg-[#0068ff] hover:bg-[#0055d4] text-white text-sm md:text-base font-bold transition-all flex items-center justify-center gap-2 shadow-lg hover:shadow-blue-500/20 active:scale-95">
+                                    <i class="fa-solid fa-comment-dots"></i>
+                                    <span>Zalo{{ count($detailPhones) > 1 ? ' ' . $loop->iteration : '' }}</span>
+                                </a>
+                            @endforeach
                         @else
                             <button wire:click="openPinModal({{ $selectedListing['id'] }})"
                                 class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-gray-500 to-slate-600 hover:from-gray-600 hover:to-slate-700 text-white text-sm md:text-base font-bold transition-all flex items-center justify-center gap-2 shadow-lg active:scale-95">
