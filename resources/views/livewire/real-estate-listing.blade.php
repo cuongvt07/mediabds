@@ -1585,16 +1585,16 @@
                     x-data="{ copied: false }">
                     @if (!empty($selectedListing['facebook_link']))
                         <a href="{{ $selectedListing['facebook_link'] }}" target="_blank"
+                            title="FB New"
                             class="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm md:text-base font-bold transition-all flex items-center justify-center gap-2 shadow-lg active:scale-95">
                             <i class="fa-brands fa-facebook"></i>
-                            <span>FB New</span>
                         </a>
                     @endif
                     @if (!empty($selectedListing['facebook_video_link']))
                         <a href="{{ $selectedListing['facebook_video_link'] }}" target="_blank"
+                            title="FB Video"
                             class="px-4 py-2.5 rounded-xl bg-blue-400 hover:bg-blue-500 text-white text-sm md:text-base font-bold transition-all flex items-center justify-center gap-2 shadow-lg active:scale-95">
                             <i class="fa-brands fa-facebook"></i>
-                            <span>FB Video</span>
                         </a>
                     @endif
                     @if ($selectedListing['contact_phone'])
@@ -1602,29 +1602,29 @@
                             @php $detailPhones = \App\Models\RealEstateListing::parseContactPhones($selectedListing['contact_phone']); @endphp
                             @foreach($detailPhones as $dp)
                                 <a href="tel:{{ $dp }}"
+                                    title="Gọi {{ $dp }}"
                                     class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white text-sm md:text-base font-bold transition-all flex items-center justify-center gap-2 shadow-lg hover:shadow-emerald-500/20 active:scale-95">
                                     <i class="fa-solid fa-phone-volume animate-pulse"></i>
-                                    <span>Gọi{{ count($detailPhones) > 1 ? ' ' . $loop->iteration : ' Ngay' }}</span>
                                 </a>
                                 <a href="https://zalo.me/{{ $dp }}" target="_blank"
+                                    title="Zalo {{ $dp }}"
                                     class="px-4 py-2.5 rounded-xl bg-[#0068ff] hover:bg-[#0055d4] text-white text-sm md:text-base font-bold transition-all flex items-center justify-center gap-2 shadow-lg hover:shadow-blue-500/20 active:scale-95">
                                     <i class="fa-solid fa-comment-dots"></i>
-                                    <span>Zalo{{ count($detailPhones) > 1 ? ' ' . $loop->iteration : '' }}</span>
                                 </a>
                             @endforeach
                         @else
                             <button wire:click="openPinModal({{ $selectedListing['id'] }})"
+                                title="Hiện SĐT"
                                 class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-gray-500 to-slate-600 hover:from-gray-600 hover:to-slate-700 text-white text-sm md:text-base font-bold transition-all flex items-center justify-center gap-2 shadow-lg active:scale-95">
                                 <i class="fa-solid fa-eye"></i>
-                                <span>Hiện SĐT</span>
                             </button>
                         @endif
                     @endif
                     <button wire:click.stop="toggleSold({{ $selectedListing['id'] }})"
+                        title="{{ $selectedListing['is_sold'] ? 'Chưa bán' : 'Đã bán' }}"
                         class="px-4 py-2.5 rounded-xl {{ $selectedListing['is_sold'] ? 'bg-slate-600 hover:bg-slate-700' : 'bg-blue-600 hover:bg-blue-700' }} text-white text-sm md:text-base font-bold transition-all flex items-center justify-center gap-2 shadow-lg active:scale-95">
                         <i
                             class="fa-solid {{ $selectedListing['is_sold'] ? 'fa-rotate-left' : 'fa-check-circle' }}"></i>
-                        <span>{{ $selectedListing['is_sold'] ? 'Chưa bán' : 'Đã bán' }}</span>
                     </button>
                     <button
                         @click="
@@ -1633,23 +1633,23 @@
                             copied = true;
                             setTimeout(() => copied = false, 2000);
                         "
+                        :title="copied ? 'Đã Copy' : 'Copy QC'"
                         class="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm md:text-base font-bold transition-all flex items-center justify-center gap-2 shadow-lg active:scale-95">
                         <i class="fa-regular fa-copy" x-show="!copied"></i>
                         <i class="fa-solid fa-check" x-show="copied" style="display: none;"></i>
-                        <span x-text="copied ? 'Đã Copy' : 'Copy QC'"></span>
                     </button>
                     @if ($isAdmin)
                         <button wire:click.stop="deleteListing({{ $selectedListing['id'] }})"
                             wire:confirm="Bạn có chắc chắn muốn xóa tin đăng này? Thao tác này có thể hoàn tác bởi Admin."
+                            title="Xóa Tin"
                             class="px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm md:text-base font-bold transition-all flex items-center justify-center gap-2 shadow-lg active:scale-95">
                             <i class="fa-regular fa-trash-can"></i>
-                            <span>Xóa Tin</span>
                         </button>
                     @endif
                     <button wire:click="editFromDetail"
+                        title="Chỉnh Sửa"
                         class="px-4 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-sm md:text-base font-bold transition-all flex items-center justify-center gap-2 shadow-lg active:scale-95">
                         <i class="fa-solid fa-pen-to-square"></i>
-                        <span>Chỉnh Sửa</span>
                     </button>
                 </div>
 
