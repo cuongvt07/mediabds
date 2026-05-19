@@ -1580,14 +1580,15 @@
                     </div>
                 </div>
 
-                {{-- Footer Actions --}}
-                <div class="p-4 pb-12 md:pb-4 border-t border-gray-200 grid grid-cols-2 sm:flex sm:justify-end gap-3 bg-slate-50/80 backdrop-blur-md shrink-0 sticky bottom-0 z-20"
+                {{-- Footer Actions: mobile 3 nút/dòng chỉ icon — md+ flex inline có text --}}
+                <div class="p-4 pb-12 md:pb-4 border-t border-gray-200 grid grid-cols-3 sm:flex sm:justify-end gap-3 bg-slate-50/80 backdrop-blur-md shrink-0 sticky bottom-0 z-20"
                     x-data="{ copied: false }">
                     @if (!empty($selectedListing['facebook_link']))
                         <a href="{{ $selectedListing['facebook_link'] }}" target="_blank"
                             title="FB New"
                             class="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm md:text-base font-bold transition-all flex items-center justify-center gap-2 shadow-lg active:scale-95">
                             <i class="fa-brands fa-facebook"></i>
+                            <span class="hidden md:inline">FB New</span>
                         </a>
                     @endif
                     @if (!empty($selectedListing['facebook_video_link']))
@@ -1595,6 +1596,7 @@
                             title="FB Video"
                             class="px-4 py-2.5 rounded-xl bg-blue-400 hover:bg-blue-500 text-white text-sm md:text-base font-bold transition-all flex items-center justify-center gap-2 shadow-lg active:scale-95">
                             <i class="fa-brands fa-facebook"></i>
+                            <span class="hidden md:inline">FB Video</span>
                         </a>
                     @endif
                     @if ($selectedListing['contact_phone'])
@@ -1605,11 +1607,13 @@
                                     title="Gọi {{ $dp }}"
                                     class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white text-sm md:text-base font-bold transition-all flex items-center justify-center gap-2 shadow-lg hover:shadow-emerald-500/20 active:scale-95">
                                     <i class="fa-solid fa-phone-volume animate-pulse"></i>
+                                    <span class="hidden md:inline">Gọi{{ count($detailPhones) > 1 ? ' ' . $loop->iteration : ' Ngay' }}</span>
                                 </a>
                                 <a href="https://zalo.me/{{ $dp }}" target="_blank"
                                     title="Zalo {{ $dp }}"
                                     class="px-4 py-2.5 rounded-xl bg-[#0068ff] hover:bg-[#0055d4] text-white text-sm md:text-base font-bold transition-all flex items-center justify-center gap-2 shadow-lg hover:shadow-blue-500/20 active:scale-95">
                                     <i class="fa-solid fa-comment-dots"></i>
+                                    <span class="hidden md:inline">Zalo{{ count($detailPhones) > 1 ? ' ' . $loop->iteration : '' }}</span>
                                 </a>
                             @endforeach
                         @else
@@ -1617,6 +1621,7 @@
                                 title="Hiện SĐT"
                                 class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-gray-500 to-slate-600 hover:from-gray-600 hover:to-slate-700 text-white text-sm md:text-base font-bold transition-all flex items-center justify-center gap-2 shadow-lg active:scale-95">
                                 <i class="fa-solid fa-eye"></i>
+                                <span class="hidden md:inline">Hiện SĐT</span>
                             </button>
                         @endif
                     @endif
@@ -1625,6 +1630,7 @@
                         class="px-4 py-2.5 rounded-xl {{ $selectedListing['is_sold'] ? 'bg-slate-600 hover:bg-slate-700' : 'bg-blue-600 hover:bg-blue-700' }} text-white text-sm md:text-base font-bold transition-all flex items-center justify-center gap-2 shadow-lg active:scale-95">
                         <i
                             class="fa-solid {{ $selectedListing['is_sold'] ? 'fa-rotate-left' : 'fa-check-circle' }}"></i>
+                        <span class="hidden md:inline">{{ $selectedListing['is_sold'] ? 'Chưa bán' : 'Đã bán' }}</span>
                     </button>
                     <button
                         @click="
@@ -1637,6 +1643,7 @@
                         class="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm md:text-base font-bold transition-all flex items-center justify-center gap-2 shadow-lg active:scale-95">
                         <i class="fa-regular fa-copy" x-show="!copied"></i>
                         <i class="fa-solid fa-check" x-show="copied" style="display: none;"></i>
+                        <span class="hidden md:inline" x-text="copied ? 'Đã Copy' : 'Copy QC'"></span>
                     </button>
                     @if ($isAdmin)
                         <button wire:click.stop="deleteListing({{ $selectedListing['id'] }})"
@@ -1644,12 +1651,14 @@
                             title="Xóa Tin"
                             class="px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm md:text-base font-bold transition-all flex items-center justify-center gap-2 shadow-lg active:scale-95">
                             <i class="fa-regular fa-trash-can"></i>
+                            <span class="hidden md:inline">Xóa Tin</span>
                         </button>
                     @endif
                     <button wire:click="editFromDetail"
                         title="Chỉnh Sửa"
                         class="px-4 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-sm md:text-base font-bold transition-all flex items-center justify-center gap-2 shadow-lg active:scale-95">
                         <i class="fa-solid fa-pen-to-square"></i>
+                        <span class="hidden md:inline">Chỉnh Sửa</span>
                     </button>
                 </div>
 
