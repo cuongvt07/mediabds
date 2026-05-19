@@ -173,7 +173,12 @@ class Chatbot extends Component
             ]);
 
             // Nếu cần làm rõ → bot hỏi lại, lưu pending_clarification, KHÔNG gọi AI chính
-            if ($classification['needs_clarification'] && !empty($classification['clarification_question'])) {
+            // [FIX] CHỈ hỏi clarification khi CHƯA có pending_clarification.
+            // Nếu đã hỏi 1 lần rồi → KHÔNG hỏi lại để tránh loop "Bot hỏi → User trả → Bot hỏi y hệt".
+            // Lúc này đẩy thẳng vào AI chính: enrichWithContext đã inject pending_clarification rồi,
+            // AI sẽ hiểu user đang trả lời câu hỏi trước đó.
+            $alreadyInClarification = !empty($this->conversationContext['pending_clarification']);
+            if ($classification['needs_clarification'] && !empty($classification['clarification_question']) && !$alreadyInClarification) {
                 $q = $classification['clarification_question'];
                 $this->messages[] = ['role' => 'user', 'content' => $userMessage];
                 $this->messages[] = ['role' => 'assistant', 'content' => "🤔 {$q}"];
@@ -182,6 +187,11 @@ class Chatbot extends Component
                 $this->conversationContext['pending_clarification'] = $q;
                 $this->userInput = '';
                 return;
+            }
+
+            // Nếu đang ở cycle clarification thứ 2 → giả sử user đã trả lời đủ rõ, reset pending để AI chính xử lý
+            if ($alreadyInClarification) {
+                $this->conversationContext['pending_clarification'] = null;
             }
 
             // Nếu out_of_scope → từ chối ngay, không tốn AI chính
