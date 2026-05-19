@@ -395,11 +395,14 @@ class Chatbot extends Component
                 return;
             }
 
-            $hasComplexData = collect($toolCalls)->contains(fn($tc) =>
-                str_contains($tc['function']['name'], 'search') ||
-                str_contains($tc['function']['name'], 'get_details') ||
-                str_contains($tc['function']['name'], 'get_listing')
-            );
+            // [FIX] Mọi tool ĐỌC dữ liệu phải qua AI để diễn giải kết quả.
+            // Chỉ tool tạo/cập nhật state (create_*/update_*) mới in feedback ngắn.
+            // Tránh case: bot gọi aggregate_listings_stats → tool trả {data: [...]} → bot chỉ in "✅ Đã xử lý." vì không có field "message".
+            $readOnlyTool = collect($toolCalls)->contains(function ($tc) {
+                $name = $tc['function']['name'] ?? '';
+                return !str_starts_with($name, 'create_') && !str_starts_with($name, 'update_');
+            });
+            $hasComplexData = $readOnlyTool;
 
             if ($mode === 'SMART' || $hasComplexData) {
                 $apiMessages[] = ['role' => 'assistant', 'content' => $this->streamingResponse, 'tool_calls' => $toolCalls];
