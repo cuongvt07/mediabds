@@ -14,7 +14,7 @@ info:
     import axios from 'axios';
 
     const api = axios.create({
-      baseURL: 'http://localhost:8000',
+      baseURL: 'https://vmphuthinhland.com',
       withCredentials: true,   // gửi/nhận cookie
       withXSRFToken: true,     // axios >= 1.6: tự gắn X-XSRF-TOKEN
       headers: { Accept: 'application/json' },
@@ -55,10 +55,10 @@ info:
     > `min_price`/`max_price` đơn vị **TỶ**; `budget_*` (leads) đơn vị **VNĐ**.
 
 servers:
+  - url: https://vmphuthinhland.com
+    description: Production
   - url: http://localhost:8000
     description: Local (php artisan serve)
-  # - url: https://your-domain.com
-  #   description: Production
 
 tags:
   - name: Auth
@@ -134,9 +134,9 @@ paths:
           label: curl
           source: |
             # 1) Lấy CSRF cookie (lưu cookie vào file)
-            curl -s -c cookies.txt http://localhost:8000/sanctum/csrf-cookie
+            curl -s -c cookies.txt https://vmphuthinhland.com/sanctum/csrf-cookie
             # 2) Đăng nhập (gửi kèm cookie + header XSRF từ cookie)
-            curl -X POST http://localhost:8000/api/v1/auth/login \
+            curl -X POST https://vmphuthinhland.com/api/v1/auth/login \
               -H "Accept: application/json" -H "Content-Type: application/json" \
               -b cookies.txt -c cookies.txt \
               -H "X-XSRF-TOKEN: $(grep XSRF-TOKEN cookies.txt | cut -f7)" \
@@ -208,7 +208,7 @@ paths:
         - lang: bash
           label: curl
           source: |
-            curl -G "http://localhost:8000/api/v1/listings" \
+            curl -G "https://vmphuthinhland.com/api/v1/listings" \
               -H "Accept: application/json" \
               --data-urlencode "type=Cần bán" \
               --data-urlencode "property_type=107" \
@@ -249,7 +249,7 @@ paths:
         - lang: bash
           label: curl
           source: |
-            curl -X POST http://localhost:8000/api/v1/listings \
+            curl -X POST https://vmphuthinhland.com/api/v1/listings \
               -H "Accept: application/json" -H "Content-Type: application/json" \
               -b cookies.txt -H "X-XSRF-TOKEN: $(grep XSRF-TOKEN cookies.txt | cut -f7)" \
               -d '{"title":"Nhà mặt phố Cầu Giấy","type":"Cần bán","property_type":107,
