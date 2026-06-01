@@ -12,19 +12,24 @@ use Illuminate\Support\Facades\Hash;
 class AuthController extends BaseApiController
 {
     /**
-     * Authenticate a user via the web guard (SPA cookie mode).
+     * Authenticate a user and issue a Sanctum API token.
      */
     public function login(LoginRequest $req)
     {
-        $credentials = $req->only('phone', 'password');
+        $data = $req->validated();
 
-        if (! auth()->attempt($credentials)) {
+        $user = User::where('phone', $data['phone'])->first();
+
+        if (! $user || ! Hash::check($data['password'], $user->password)) {
             return $this->fail('Sai số điện thoại hoặc mật khẩu', 401);
         }
 
-        $req->session()->regenerate();
+        $token = $user->createToken('api')->plainTextToken;
 
-        return $this->ok(new UserResource(auth()->user()), 'OK');
+        return $this->ok([
+            'user'  => new UserResource($user),
+            'token' => $token,
+        ], 'OK');
     }
 
     /**
@@ -52,10 +57,13 @@ class AuthController extends BaseApiController
         $prefix = $inviter ? $inviter->invite_code : 'BD';
         $user->update(['invite_code' => $prefix . $user->id]);
 
-        auth()->login($user);
-        $req->session()->regenerate();
+        $user = $user->fresh();
+        $token = $user->createToken('api')->plainTextToken;
 
-        return $this->ok(new UserResource($user->fresh()), 'Registered', 201);
+        return $this->ok([
+            'user'  => new UserResource($user),
+            'token' => $token,
+        ], 'Registered', 201);
     }
 
     /**
@@ -73,13 +81,11 @@ class AuthController extends BaseApiController
     }
 
     /**
-     * Log the current user out of the web session.
+     * Revoke the current access token.
      */
     public function logout(Request $req)
     {
-        auth()->guard('web')->logout();
-        $req->session()->invalidate();
-        $req->session()->regenerateToken();
+        $req->user()->currentAccessToken()->delete();
 
         return $this->ok(null, 'Logged out');
     }
