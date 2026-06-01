@@ -1,0 +1,653 @@
+openapi: 3.1.0
+info:
+  title: MediaBDS API
+  version: 1.0.0
+  description: |
+    REST API phục vụ website Next.js (xem listing, đăng nhập CTV, gửi lead...).
+
+    **Xác thực = Sanctum SPA (cookie + CSRF)**, không dùng Bearer token.
+    Luồng: `GET /sanctum/csrf-cookie` → `POST /api/v1/auth/login` → gọi API (cookie tự kèm).
+    Mọi request ghi (`POST/PUT/DELETE`) cần header `X-XSRF-TOKEN` = cookie `XSRF-TOKEN` (URL-decoded).
+
+    ### ⚡ Mẫu CRUD nhanh (axios) — copy & dùng ngay
+    ```js
+    import axios from 'axios';
+
+    const api = axios.create({
+      baseURL: 'http://localhost:8000',
+      withCredentials: true,   // gửi/nhận cookie
+      withXSRFToken: true,     // axios >= 1.6: tự gắn X-XSRF-TOKEN
+      headers: { Accept: 'application/json' },
+    });
+
+    const csrf = () => api.get('/sanctum/csrf-cookie'); // gọi trước mỗi POST/PUT/DELETE
+
+    // LOGIN (cần để tạo/sửa/xoá)
+    await csrf();
+    await api.post('/api/v1/auth/login', { phone: '0900000000', password: 'secret' });
+
+    // CREATE
+    await csrf();
+    const { data: created } = await api.post('/api/v1/listings', {
+      title: 'Nhà mặt phố Cầu Giấy', type: 'Cần bán', property_type: 107,
+      price: 5.5, price_unit: 'Tỷ', area: 60, contact_phone: '0900000000',
+      bedrooms: 3, toilets: 3, floors: 4, direction: 'Đông Nam', address: 'Số 1 Dịch Vọng',
+    });
+    const id = created.data.id;
+
+    // READ (danh sách + chi tiết)
+    const { data: list } = await api.get('/api/v1/listings', { params: { per_page: 12, type: 'Cần bán' } });
+    const { data: one }  = await api.get(`/api/v1/listings/${id}`);
+
+    // UPDATE (gửi đủ field bắt buộc như CREATE)
+    await csrf();
+    const { data: updated } = await api.put(`/api/v1/listings/${id}`, {
+      title: 'Nhà mặt phố Cầu Giấy (đã sửa)', type: 'Cần bán', property_type: 107,
+      price: 6, price_unit: 'Tỷ', area: 60, contact_phone: '0900000000',
+    });
+
+    // DELETE (admin)
+    await csrf();
+    await api.delete(`/api/v1/listings/${id}`);
+    ```
+
+    > Lưu ý: `property_type` gửi đi là **số** (mã) nhưng nhận về là **chữ** (nhãn).
+    > `min_price`/`max_price` đơn vị **TỶ**; `budget_*` (leads) đơn vị **VNĐ**.
+
+servers:
+  - url: http://localhost:8000
+    description: Local (php artisan serve)
+  # - url: https://your-domain.com
+  #   description: Production
+
+tags:
+  - name: Auth
+    description: Đăng ký / đăng nhập / phiên
+  - name: Listings
+    description: Tin bất động sản (CRUD)
+  - name: Me
+    description: Tài khoản hiện tại
+  - name: Leads
+    description: Khách hàng tiềm năng từ website
+
+security: []
+
+paths:
+  /sanctum/csrf-cookie:
+    get:
+      tags: [Auth]
+      summary: Lấy CSRF cookie
+      description: Gọi 1 lần trước khi thực hiện POST/PUT/DELETE. Server set cookie `XSRF-TOKEN` + session.
+      responses:
+        '204':
+          description: Không có nội dung; cookie được set trong header.
+
+  /api/v1/auth/register:
+    post:
+      tags: [Auth]
+      summary: Đăng ký tài khoản
+      description: Có `invite_code` hợp lệ → role `ctv`; không có → `buyer`. Đăng ký xong tự đăng nhập. Rate limit 5/phút.
+      parameters:
+        - $ref: '#/components/parameters/XsrfToken'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RegisterInput' }
+      responses:
+        '201':
+          description: Tạo thành công
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UserEnvelope' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+  /api/v1/auth/login:
+    post:
+      tags: [Auth]
+      summary: Đăng nhập
+      description: Tạo session đăng nhập (cookie). Rate limit 10/phút.
+      parameters:
+        - $ref: '#/components/parameters/XsrfToken'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LoginInput' }
+      responses:
+        '200':
+          description: Đăng nhập thành công
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UserEnvelope' }
+        '401':
+          description: Sai thông tin đăng nhập
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { success: false, message: 'Sai số điện thoại hoặc mật khẩu' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+      x-codeSamples:
+        - lang: bash
+          label: curl
+          source: |
+            # 1) Lấy CSRF cookie (lưu cookie vào file)
+            curl -s -c cookies.txt http://localhost:8000/sanctum/csrf-cookie
+            # 2) Đăng nhập (gửi kèm cookie + header XSRF từ cookie)
+            curl -X POST http://localhost:8000/api/v1/auth/login \
+              -H "Accept: application/json" -H "Content-Type: application/json" \
+              -b cookies.txt -c cookies.txt \
+              -H "X-XSRF-TOKEN: $(grep XSRF-TOKEN cookies.txt | cut -f7)" \
+              -d '{"phone":"0900000000","password":"secret"}'
+        - lang: js
+          label: axios
+          source: |
+            await api.get('/sanctum/csrf-cookie');
+            const { data } = await api.post('/api/v1/auth/login', {
+              phone: '0900000000', password: 'secret',
+            });
+
+  /api/v1/auth/me:
+    get:
+      tags: [Auth]
+      summary: Thông tin tài khoản đang đăng nhập
+      security: [{ cookieAuth: [] }]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UserEnvelope' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  /api/v1/auth/logout:
+    post:
+      tags: [Auth]
+      summary: Đăng xuất
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/XsrfToken'
+      responses:
+        '200':
+          description: Đã đăng xuất
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MessageEnvelope' }
+              example: { success: true, message: 'Logged out' }
+
+  /api/v1/listings:
+    get:
+      tags: [Listings]
+      summary: Danh sách tin (công khai)
+      description: Chỉ trả tin chưa bán (`is_sold = false`). Có phân trang. Khách chưa đăng nhập sẽ bị che số điện thoại.
+      parameters:
+        - { name: per_page, in: query, schema: { type: integer, default: 12, maximum: 30 }, description: Tối đa 30 }
+        - { name: page, in: query, schema: { type: integer, default: 1 } }
+        - { name: type, in: query, schema: { type: string, enum: ['Cần bán', 'Cho thuê', 'Cần mua'] } }
+        - { name: property_type, in: query, schema: { type: integer }, description: 'Mã loại BĐS (102–115), xem schema ListingInput' }
+        - { name: province, in: query, schema: { type: string }, description: 'Mã tỉnh (id) HOẶC tên — khớp cả hai' }
+        - { name: district, in: query, schema: { type: string }, description: 'Mã huyện (id) HOẶC tên' }
+        - { name: ward, in: query, schema: { type: string }, description: 'Mã xã (id) HOẶC tên' }
+        - { name: bedrooms, in: query, schema: { type: integer }, description: 'Lọc số phòng ngủ ≥ giá trị' }
+        - { name: direction, in: query, schema: { type: string } }
+        - { name: min_area, in: query, schema: { type: number }, description: 'm²' }
+        - { name: max_area, in: query, schema: { type: number }, description: 'm²' }
+        - { name: min_price, in: query, schema: { type: number }, description: 'Đơn vị TỶ (vd 2 = 2 tỷ)' }
+        - { name: max_price, in: query, schema: { type: number }, description: 'Đơn vị TỶ' }
+        - { name: sort_by, in: query, schema: { type: string, enum: ['created_at', 'price', 'area'], default: 'created_at' } }
+        - { name: sort_order, in: query, schema: { type: string, enum: ['desc', 'asc'], default: 'desc' } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PaginatedListings' }
+      x-codeSamples:
+        - lang: bash
+          label: curl
+          source: |
+            curl -G "http://localhost:8000/api/v1/listings" \
+              -H "Accept: application/json" \
+              --data-urlencode "type=Cần bán" \
+              --data-urlencode "property_type=107" \
+              --data-urlencode "province=Hà Nội" \
+              --data-urlencode "min_price=2" --data-urlencode "max_price=5" \
+              --data-urlencode "bedrooms=3" \
+              --data-urlencode "sort_by=price" --data-urlencode "sort_order=asc"
+        - lang: js
+          label: axios
+          source: |
+            const { data } = await api.get('/api/v1/listings', {
+              params: { type: 'Cần bán', property_type: 107, province: 'Hà Nội',
+                        min_price: 2, max_price: 5, bedrooms: 3,
+                        sort_by: 'price', sort_order: 'asc', per_page: 12 },
+            });
+    post:
+      tags: [Listings]
+      summary: Tạo tin
+      description: Yêu cầu đăng nhập **và** là CTV/admin. `code` + `user_id` tự gán.
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/XsrfToken'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ListingInput' }
+      responses:
+        '201':
+          description: Tạo thành công
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ListingActionEnvelope' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+      x-codeSamples:
+        - lang: bash
+          label: curl
+          source: |
+            curl -X POST http://localhost:8000/api/v1/listings \
+              -H "Accept: application/json" -H "Content-Type: application/json" \
+              -b cookies.txt -H "X-XSRF-TOKEN: $(grep XSRF-TOKEN cookies.txt | cut -f7)" \
+              -d '{"title":"Nhà mặt phố Cầu Giấy","type":"Cần bán","property_type":107,
+                   "price":5.5,"price_unit":"Tỷ","area":60,"contact_phone":"0900000000",
+                   "bedrooms":3,"toilets":3,"floors":4,"direction":"Đông Nam"}'
+        - lang: js
+          label: axios
+          source: |
+            await api.get('/sanctum/csrf-cookie');
+            const { data } = await api.post('/api/v1/listings', {
+              title: 'Nhà mặt phố Cầu Giấy', type: 'Cần bán', property_type: 107,
+              price: 5.5, price_unit: 'Tỷ', area: 60, contact_phone: '0900000000',
+              bedrooms: 3, toilets: 3, floors: 4, direction: 'Đông Nam',
+            });
+
+  /api/v1/listings/{id}:
+    get:
+      tags: [Listings]
+      summary: Chi tiết 1 tin (công khai)
+      description: '`id` có thể là **id** (số) hoặc **code** (vd `API-AB12CD`).'
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string }, description: 'id hoặc code' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ListingSingle' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      tags: [Listings]
+      summary: Cập nhật tin
+      description: Quyền **admin hoặc chủ tin**. Gửi đủ field bắt buộc như khi tạo.
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+        - $ref: '#/components/parameters/XsrfToken'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ListingInput' }
+      responses:
+        '200':
+          description: Cập nhật thành công
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ListingActionEnvelope' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+      x-codeSamples:
+        - lang: js
+          label: axios
+          source: |
+            await api.get('/sanctum/csrf-cookie');
+            const { data } = await api.put(`/api/v1/listings/${id}`, {
+              title: 'Tiêu đề mới', type: 'Cần bán', property_type: 107,
+              price: 6, price_unit: 'Tỷ', area: 60, contact_phone: '0900000000',
+            });
+    delete:
+      tags: [Listings]
+      summary: Xoá tin
+      description: Chỉ **admin**.
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+        - $ref: '#/components/parameters/XsrfToken'
+      responses:
+        '200':
+          description: Đã xoá
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MessageEnvelope' }
+              example: { success: true, message: 'Deleted' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+      x-codeSamples:
+        - lang: js
+          label: axios
+          source: |
+            await api.get('/sanctum/csrf-cookie');
+            await api.delete(`/api/v1/listings/${id}`);
+
+  /api/v1/leads:
+    post:
+      tags: [Leads]
+      summary: Gửi lead (công khai)
+      description: Form liên hệ trên website. Tạo Customer + timeline. Rate limit 3 lần / 5 phút.
+      parameters:
+        - $ref: '#/components/parameters/XsrfToken'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LeadInput' }
+      responses:
+        '201':
+          description: Đã ghi nhận
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LeadEnvelope' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+  /api/v1/me:
+    get:
+      tags: [Me]
+      summary: Hồ sơ tài khoản hiện tại
+      security: [{ cookieAuth: [] }]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UserSingle' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  /api/v1/me/listings:
+    get:
+      tags: [Me]
+      summary: Tin của tôi (phân trang)
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - { name: per_page, in: query, schema: { type: integer, default: 10 } }
+        - { name: page, in: query, schema: { type: integer, default: 1 } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PaginatedListings' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  /api/v1/me/stats:
+    get:
+      tags: [Me]
+      summary: Thống kê của tôi
+      security: [{ cookieAuth: [] }]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/StatsEnvelope' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: laravel_session
+      description: |
+        Phiên Sanctum (cookie). Đăng nhập qua `POST /api/v1/auth/login` sau khi `GET /sanctum/csrf-cookie`.
+        Mọi request ghi cần thêm header `X-XSRF-TOKEN`.
+
+  parameters:
+    XsrfToken:
+      name: X-XSRF-TOKEN
+      in: header
+      required: true
+      schema: { type: string }
+      description: Giá trị cookie `XSRF-TOKEN` (URL-decoded). Bắt buộc cho mọi request ghi (POST/PUT/DELETE).
+
+  responses:
+    Unauthenticated:
+      description: Chưa đăng nhập
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { message: 'Unauthenticated.' }
+    Forbidden:
+      description: Không đủ quyền
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { message: 'This action is unauthorized.' }
+    NotFound:
+      description: Không tìm thấy
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { success: false, message: 'Không tìm thấy tin' }
+    ValidationError:
+      description: Lỗi validate (HTTP 422)
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ValidationError' }
+    TooManyRequests:
+      description: Vượt rate limit
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { message: 'Too Many Attempts.' }
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id: { type: integer, example: 12 }
+        name: { type: string, example: 'Nguyễn A' }
+        email: { type: ['string', 'null'], example: null }
+        phone: { type: string, example: '0900000001' }
+        role: { type: string, enum: ['buyer', 'ctv', 'admin'], example: 'ctv' }
+        avatar: { type: ['string', 'null'] }
+        invite_code: { type: ['string', 'null'], example: 'BD12' }
+        property_types: { type: array, items: { type: integer }, example: [107, 108] }
+        rank:
+          type: ['object', 'null']
+          properties:
+            id: { type: integer }
+            name: { type: string, example: 'Vàng' }
+            min_price: { type: number, example: 1 }
+            min_invites: { type: integer, example: 3 }
+        total_revenue: { type: number, example: 1500000000 }
+        invites_count: { type: integer, example: 4 }
+        trial_ends_at: { type: ['string', 'null'], format: date-time }
+        license_expires_at: { type: ['string', 'null'], format: date-time }
+        is_admin: { type: boolean, example: false }
+        created_at: { type: string, format: date-time }
+
+    Listing:
+      type: object
+      properties:
+        id: { type: integer, example: 12 }
+        code: { type: string, example: 'API-AB12CD' }
+        title: { type: string, example: 'Nhà mặt phố Cầu Giấy' }
+        type: { type: string, example: 'Cần bán' }
+        property_type: { type: ['string', 'null'], description: 'Nhãn (đã map từ mã)', example: 'Nhà mặt phố' }
+        price: { type: number, example: 5.5 }
+        price_unit: { type: string, example: 'Tỷ' }
+        area: { type: number, example: 60 }
+        address: { type: ['string', 'null'] }
+        ward_name: { type: ['string', 'null'], example: 'Dịch Vọng' }
+        district_name: { type: ['string', 'null'], example: 'Cầu Giấy' }
+        province_name: { type: ['string', 'null'], example: 'Hà Nội' }
+        floors: { type: ['integer', 'null'], example: 4 }
+        bedrooms: { type: ['integer', 'null'], example: 3 }
+        toilets: { type: ['integer', 'null'], example: 3 }
+        direction: { type: ['string', 'null'], example: 'Đông Nam' }
+        front_width: { type: ['number', 'null'], example: 4.5 }
+        road_width: { type: ['number', 'null'], example: 8 }
+        avatar: { type: ['string', 'null'] }
+        images: { type: array, items: { type: string }, example: ['https://.../1.jpg'] }
+        is_sold: { type: boolean, example: false }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        can_view_phone: { type: boolean, description: 'true khi đã đăng nhập', example: false }
+        contact_phone: { type: ['string', 'null'], description: 'Bị che nếu chưa đăng nhập', example: '090*******' }
+        contact_phones: { type: array, items: { type: string }, description: 'Rỗng nếu chưa đăng nhập', example: [] }
+
+    ListingInput:
+      type: object
+      required: [title, type, property_type, price, price_unit, area, contact_phone]
+      properties:
+        title: { type: string, maxLength: 255, example: 'Nhà mặt phố Cầu Giấy' }
+        type: { type: string, enum: ['Cần bán', 'Cho thuê', 'Cần mua'], example: 'Cần bán' }
+        property_type:
+          type: integer
+          enum: [102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115]
+          description: |
+            Mã loại BĐS: 102 Biệt thự · 103 Căn hộ–chung cư · 104 Đất · 105 Đất nền dự án ·
+            106 Mặt tiền · 107 Nhà mặt phố · 108 Nhà riêng · 109 Trang trại · 110 BĐS khác ·
+            111 Nhà mặt phố (LG 4M-5M) · 112 Khách sạn · 113 Nhà nghỉ · 114 Homestay · 115 Nhà trọ
+          example: 107
+        price: { type: number, minimum: 0, example: 5.5 }
+        price_unit: { type: string, enum: ['Tỷ', 'Triệu', 'VNĐ/tháng', 'Thỏa thuận'], example: 'Tỷ' }
+        area: { type: number, minimum: 0, description: 'm²', example: 60 }
+        contact_phone: { type: string, description: 'Có thể nhiều số, ngăn cách , / -', example: '0900000000' }
+        address: { type: string }
+        description: { type: string }
+        bedrooms: { type: integer, example: 3 }
+        toilets: { type: integer, example: 3 }
+        floors: { type: integer, example: 4 }
+        direction: { type: string, example: 'Đông Nam' }
+        front_width: { type: number, example: 4.5 }
+        road_width: { type: number, example: 8 }
+
+    LoginInput:
+      type: object
+      required: [phone, password]
+      properties:
+        phone: { type: string, minLength: 9, maxLength: 15, example: '0900000000' }
+        password: { type: string, minLength: 6, example: 'secret' }
+
+    RegisterInput:
+      type: object
+      required: [name, phone, password, password_confirmation]
+      properties:
+        name: { type: string, maxLength: 120, example: 'Nguyễn A' }
+        phone: { type: string, minLength: 9, maxLength: 15, example: '0900000001' }
+        password: { type: string, minLength: 6, example: 'secret' }
+        password_confirmation: { type: string, example: 'secret' }
+        invite_code: { type: string, description: 'Nếu có phải tồn tại', example: 'BD12' }
+
+    LeadInput:
+      type: object
+      required: [name, phone]
+      properties:
+        name: { type: string, maxLength: 120, example: 'Trần B' }
+        phone: { type: string, minLength: 9, maxLength: 15, example: '0900000002' }
+        budget_from: { type: number, minimum: 0, description: 'VNĐ', example: 2000000000 }
+        budget_to: { type: number, minimum: 0, description: 'VNĐ', example: 5000000000 }
+        message: { type: string, maxLength: 1000, example: 'Cần nhà 3 phòng ngủ' }
+        listing_id: { type: integer, description: 'id listing quan tâm', example: 12 }
+
+    UserEnvelope:
+      type: object
+      properties:
+        success: { type: boolean, example: true }
+        data: { $ref: '#/components/schemas/User' }
+        message: { type: string, example: 'OK' }
+
+    UserSingle:
+      type: object
+      properties:
+        data: { $ref: '#/components/schemas/User' }
+
+    ListingActionEnvelope:
+      type: object
+      properties:
+        success: { type: boolean, example: true }
+        data: { $ref: '#/components/schemas/Listing' }
+        message: { type: string, example: 'Created' }
+
+    ListingSingle:
+      type: object
+      properties:
+        data: { $ref: '#/components/schemas/Listing' }
+
+    PaginatedListings:
+      type: object
+      properties:
+        data: { type: array, items: { $ref: '#/components/schemas/Listing' } }
+        links:
+          type: object
+          properties:
+            first: { type: string }
+            last: { type: string }
+            prev: { type: ['string', 'null'] }
+            next: { type: ['string', 'null'] }
+        meta:
+          type: object
+          properties:
+            current_page: { type: integer, example: 1 }
+            per_page: { type: integer, example: 12 }
+            total: { type: integer, example: 134 }
+            last_page: { type: integer, example: 12 }
+
+    StatsEnvelope:
+      type: object
+      properties:
+        success: { type: boolean, example: true }
+        data:
+          type: object
+          properties:
+            total_revenue: { type: number, example: 1500000000 }
+            invites_count: { type: integer, example: 4 }
+            rank:
+              type: ['object', 'null']
+              properties:
+                name: { type: string, example: 'Vàng' }
+                min_price: { type: number, example: 1 }
+            listings_count: { type: integer, example: 12 }
+            listings_sold: { type: integer, example: 3 }
+
+    LeadEnvelope:
+      type: object
+      properties:
+        success: { type: boolean, example: true }
+        data:
+          type: object
+          properties:
+            lead_id: { type: integer, example: 88 }
+            code: { type: string, example: 'KH000088' }
+        message: { type: string, example: 'Đã ghi nhận, chúng tôi sẽ liên hệ sớm' }
+
+    MessageEnvelope:
+      type: object
+      properties:
+        success: { type: boolean, example: true }
+        message: { type: string }
+
+    Error:
+      type: object
+      properties:
+        success: { type: boolean, example: false }
+        message: { type: string }
+        errors: { type: object, additionalProperties: true }
+
+    ValidationError:
+      type: object
+      properties:
+        message: { type: string, example: 'The phone field is required.' }
+        errors:
+          type: object
+          additionalProperties: { type: array, items: { type: string } }
+          example: { phone: ['The phone field is required.'] }

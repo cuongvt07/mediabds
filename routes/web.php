@@ -38,6 +38,16 @@ Route::get('/business/detail/{id}', \App\Livewire\BusinessDetail::class)->middle
 Route::get('/business/statistics', \App\Livewire\CtvStatistics::class)->middleware(['auth', 'admin'])->name('business.statistics');
 Route::get('/chatbot', \App\Livewire\Chatbot::class)->middleware('auth')->name('chatbot');
 
+// ----- API documentation (Scalar) -----
+// Trang doc đọc tại /docs/api. Spec OpenAPI lấy từ resources/docs/openapi.yaml.
+// Đang công khai cho dev; muốn giới hạn thì thêm ->middleware(['auth','admin']).
+Route::view('/docs/api', 'docs.api')->name('docs.api');
+Route::get('/docs/api/openapi.yaml', function () {
+    return response()->file(resource_path('docs/openapi.yaml'), [
+        'Content-Type' => 'application/yaml; charset=UTF-8',
+    ]);
+})->name('docs.api.spec');
+
 
 
 

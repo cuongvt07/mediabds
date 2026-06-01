@@ -9,11 +9,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable;
 
     /**
      * Admin phone number
@@ -25,7 +26,23 @@ class User extends Authenticatable
      */
     public function isAdmin(): bool
     {
-        return $this->phone === self::ADMIN_PHONE;
+        return $this->role === 'admin' || $this->phone === self::ADMIN_PHONE;
+    }
+
+    /**
+     * Check if user is a CTV (cộng tác viên) or higher.
+     */
+    public function isCtv(): bool
+    {
+        return in_array($this->role, ['ctv', 'admin'], true);
+    }
+
+    /**
+     * Check if user is a buyer.
+     */
+    public function isBuyer(): bool
+    {
+        return $this->role === 'buyer';
     }
 
     /**
@@ -121,6 +138,7 @@ class User extends Authenticatable
         'name',
         'email',
         'phone',
+        'role',
         'password',
         'license_key',
         'license_expires_at',

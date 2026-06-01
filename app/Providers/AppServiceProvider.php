@@ -2,6 +2,9 @@
 
 namespace App\Providers;
 
+use App\Models\RealEstateListing;
+use App\Policies\ListingPolicy;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -19,6 +22,6 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        Gate::policy(RealEstateListing::class, ListingPolicy::class);
     }
 }
