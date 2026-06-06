@@ -28,6 +28,7 @@
         <div class="flex min-w-max gap-1">
             @foreach ([
                 'overview' => ['Tổng quan', 'fa-chart-pie'],
+                'home' => ['Trang user', 'fa-house-chimney-window'],
                 'listings' => ['Tin public', 'fa-newspaper'],
                 'categories' => ['Danh mục', 'fa-layer-group'],
                 'blogs' => ['Blog', 'fa-pen-nib'],
@@ -97,6 +98,86 @@
                     </div>
                 </section>
             </div>
+        @elseif ($activeTab === 'home')
+            <section class="space-y-4">
+                <div class="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+                    <p class="font-black uppercase tracking-widest text-xs">Trang user dang doc tu API /api/v1/homepage</p>
+                    <p class="mt-1 font-semibold">Moi khoi ben duoi quyet dinh site user hien thi phan nao, lay nguon tin nao va gioi han bao nhieu tin. Cot "Tin match" cho biet hien tai DB co bao nhieu tin public phu hop voi cau hinh khoi.</p>
+                </div>
+
+                <div class="rounded-2xl border border-slate-200 bg-white overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full min-w-[1100px] text-left">
+                            <thead class="bg-slate-50 text-[10px] font-black uppercase tracking-widest text-slate-400">
+                                <tr>
+                                    <th class="px-5 py-4">Khoi hien thi</th>
+                                    <th class="px-5 py-4">Loai / nguon</th>
+                                    <th class="px-5 py-4">Filter</th>
+                                    <th class="px-5 py-4">Tin match</th>
+                                    <th class="px-5 py-4">Gioi han</th>
+                                    <th class="px-5 py-4">Thu tu</th>
+                                    <th class="px-5 py-4 text-right">Thao tac</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 text-sm">
+                                @forelse ($homeSections as $section)
+                                    <tr class="{{ $section->enabled ? 'hover:bg-slate-50' : 'bg-slate-50/70 opacity-70' }}">
+                                        <td class="px-5 py-4">
+                                            <div class="flex items-start gap-3">
+                                                <span class="mt-0.5 inline-flex h-8 w-8 items-center justify-center rounded-xl {{ $section->enabled ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-400' }}">
+                                                    <i class="fa-solid {{ $section->enabled ? 'fa-eye' : 'fa-eye-slash' }}"></i>
+                                                </span>
+                                                <div class="min-w-0">
+                                                    <p class="font-black text-slate-800">{{ $section->title }}</p>
+                                                    <p class="mt-1 text-[11px] font-mono text-slate-400">{{ $section->key }}</p>
+                                                    @if ($section->description)
+                                                        <p class="mt-1 line-clamp-1 text-xs text-slate-500">{{ $section->description }}</p>
+                                                    @endif
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="px-5 py-4">
+                                            <p class="font-mono text-xs font-black uppercase text-slate-700">{{ $section->section_type }}</p>
+                                            <p class="mt-1 font-mono text-xs text-slate-400">{{ $section->source_type }}</p>
+                                        </td>
+                                        <td class="px-5 py-4 text-xs text-slate-500">
+                                            <p>GD: {{ $section->transaction_type ?: '-' }}</p>
+                                            <p>Loai: {{ $section->property_kind ?: '-' }}</p>
+                                            <p>Tinh/DM: {{ $section->province_name ?: ($section->category_id ?: '-') }}</p>
+                                            @if (($section->manual_listing_ids ?: []))
+                                                <p>ID: {{ implode(',', $section->manual_listing_ids ?: []) }}</p>
+                                            @endif
+                                        </td>
+                                        <td class="px-5 py-4">
+                                            @if ($section->section_type === 'listings')
+                                                <span class="font-mono text-sm font-black {{ $this->homeSectionCount($section) > 0 ? 'text-emerald-600' : 'text-red-500' }}">
+                                                    {{ number_format($this->homeSectionCount($section)) }}
+                                                </span>
+                                            @else
+                                                <span class="text-xs text-slate-400">static</span>
+                                            @endif
+                                        </td>
+                                        <td class="px-5 py-4 font-mono text-slate-600">{{ $section->limit }}</td>
+                                        <td class="px-5 py-4 font-mono text-slate-600">{{ $section->sort_order_index }}</td>
+                                        <td class="px-5 py-4 text-right space-x-2">
+                                            <button wire:click="toggleHomeSection({{ $section->id }})"
+                                                class="rounded-lg border border-slate-200 px-3 py-1.5 text-[10px] font-black uppercase text-slate-600 hover:border-emerald-500 hover:text-emerald-600">
+                                                {{ $section->enabled ? 'An' : 'Hien' }}
+                                            </button>
+                                            <button wire:click="editHomeSection({{ $section->id }})"
+                                                class="rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-1.5 text-[10px] font-black uppercase text-emerald-600 hover:bg-emerald-100">
+                                                Cau hinh
+                                            </button>
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr><td colspan="7" class="px-5 py-10 text-center text-slate-400">Chua co bang website_home_sections. Hay chay migrate.</td></tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
         @elseif ($activeTab === 'listings')
             <section class="space-y-4">
                 <div class="rounded-2xl border border-slate-200 bg-white p-4 flex flex-col lg:flex-row gap-3 lg:items-center">
@@ -460,6 +541,111 @@
             </section>
         @endif
     </div>
+
+    @if ($showHomeSectionModal)
+        <div class="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" wire:click="closeHomeSectionModal"></div>
+            <form wire:submit.prevent="saveHomeSection" class="relative w-full max-w-4xl max-h-[calc(100vh-2rem)] overflow-y-auto rounded-2xl bg-white shadow-2xl border border-slate-200">
+                <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white z-10">
+                    <div>
+                        <h3 class="font-black text-slate-800 uppercase tracking-widest text-sm">Cau hinh khoi trang user</h3>
+                        <p class="mt-1 text-xs font-mono text-slate-400">{{ $homeSectionKey }}</p>
+                    </div>
+                    <button type="button" wire:click="closeHomeSectionModal" class="text-slate-400 hover:text-red-500"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <div class="p-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <x-admin-field label="Tieu de khoi" model="homeSectionTitle" />
+                    <x-admin-field label="Thu tu hien thi" model="homeSectionSortOrderIndex" type="number" />
+                    <div class="lg:col-span-2">
+                        <label class="mb-1 block text-xs font-black uppercase tracking-widest text-slate-500">Mo ta</label>
+                        <textarea wire:model="homeSectionDescription" rows="3" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold"></textarea>
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-xs font-black uppercase tracking-widest text-slate-500">Bat hien thi</label>
+                        <select wire:model="homeSectionEnabled" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold">
+                            <option value="1">Hien tren site user</option>
+                            <option value="0">An khoi nay</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-xs font-black uppercase tracking-widest text-slate-500">Loai khoi</label>
+                        <select wire:model="homeSectionType" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold">
+                            <option value="listings">Tin dang</option>
+                            <option value="regions">Khu vuc</option>
+                            <option value="tools">Tien ich</option>
+                            <option value="recently_viewed">Da xem gan day</option>
+                            <option value="blogs">Blog</option>
+                            <option value="feature_descriptions">Mo ta dich vu</option>
+                            <option value="promo">Banner</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-xs font-black uppercase tracking-widest text-slate-500">Nguon du lieu</label>
+                        <select wire:model="homeSectionSourceType" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold">
+                            <option value="latest">Moi nhat</option>
+                            <option value="vip">VIP</option>
+                            <option value="property">Theo loai BDS</option>
+                            <option value="category">Theo danh muc</option>
+                            <option value="province">Theo tinh/thanh</option>
+                            <option value="manual">Chon ID thu cong</option>
+                            <option value="regions">Khu vuc tinh thanh</option>
+                            <option value="static">Noi dung tinh</option>
+                            <option value="client">Du lieu client</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-xs font-black uppercase tracking-widest text-slate-500">Giao dich</label>
+                        <select wire:model="homeSectionTransactionType" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold">
+                            <option value="">Tat ca</option>
+                            <option value="sale">Mua ban</option>
+                            <option value="rent">Cho thue</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-xs font-black uppercase tracking-widest text-slate-500">Loai BDS</label>
+                        <select wire:model="homeSectionPropertyKind" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold">
+                            <option value="">Tat ca</option>
+                            <option value="apartment">Can ho</option>
+                            <option value="room">Phong tro</option>
+                            <option value="house">Nha</option>
+                            <option value="office">Mat tien / van phong</option>
+                            <option value="land">Dat</option>
+                            <option value="shared">O ghep</option>
+                        </select>
+                    </div>
+                    <x-admin-field label="ID danh muc" model="homeSectionCategoryId" />
+                    <x-admin-field label="Tinh/thanh hoac ma tinh" model="homeSectionProvinceName" />
+                    <div>
+                        <label class="mb-1 block text-xs font-black uppercase tracking-widest text-slate-500">Sap xep theo</label>
+                        <select wire:model="homeSectionSortBy" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold">
+                            <option value="created_at">Ngay dang</option>
+                            <option value="price">Gia</option>
+                            <option value="area">Dien tich</option>
+                            <option value="view_count">Luot xem</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-xs font-black uppercase tracking-widest text-slate-500">Chieu sap xep</label>
+                        <select wire:model="homeSectionSortOrder" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold">
+                            <option value="desc">Giam dan</option>
+                            <option value="asc">Tang dan</option>
+                        </select>
+                    </div>
+                    <x-admin-field label="So luong tin toi da" model="homeSectionLimit" type="number" />
+                    <x-admin-field label="Link xem tat ca" model="homeSectionHref" />
+                    <div class="lg:col-span-2">
+                        <label class="mb-1 block text-xs font-black uppercase tracking-widest text-slate-500">ID tin thu cong, cach nhau dau phay</label>
+                        <input wire:model="homeSectionManualIds" type="text" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-mono">
+                        <p class="mt-1 text-xs text-slate-400">Dung khi nguon du lieu = Chon ID thu cong. Vi du: 2246,2245,2244</p>
+                    </div>
+                </div>
+                <div class="px-6 py-4 border-t border-slate-100 flex justify-end gap-2 sticky bottom-0 bg-white">
+                    <button type="button" wire:click="closeHomeSectionModal" class="rounded-xl bg-slate-100 px-4 py-2 text-xs font-black uppercase text-slate-600">Huy</button>
+                    <button type="submit" class="rounded-xl bg-emerald-600 px-4 py-2 text-xs font-black uppercase text-white">Luu cau hinh</button>
+                </div>
+            </form>
+        </div>
+    @endif
 
     @if ($showCategoryModal)
         <div class="fixed inset-0 z-[100] flex items-center justify-center p-4">

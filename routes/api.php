@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BlogApiController;
 use App\Http\Controllers\Api\CategoryApiController;
 use App\Http\Controllers\Api\FavoriteApiController;
+use App\Http\Controllers\Api\HomepageApiController;
 use App\Http\Controllers\Api\ListingApiController;
 use App\Http\Controllers\Api\LocationApiController;
 use App\Http\Controllers\Api\LeadApiController;
@@ -22,6 +23,7 @@ Route::prefix('v1')->group(function () {
     Route::get('/locations', [LocationApiController::class, 'index']);
     Route::get('/blogs', [BlogApiController::class, 'index']);
     Route::get('/blogs/{slug}', [BlogApiController::class, 'show']);
+    Route::get('/homepage', [HomepageApiController::class, 'index']);
     Route::get('/listings', [ListingApiController::class, 'index']);
     Route::get('/listings/{idOrCode}', [ListingApiController::class, 'show']);
 

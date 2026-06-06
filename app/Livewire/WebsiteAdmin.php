@@ -6,6 +6,7 @@ use App\Models\BlogPost;
 use App\Models\ListingCategory;
 use App\Models\ListingContactRequest;
 use App\Models\RealEstateListing;
+use App\Models\WebsiteHomeSection;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -22,6 +23,25 @@ class WebsiteAdmin extends Component
     public $listingSearch = '';
     public $listingStatus = 'all';
     public $listingVip = 'all';
+
+    public $showHomeSectionModal = false;
+    public $homeSectionEditingId = null;
+    public $homeSectionKey = '';
+    public $homeSectionTitle = '';
+    public $homeSectionDescription = '';
+    public $homeSectionType = 'listings';
+    public $homeSectionEnabled = true;
+    public $homeSectionSourceType = 'latest';
+    public $homeSectionTransactionType = '';
+    public $homeSectionPropertyKind = '';
+    public $homeSectionCategoryId = '';
+    public $homeSectionProvinceName = '';
+    public $homeSectionSortBy = 'created_at';
+    public $homeSectionSortOrder = 'desc';
+    public $homeSectionLimit = 8;
+    public $homeSectionHref = '';
+    public $homeSectionManualIds = '';
+    public $homeSectionSortOrderIndex = 0;
 
     public $categorySearch = '';
     public $showCategoryModal = false;
@@ -74,7 +94,7 @@ class WebsiteAdmin extends Component
 
     public function setTab($tab)
     {
-        $allowed = ['overview', 'listings', 'categories', 'blogs', 'leads', 'favorites', 'saved-searches', 'analytics'];
+        $allowed = ['overview', 'home', 'listings', 'categories', 'blogs', 'leads', 'favorites', 'saved-searches', 'analytics'];
         if (in_array($tab, $allowed, true)) {
             $this->activeTab = $tab;
             $this->resetPage();
@@ -94,6 +114,7 @@ class WebsiteAdmin extends Component
             'stats' => $this->stats(),
             'recentListings' => $this->recentListings(),
             'recentLeads' => $this->recentLeads(),
+            'homeSections' => $this->homeSections(),
             'listings' => $this->listings(),
             'categories' => $this->categories(),
             'blogs' => $this->blogs(),
@@ -296,6 +317,106 @@ class WebsiteAdmin extends Component
         RealEstateListing::where('id', $id)->update(['vip_tier' => $vip]);
     }
 
+    public function editHomeSection($id)
+    {
+        if (! Schema::hasTable('website_home_sections')) {
+            return;
+        }
+
+        $section = WebsiteHomeSection::findOrFail($id);
+        $this->homeSectionEditingId = $section->id;
+        $this->homeSectionKey = $section->key;
+        $this->homeSectionTitle = $section->title;
+        $this->homeSectionDescription = $section->description ?: '';
+        $this->homeSectionType = $section->section_type;
+        $this->homeSectionEnabled = (bool) $section->enabled;
+        $this->homeSectionSourceType = $section->source_type;
+        $this->homeSectionTransactionType = $section->transaction_type ?: '';
+        $this->homeSectionPropertyKind = $section->property_kind ?: '';
+        $this->homeSectionCategoryId = $section->category_id ?: '';
+        $this->homeSectionProvinceName = $section->province_name ?: '';
+        $this->homeSectionSortBy = $section->sort_by ?: 'created_at';
+        $this->homeSectionSortOrder = $section->sort_order ?: 'desc';
+        $this->homeSectionLimit = (int) $section->limit;
+        $this->homeSectionHref = $section->href ?: '';
+        $this->homeSectionManualIds = implode(',', $section->manual_listing_ids ?: []);
+        $this->homeSectionSortOrderIndex = (int) $section->sort_order_index;
+        $this->showHomeSectionModal = true;
+    }
+
+    public function saveHomeSection()
+    {
+        if (! Schema::hasTable('website_home_sections') || ! $this->homeSectionEditingId) {
+            return;
+        }
+
+        $data = $this->validate([
+            'homeSectionTitle' => 'required|string|max:180',
+            'homeSectionDescription' => 'nullable|string|max:500',
+            'homeSectionType' => 'required|in:listings,regions,tools,recently_viewed,blogs,feature_descriptions,promo',
+            'homeSectionEnabled' => 'boolean',
+            'homeSectionSourceType' => 'required|in:latest,vip,property,category,province,manual,regions,static,client',
+            'homeSectionTransactionType' => 'nullable|in:,sale,rent',
+            'homeSectionPropertyKind' => 'nullable|in:,apartment,room,house,office,land,shared',
+            'homeSectionCategoryId' => 'nullable|string|max:80',
+            'homeSectionProvinceName' => 'nullable|string|max:120',
+            'homeSectionSortBy' => 'required|in:created_at,price,area,view_count',
+            'homeSectionSortOrder' => 'required|in:asc,desc',
+            'homeSectionLimit' => 'required|integer|min:0|max:24',
+            'homeSectionHref' => 'nullable|string|max:255',
+            'homeSectionManualIds' => 'nullable|string|max:1000',
+            'homeSectionSortOrderIndex' => 'required|integer|min:0|max:9999',
+        ]);
+
+        $manualIds = collect(explode(',', $data['homeSectionManualIds'] ?: ''))
+            ->map(fn ($id) => trim($id))
+            ->filter()
+            ->map(fn ($id) => (int) $id)
+            ->filter()
+            ->values()
+            ->all();
+
+        $section = WebsiteHomeSection::findOrFail($this->homeSectionEditingId);
+        $section->fill([
+            'title' => $data['homeSectionTitle'],
+            'description' => $data['homeSectionDescription'] ?: null,
+            'section_type' => $data['homeSectionType'],
+            'enabled' => (bool) $data['homeSectionEnabled'],
+            'source_type' => $data['homeSectionSourceType'],
+            'transaction_type' => $data['homeSectionTransactionType'] ?: null,
+            'property_kind' => $data['homeSectionPropertyKind'] ?: null,
+            'category_id' => $data['homeSectionCategoryId'] ?: null,
+            'province_name' => $data['homeSectionProvinceName'] ?: null,
+            'sort_by' => $data['homeSectionSortBy'],
+            'sort_order' => $data['homeSectionSortOrder'],
+            'limit' => (int) $data['homeSectionLimit'],
+            'href' => $data['homeSectionHref'] ?: null,
+            'manual_listing_ids' => $manualIds,
+            'sort_order_index' => (int) $data['homeSectionSortOrderIndex'],
+        ]);
+        $section->save();
+
+        session()->flash('message', 'Da cap nhat khoi hien thi trang user.');
+        $this->closeHomeSectionModal();
+    }
+
+    public function toggleHomeSection($id)
+    {
+        if (! Schema::hasTable('website_home_sections')) {
+            return;
+        }
+
+        $section = WebsiteHomeSection::findOrFail($id);
+        $section->update(['enabled' => ! $section->enabled]);
+    }
+
+    public function closeHomeSectionModal()
+    {
+        $this->showHomeSectionModal = false;
+        $this->homeSectionEditingId = null;
+        $this->homeSectionKey = '';
+    }
+
     public function deleteListing($id)
     {
         RealEstateListing::where('id', $id)->delete();
@@ -466,6 +587,89 @@ class WebsiteAdmin extends Component
         } catch (\Throwable $e) {
             return 0;
         }
+    }
+
+    public function homeSectionCount($section): int
+    {
+        try {
+            if (! $section || $section->section_type !== 'listings') {
+                return 0;
+            }
+
+            return $this->homeSectionListingQuery($section)->count();
+        } catch (\Throwable $e) {
+            return 0;
+        }
+    }
+
+    private function homeSections()
+    {
+        if (! Schema::hasTable('website_home_sections')) {
+            return collect();
+        }
+
+        return WebsiteHomeSection::query()
+            ->orderBy('sort_order_index')
+            ->orderBy('id')
+            ->get();
+    }
+
+    private function homeSectionListingQuery($section)
+    {
+        $query = RealEstateListing::query()
+            ->where('is_sold', false)
+            ->where(function ($q) {
+                $q->whereNull('status')->orWhere('status', 'active');
+            });
+
+        if ($section->source_type === 'manual') {
+            $ids = collect($section->manual_listing_ids ?: [])->map(fn ($id) => (int) $id)->filter()->values()->all();
+            if ($ids) {
+                return $query->whereIn('id', $ids);
+            }
+        }
+
+        if ($section->source_type === 'vip') {
+            $query->where('vip_tier', '<>', 'normal');
+        }
+
+        if ($section->source_type === 'property' && $section->property_kind) {
+            $codes = match ($section->property_kind) {
+                'apartment' => [103],
+                'room' => [115],
+                'land' => [104, 105, 109],
+                'office' => [106, 107, 111, 112, 113],
+                'house' => [102, 108, 114],
+                default => [],
+            };
+            if ($codes) {
+                $query->whereIn('property_type', $codes);
+            }
+        }
+
+        if ($section->source_type === 'category' && $section->category_id) {
+            $query->where('category_id', $section->category_id);
+        }
+
+        if ($section->source_type === 'province' && $section->province_name) {
+            $province = $section->province_name;
+            $query->where(function ($q) use ($province) {
+                $q->where('province_id', $province)->orWhere('province_name', 'like', '%' . $province . '%');
+            });
+        }
+
+        if ($section->transaction_type === 'sale') {
+            $query->where(function ($q) {
+                $q->where('type', 'like', '%ban%')->orWhere('type', 'like', '%bán%')->orWhere('type', 'like', '%Cần bán%');
+            });
+        }
+        if ($section->transaction_type === 'rent') {
+            $query->where(function ($q) {
+                $q->where('type', 'like', '%thue%')->orWhere('type', 'like', '%thuê%')->orWhere('type', 'like', '%Cho thuê%');
+            });
+        }
+
+        return $query;
     }
 
     private function listings()
