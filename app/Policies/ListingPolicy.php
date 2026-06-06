@@ -28,7 +28,7 @@ class ListingPolicy
      */
     public function create(User $user): bool
     {
-        return $user->isCtv();
+        return true;
     }
 
     /**
@@ -44,6 +44,6 @@ class ListingPolicy
      */
     public function delete(User $user, RealEstateListing $listing): bool
     {
-        return $user->isAdmin();
+        return $user->isAdmin() || $listing->user_id === $user->id;
     }
 }

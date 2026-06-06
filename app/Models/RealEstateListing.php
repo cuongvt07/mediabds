@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Models\User;
@@ -15,7 +16,14 @@ class RealEstateListing extends Model
 
     protected $casts = [
         'images' => 'array',
+        'amenities' => 'array',
+        'tags' => 'array',
         'is_sold' => 'boolean',
+        'lat' => 'float',
+        'lng' => 'float',
+        'view_count' => 'integer',
+        'published_at' => 'datetime',
+        'expires_at' => 'datetime',
     ];
 
     public function sale(): HasOne
@@ -36,6 +44,21 @@ class RealEstateListing extends Model
     public function embedding(): HasOne
     {
         return $this->hasOne(ListingEmbedding::class, 'listing_id');
+    }
+
+    public function favorites(): HasMany
+    {
+        return $this->hasMany(ListingFavorite::class, 'listing_id');
+    }
+
+    public function contactRequests(): HasMany
+    {
+        return $this->hasMany(ListingContactRequest::class, 'listing_id');
+    }
+
+    public function viewEvents(): HasMany
+    {
+        return $this->hasMany(ListingViewEvent::class, 'listing_id');
     }
 
     /**

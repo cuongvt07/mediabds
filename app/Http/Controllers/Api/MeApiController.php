@@ -23,6 +23,7 @@ class MeApiController extends BaseApiController
     public function myListings(Request $req)
     {
         $page = RealEstateListing::where('user_id', auth()->id())
+            ->with('user:id,name,phone,avatar')
             ->orderBy('created_at', 'desc')
             ->paginate($req->integer('per_page', 10));
 

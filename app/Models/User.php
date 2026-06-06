@@ -97,6 +97,16 @@ class User extends Authenticatable
         return $this->hasMany(Customer::class, 'assigned_user_id');
     }
 
+    public function favoriteListings(): HasMany
+    {
+        return $this->hasMany(ListingFavorite::class);
+    }
+
+    public function savedSearches(): HasMany
+    {
+        return $this->hasMany(SavedSearch::class);
+    }
+
     /**
      * Get the user who invited this account.
      */

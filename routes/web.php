@@ -37,6 +37,7 @@ Route::get('/my-profile', \App\Livewire\UserProfile::class)->middleware('auth')-
 Route::get('/business/detail/{id}', \App\Livewire\BusinessDetail::class)->middleware(['auth', 'admin'])->name('business.detail');
 Route::get('/business/statistics', \App\Livewire\CtvStatistics::class)->middleware(['auth', 'admin'])->name('business.statistics');
 Route::get('/chatbot', \App\Livewire\Chatbot::class)->middleware('auth')->name('chatbot');
+Route::get('/website-admin', \App\Livewire\WebsiteAdmin::class)->middleware(['auth', 'admin'])->name('website.admin');
 
 // ----- API documentation (Scalar) -----
 // Trang doc đọc tại /docs/api. Spec OpenAPI lấy từ resources/docs/openapi.yaml.
@@ -89,4 +90,3 @@ Route::get('/test-s3', function () {
         echo "<h2 style='color: red;'>❌ Error:</h2><pre>" . $e->getMessage() . "</pre>";
     }
 });
-

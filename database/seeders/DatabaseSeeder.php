@@ -17,6 +17,8 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        $this->call(PublicWebsiteSeeder::class);
+
         // 1. Create Admin
         $admin = User::updateOrCreate(
             ['phone' => '0981847977'],

@@ -4,14 +4,13 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Requests\Api\CreateListingRequest;
 use App\Http\Resources\ListingResource;
+use App\Models\ListingViewEvent;
 use App\Models\RealEstateListing;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class ListingApiController extends BaseApiController
 {
-    /**
-     * Browse public listings (available for guests).
-     */
     public function index(Request $req)
     {
         $perPage = min((int) $req->integer('per_page', 12), 30);
@@ -19,44 +18,70 @@ class ListingApiController extends BaseApiController
             $perPage = 12;
         }
 
-        $query = RealEstateListing::query()->where('is_sold', false);
+        $query = RealEstateListing::query()
+            ->with('user:id,name,phone,avatar')
+            ->where('is_sold', false)
+            ->where(function ($q) {
+                $q->whereNull('status')->orWhere('status', 'active');
+            });
 
-        // Filter: type (Bán/Cho thuê)
+        if ($req->filled('q')) {
+            $term = trim((string) $req->string('q'));
+            $query->where(function ($q) use ($term) {
+                $q->where('title', 'like', "%{$term}%")
+                    ->orWhere('description', 'like', "%{$term}%")
+                    ->orWhere('address', 'like', "%{$term}%")
+                    ->orWhere('code', 'like', "%{$term}%");
+            });
+        }
+
+        if ($req->filled('category_id')) {
+            $query->where('category_id', $req->string('category_id'));
+        }
+
         if ($req->filled('type')) {
             $query->where('type', $req->string('type'));
         }
 
-        // Filter: property_type
         if ($req->filled('property_type')) {
             $query->where('property_type', $req->string('property_type'));
         }
 
-        // Filter: province / district / ward
-        // FE có thể gửi mã (province_id) hoặc tên (province_name) → khớp cả hai cho an toàn.
         if ($req->filled('province')) {
             $v = (string) $req->string('province');
-            $query->where(fn ($q) => $q->where('province_id', $v)->orWhere('province_name', 'like', "%{$v}%"));
+            $query->where(function ($q) use ($v) {
+                $q->where('province_id', $v)->orWhere('province_name', 'like', "%{$v}%");
+            });
         }
         if ($req->filled('district')) {
             $v = (string) $req->string('district');
-            $query->where(fn ($q) => $q->where('district_id', $v)->orWhere('district_name', 'like', "%{$v}%"));
+            $query->where(function ($q) use ($v) {
+                $q->where('district_id', $v)->orWhere('district_name', 'like', "%{$v}%");
+            });
         }
         if ($req->filled('ward')) {
             $v = (string) $req->string('ward');
-            $query->where(fn ($q) => $q->where('ward_id', $v)->orWhere('ward_name', 'like', "%{$v}%"));
+            $query->where(function ($q) use ($v) {
+                $q->where('ward_id', $v)->orWhere('ward_name', 'like', "%{$v}%");
+            });
         }
 
-        // Filter: bedrooms
         if ($req->filled('bedrooms')) {
             $query->where('bedrooms', '>=', (int) $req->integer('bedrooms'));
         }
 
-        // Filter: direction
         if ($req->filled('direction')) {
             $query->where('direction', $req->string('direction'));
         }
 
-        // Filter: area range (m²)
+        if ($req->filled('furnish')) {
+            $query->where('furnish', $req->string('furnish'));
+        }
+
+        if ($req->boolean('vip_only')) {
+            $query->where('vip_tier', '<>', 'normal');
+        }
+
         if ($req->filled('min_area')) {
             $query->where('area', '>=', (float) $req->input('min_area'));
         }
@@ -64,94 +89,101 @@ class ListingApiController extends BaseApiController
             $query->where('area', '<=', (float) $req->input('max_area'));
         }
 
-        // Filter: price range (TỶ → VNĐ) — chuẩn hoá unit qua SQL CASE
-        // (Giống logic đã fix trong search_listings của Chatbot)
         if ($req->filled('min_price') || $req->filled('max_price')) {
-            $priceExpr = "price * CASE price_unit "
-                . "WHEN 'Tỷ' THEN 1000000000 "
-                . "WHEN 'Tỉ' THEN 1000000000 "
-                . "WHEN 'Triệu' THEN 1000000 "
-                . "ELSE 1 END";
+            $priceExpr = $this->priceVndExpression();
 
             if ($req->filled('min_price')) {
-                $minVnd = (float) $req->input('min_price') * 1_000_000_000;
+                $minVnd = (float) $req->input('min_price') * 1000000000;
                 $query->whereRaw("({$priceExpr}) >= ?", [$minVnd]);
             }
             if ($req->filled('max_price')) {
-                $maxVnd = (float) $req->input('max_price') * 1_000_000_000;
+                $maxVnd = (float) $req->input('max_price') * 1000000000;
                 $query->whereRaw("({$priceExpr}) <= ?", [$maxVnd]);
             }
         }
 
-        // Sorting
         $sortBy = $req->input('sort_by', 'created_at');
-        $sortOrder = $req->input('sort_order', 'desc');
-
-        $allowedSortBy = ['created_at', 'price', 'area'];
-        if (!in_array($sortBy, $allowedSortBy, true)) {
+        $sortOrder = strtolower((string) $req->input('sort_order', 'desc')) === 'asc' ? 'asc' : 'desc';
+        if (! in_array($sortBy, ['created_at', 'price', 'area', 'view_count'], true)) {
             $sortBy = 'created_at';
         }
-        $sortOrder = strtolower($sortOrder) === 'asc' ? 'asc' : 'desc';
 
-        $query->orderBy($sortBy, $sortOrder);
+        if ($sortBy === 'price') {
+            $query->orderByRaw('(' . $this->priceVndExpression() . ') ' . $sortOrder);
+        } else {
+            $query->orderBy($sortBy, $sortOrder);
+        }
 
-        $page = $query->paginate($perPage)->appends($req->query());
-
-        return ListingResource::collection($page);
+        return ListingResource::collection($query->paginate($perPage)->appends($req->query()));
     }
 
-    /**
-     * Get details for a single listing (by id or code).
-     */
     public function show($idOrCode)
     {
         $listing = RealEstateListing::with([
             'user:id,name,phone,avatar',
             'reporter:id,name',
         ])
-            ->where('id', $idOrCode)
-            ->orWhere('code', $idOrCode)
+            ->where(function ($q) use ($idOrCode) {
+                if (is_numeric($idOrCode)) {
+                    $q->where('id', (int) $idOrCode);
+                }
+
+                $q->orWhere('code', $idOrCode)
+                    ->orWhere('slug', $idOrCode);
+
+                if (preg_match('/-(\d+)$/', (string) $idOrCode, $m)) {
+                    $q->orWhere('id', (int) $m[1]);
+                }
+            })
             ->first();
 
-        if (!$listing) {
+        if (! $listing) {
             return $this->fail('Không tìm thấy tin', 404);
         }
 
-        return new ListingResource($listing);
+        $listing->increment('view_count');
+
+        try {
+            ListingViewEvent::create([
+                'listing_id' => $listing->id,
+                'user_id' => auth()->id(),
+                'ip_hash' => request()->ip() ? hash('sha256', request()->ip()) : null,
+                'user_agent' => Str::limit((string) request()->userAgent(), 255, ''),
+            ]);
+        } catch (\Throwable $e) {
+            // Analytics must not block listing details.
+        }
+
+        return new ListingResource($listing->fresh(['user:id,name,phone,avatar', 'reporter:id,name']));
     }
 
-    /**
-     * Create a new listing (auth required).
-     */
     public function store(CreateListingRequest $req)
     {
         $this->authorize('create', RealEstateListing::class);
 
-        $data = $req->validated();
+        $data = $this->normalizeListingPayload($req->validated());
         $data['user_id'] = auth()->id();
-        $data['code'] = 'API-' . strtoupper(str()->random(6));
+        $data['code'] = $this->makeCode($data['property_type'] ?? null);
+        $data['slug'] = $this->makeSlug($data['title']);
+        $data['status'] = $data['status'] ?? 'active';
+        $data['published_at'] = $data['published_at'] ?? now();
+        $data['expires_at'] = $data['expires_at'] ?? now()->addDays(60);
 
         $listing = RealEstateListing::create($data);
 
-        return $this->ok(new ListingResource($listing), 'Created', 201);
+        return $this->ok(new ListingResource($listing->fresh('user')), 'Created', 201);
     }
 
-    /**
-     * Update an existing listing (auth required, owner or admin).
-     */
     public function update(CreateListingRequest $req, $id)
     {
         $listing = RealEstateListing::findOrFail($id);
         $this->authorize('update', $listing);
 
-        $listing->update($req->validated());
+        $listing->update($this->normalizeListingPayload($req->validated(), $listing));
 
-        return $this->ok(new ListingResource($listing->fresh()));
+        return $this->ok(new ListingResource($listing->fresh('user')));
     }
 
-    /**
-     * Delete a listing (admin only).
-     */
     public function destroy($id)
     {
         $listing = RealEstateListing::findOrFail($id);
@@ -160,5 +192,81 @@ class ListingApiController extends BaseApiController
         $listing->delete();
 
         return $this->ok(null, 'Deleted');
+    }
+
+    private function priceVndExpression(): string
+    {
+        return "CASE "
+            . "WHEN price >= 1000000 THEN price "
+            . "WHEN price_unit IN ('Tỷ', 'Tỉ', 'ty', '1') THEN price * 1000000000 "
+            . "WHEN price_unit IN ('Triệu', 'trieu', '2') THEN price * 1000000 "
+            . "ELSE price END";
+    }
+
+    private function normalizeListingPayload(array $data, ?RealEstateListing $listing = null): array
+    {
+        if (array_key_exists('images', $data) && is_array($data['images'])) {
+            $data['images'] = array_values(array_filter($data['images']));
+            $data['avatar'] = $data['avatar'] ?? ($data['images'][0] ?? null);
+        }
+
+        foreach (['amenities', 'tags'] as $field) {
+            if (array_key_exists($field, $data) && is_array($data[$field])) {
+                $data[$field] = array_values(array_filter($data[$field]));
+            }
+        }
+
+        if (! empty($data['title']) && ($listing === null || $listing->title !== $data['title'])) {
+            $data['slug'] = $this->makeSlug($data['title'], $listing ? $listing->id : null);
+        }
+
+        if (! empty($data['province'])) {
+            $data['province_name'] = $data['province'];
+            unset($data['province']);
+        }
+        if (! empty($data['district'])) {
+            $data['district_name'] = $data['district'];
+            unset($data['district']);
+        }
+        if (! empty($data['ward'])) {
+            $data['ward_name'] = $data['ward'];
+            unset($data['ward']);
+        }
+
+        return $data;
+    }
+
+    private function makeCode($propertyType = null): string
+    {
+        $prefixes = [
+            103 => 'CH',
+            104 => 'D',
+            107 => 'MP',
+            108 => 'NR',
+            115 => 'NT',
+        ];
+
+        $prefix = $prefixes[(int) $propertyType] ?? 'BDS';
+
+        do {
+            $code = $prefix . '-' . strtoupper(Str::random(7));
+        } while (RealEstateListing::where('code', $code)->exists());
+
+        return $code;
+    }
+
+    private function makeSlug(string $title, ?int $id = null): string
+    {
+        $base = Str::slug($title) ?: 'tin-dang';
+        $suffix = $id ? '-' . $id : '-' . strtolower(Str::random(5));
+        $slug = $base . $suffix;
+
+        $exists = RealEstateListing::where('slug', $slug)
+            ->when($id, function ($q) use ($id) {
+                $q->where('id', '<>', $id);
+            })
+            ->exists();
+
+        return $exists ? $base . '-' . strtolower(Str::random(8)) : $slug;
     }
 }
