@@ -21,6 +21,7 @@ class ListingResource extends JsonResource
         $avatar = $this->avatar ?: ($images[0] ?? null);
         $contactPhone = $this->contact_phone ?: optional($this->user)->phone;
         $contactName = $this->contact_name ?: optional($this->user)->name;
+        $userAvatar = $this->userAvatar();
 
         $data = [
             'id' => $this->id,
@@ -70,13 +71,15 @@ class ListingResource extends JsonResource
             'expires_at' => optional($this->expires_at ?? $this->updated_at)->toISOString(),
             'can_view_phone' => $reveal,
             'contact_name' => $contactName,
-            'contact_avatar' => optional($this->user)->avatar,
+            'contact_avatar' => $userAvatar,
             'owner' => $this->whenLoaded('user', function () {
+                $userAvatar = $this->userAvatar();
+
                 return [
                 'id' => optional($this->user)->id,
                 'name' => optional($this->user)->name,
                 'phone' => optional($this->user)->phone,
-                'avatar' => optional($this->user)->avatar,
+                'avatar' => $userAvatar,
                 ];
             }),
             'is_favorited' => $user
@@ -93,6 +96,17 @@ class ListingResource extends JsonResource
         }
 
         return $data;
+    }
+
+    private function userAvatar(): ?string
+    {
+        if (! $this->resource->relationLoaded('user') || ! $this->user) {
+            return null;
+        }
+
+        return array_key_exists('avatar', $this->user->getAttributes())
+            ? $this->user->getAttribute('avatar')
+            : null;
     }
 
     private function normalizeStringArray($value): array

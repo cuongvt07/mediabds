@@ -19,7 +19,7 @@ class ListingApiController extends BaseApiController
         }
 
         $query = RealEstateListing::query()
-            ->with('user:id,name,phone,avatar')
+            ->with('user:id,name,phone')
             ->where('is_sold', false)
             ->where(function ($q) {
                 $q->whereNull('status')->orWhere('status', 'active');
@@ -120,7 +120,7 @@ class ListingApiController extends BaseApiController
     public function show($idOrCode)
     {
         $listing = RealEstateListing::with([
-            'user:id,name,phone,avatar',
+            'user:id,name,phone',
             'reporter:id,name',
         ])
             ->where(function ($q) use ($idOrCode) {
@@ -154,7 +154,7 @@ class ListingApiController extends BaseApiController
             // Analytics must not block listing details.
         }
 
-        return new ListingResource($listing->fresh(['user:id,name,phone,avatar', 'reporter:id,name']));
+        return new ListingResource($listing->fresh(['user:id,name,phone', 'reporter:id,name']));
     }
 
     public function store(CreateListingRequest $req)
