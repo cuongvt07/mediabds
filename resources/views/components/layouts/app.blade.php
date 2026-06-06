@@ -118,7 +118,7 @@
                 @if (auth()->user() && auth()->user()->isAdmin())
                     <div class="my-1 h-px w-12 self-center bg-slate-700/70"></div>
 
-                    <a href="{{ route('website.admin') }}" wire:navigate
+                    <a href="{{ route('website.admin') }}"
                         class="flex flex-col items-center justify-center p-3 rounded-2xl transition-all group {{ request()->routeIs('website.admin') ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/20' : 'text-emerald-300/80 hover:text-white hover:bg-emerald-900/40' }}"
                         title="Website public">
                         <div

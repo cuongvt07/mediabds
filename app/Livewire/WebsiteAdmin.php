@@ -123,7 +123,7 @@ class WebsiteAdmin extends Component
             'savedSearches' => $this->savedSearches(),
             'topViewedListings' => $this->topViewedListings(),
             'dailyViews' => $this->dailyViews(),
-        ])->layout('components.layouts.app', ['title' => 'Website Public']);
+        ])->layout('components.layouts.website-cms', ['title' => 'Website CMS']);
     }
 
     public function createCategory()
