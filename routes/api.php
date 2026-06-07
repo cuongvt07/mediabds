@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\HomepageApiController;
 use App\Http\Controllers\Api\ListingApiController;
 use App\Http\Controllers\Api\LocationApiController;
 use App\Http\Controllers\Api\LeadApiController;
+use App\Http\Controllers\Api\ListingImageUploadController;
 use App\Http\Controllers\Api\MeApiController;
 use App\Http\Controllers\Api\SavedSearchApiController;
 
@@ -40,6 +41,8 @@ Route::prefix('v1')->group(function () {
         Route::post('/auth/logout', [AuthController::class, 'logout']);
 
         Route::post('/listings', [ListingApiController::class, 'store']);
+        Route::post('/listings/images', [ListingImageUploadController::class, 'store'])
+            ->middleware('throttle:30,1');
         Route::put('/listings/{id}', [ListingApiController::class, 'update']);
         Route::delete('/listings/{id}', [ListingApiController::class, 'destroy']);
 
