@@ -419,6 +419,7 @@
         'blogs' => ['Bài viết/SEO', 'fa-pen-nib', null],
     ];
     $userItems = [
+        'accounts' => ['Tài khoản', 'fa-users-gear', $stats['accounts'] ?? null],
         'leads' => ['Khách liên hệ', 'fa-address-book', $stats['open_leads'] ?? null],
         'favorites' => ['Yêu thích', 'fa-heart', null],
         'saved-searches' => ['Tìm kiếm lưu', 'fa-bookmark', null],

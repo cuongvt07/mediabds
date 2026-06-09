@@ -44,6 +44,12 @@
         'static' => 'Tĩnh',
         'client' => 'Trình duyệt',
     ];
+
+    $roleLabels = [
+        'admin' => ['Quản trị viên', 'danger'],
+        'ctv' => ['Cộng tác viên', 'info'],
+        'buyer' => ['Người đăng tin', 'success'],
+    ];
 @endphp
 
 <div>
@@ -109,6 +115,7 @@
                 </div>
                 <div>
                     <div class="cms-kpi-row"><span>Danh mục BĐS</span><strong class="mono">{{ number_format($stats['categories']) }}</strong><span></span></div>
+                    <div class="cms-kpi-row"><span>Tài khoản người dùng</span><strong class="mono">{{ number_format($stats['accounts']) }}</strong><span></span></div>
                     <div class="cms-kpi-row"><span>Bài viết/SEO</span><strong class="mono">{{ number_format($stats['blogs']) }}</strong><span></span></div>
                     <div class="cms-kpi-row"><span>Yêu thích</span><strong class="mono">{{ number_format($stats['favorites']) }}</strong><span></span></div>
                     <div class="cms-kpi-row"><span>Tìm kiếm đã lưu</span><strong class="mono">{{ number_format($stats['saved_searches']) }}</strong><span></span></div>
@@ -353,6 +360,161 @@
             </div>
             <div class="cms-pagination">{{ $blogs->links(data: ['scrollTo' => false]) }}</div>
         </section>
+    @elseif ($activeTab === 'accounts')
+        <div class="cms-grid-2">
+            <section class="cms-panel">
+                <div class="cms-panel-head">
+                    <h2 class="cms-panel-title">Tài khoản người dùng</h2>
+                    <div style="display:flex; gap:8px;">
+                        <input class="cms-input" style="width: 280px;" wire:model.live.debounce.300ms="accountSearch" placeholder="Tìm tên, số điện thoại, mã mời">
+                        <select class="cms-select" wire:model.live="accountRole">
+                            <option value="all">Tất cả vai trò</option>
+                            <option value="buyer">Người đăng tin</option>
+                            <option value="ctv">Cộng tác viên</option>
+                            <option value="admin">Quản trị viên</option>
+                        </select>
+                        <button class="cms-btn primary" wire:click="createAccount"><i class="fa-solid fa-plus"></i> Thêm</button>
+                    </div>
+                </div>
+                <div class="cms-table-wrap cms-scrollbar">
+                    <table class="cms-table">
+                        <thead>
+                            <tr>
+                                <th>Tài khoản</th>
+                                <th style="width:112px;">Vai trò</th>
+                                <th style="width:120px;">Mã mời</th>
+                                <th style="width:170px;">Người mời</th>
+                                <th class="right" style="width:80px;">Đã mời</th>
+                                <th class="right" style="width:80px;">Tin đăng</th>
+                                <th style="width:112px;">Ngày tạo</th>
+                                <th class="right" style="width:142px;">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse ($accounts as $account)
+                                @php
+                                    $role = $account->role ?: 'buyer';
+                                    $roleMeta = $roleLabels[$role] ?? ['Người dùng', 'muted'];
+                                @endphp
+                                <tr style="{{ (int) $selectedAccountId === (int) $account->id ? 'background: var(--accent-dim);' : '' }}">
+                                    <td>
+                                        <button type="button" wire:click="selectAccount({{ $account->id }})" style="display:block; width:100%; border:0; background:transparent; color:inherit; text-align:left; cursor:pointer;">
+                                            <div class="cms-truncate" style="color: var(--text-primary); font-weight:700">{{ $account->name ?: 'Chưa đặt tên' }}</div>
+                                            <div class="mono" style="color: var(--text-muted); font-size:11px">{{ $account->phone ?: '-' }}</div>
+                                        </button>
+                                    </td>
+                                    <td><span class="cms-badge {{ $roleMeta[1] }}">{{ $roleMeta[0] }}</span></td>
+                                    <td class="mono">{{ $account->invite_code ?: '-' }}</td>
+                                    <td>
+                                        @if ($account->inviter)
+                                            <div class="cms-truncate">{{ $account->inviter->name }}</div>
+                                            <div class="mono" style="color: var(--text-muted); font-size:11px">{{ $account->inviter->invite_code ?: '-' }}</div>
+                                        @else
+                                            <span style="color: var(--text-muted)">Tài khoản gốc</span>
+                                        @endif
+                                    </td>
+                                    <td class="right mono">{{ number_format((int) $account->invitees_count) }}</td>
+                                    <td class="right mono">{{ number_format($this->countUserListings($account->id)) }}</td>
+                                    <td class="mono">{{ optional($account->created_at)->format('d/m/Y') }}</td>
+                                    <td class="right">
+                                        <button class="cms-btn" wire:click="selectAccount({{ $account->id }})">Xem</button>
+                                        <button class="cms-btn" wire:click="editAccount({{ $account->id }})">Sửa</button>
+                                        <button class="cms-btn danger" wire:click="confirmDeleteAccount({{ $account->id }})">Xóa</button>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr><td colspan="8" style="text-align:center; height:72px;">Không có tài khoản phù hợp.</td></tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+                <div class="cms-pagination">{{ $accounts->links(data: ['scrollTo' => false]) }}</div>
+            </section>
+
+            <section class="cms-panel">
+                <div class="cms-panel-head">
+                    <h2 class="cms-panel-title">Hồ sơ và dữ liệu liên quan</h2>
+                    @if ($selectedAccount)
+                        <button class="cms-btn" wire:click="editAccount({{ $selectedAccount->id }})">Sửa hồ sơ</button>
+                    @endif
+                </div>
+                @if ($selectedAccount)
+                    @php
+                        $selectedRole = $selectedAccount->role ?: 'buyer';
+                        $selectedRoleMeta = $roleLabels[$selectedRole] ?? ['Người dùng', 'muted'];
+                    @endphp
+                    <div style="padding:10px; border-bottom:1px solid var(--border);">
+                        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+                            <div>
+                                <div style="font-weight:800; color:var(--text-primary);">{{ $selectedAccount->name ?: 'Chưa đặt tên' }}</div>
+                                <div class="mono" style="color:var(--text-muted);">{{ $selectedAccount->phone ?: '-' }}</div>
+                            </div>
+                            <span class="cms-badge {{ $selectedRoleMeta[1] }}">{{ $selectedRoleMeta[0] }}</span>
+                        </div>
+                        <div style="display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin-top:10px;">
+                            <div><span class="cms-label">Mã mời</span><div class="mono">{{ $selectedAccount->invite_code ?: '-' }}</div></div>
+                            <div><span class="cms-label">Người mời</span><div>{{ $selectedAccount->inviter?->name ?: 'Tài khoản gốc' }}</div></div>
+                            <div><span class="cms-label">PIN xem SĐT</span><div class="mono">{{ $selectedAccount->view_phone_pin ?: '-' }}</div></div>
+                            <div><span class="cms-label">Ngày tạo</span><div class="mono">{{ optional($selectedAccount->created_at)->format('d/m/Y H:i') }}</div></div>
+                        </div>
+                    </div>
+
+                    <div class="cms-data-list">
+                        <div class="cms-kpi-row"><span>Tổng doanh thu cá nhân</span><strong class="mono">{{ number_format((float) ($selectedAccountStats['total_revenue'] ?? 0), 0, ',', '.') }} đ</strong><span></span></div>
+                        <div class="cms-kpi-row"><span>Tin đã đăng/phụ trách</span><strong class="mono">{{ number_format((int) ($selectedAccountStats['listings'] ?? 0)) }}</strong><span></span></div>
+                        <div class="cms-kpi-row"><span>Lead gửi bởi tài khoản</span><strong class="mono">{{ number_format((int) ($selectedAccountStats['direct_leads'] ?? 0)) }}</strong><span></span></div>
+                        <div class="cms-kpi-row"><span>Lead phát sinh trên tin của tài khoản</span><strong class="mono">{{ number_format((int) ($selectedAccountStats['listing_leads'] ?? 0)) }}</strong><span></span></div>
+                        <div class="cms-kpi-row"><span>Khách hàng được phân công</span><strong class="mono">{{ number_format((int) ($selectedAccountStats['customers'] ?? 0)) }}</strong><span></span></div>
+                        <div class="cms-kpi-row"><span>Tin đã lưu yêu thích</span><strong class="mono">{{ number_format((int) ($selectedAccountStats['favorites'] ?? 0)) }}</strong><span></span></div>
+                        <div class="cms-kpi-row"><span>Tìm kiếm đã lưu</span><strong class="mono">{{ number_format((int) ($selectedAccountStats['saved_searches'] ?? 0)) }}</strong><span></span></div>
+                        <div class="cms-kpi-row"><span>CTV/người dùng đã mời</span><strong class="mono">{{ number_format((int) ($selectedAccountStats['invitees'] ?? 0)) }}</strong><span></span></div>
+                    </div>
+
+                    <div class="cms-panel-head"><h3 class="cms-panel-title">Tin gần đây của tài khoản</h3></div>
+                    <div class="cms-data-list">
+                        @forelse ($selectedAccountListings as $listing)
+                            <div class="cms-data-row">
+                                <span class="cms-truncate">{{ $listing->title }}</span>
+                                <span class="mono">{{ $listing->code ?: '#' . $listing->id }}</span>
+                                <span class="mono" style="text-align:right">{{ optional($listing->created_at)->format('d/m') }}</span>
+                            </div>
+                        @empty
+                            <div class="cms-data-row"><span>Chưa có tin đăng liên quan.</span><span></span><span></span></div>
+                        @endforelse
+                    </div>
+
+                    <div class="cms-panel-head"><h3 class="cms-panel-title">Giao dịch/hoa hồng gần đây</h3></div>
+                    <div class="cms-data-list">
+                        @forelse ($selectedAccountTransactions as $tx)
+                            <div class="cms-data-row">
+                                <span class="cms-truncate">{{ $tx->listing_title }}</span>
+                                <span class="mono">{{ number_format((float) $tx->received_amount, 0, ',', '.') }} đ</span>
+                                <span class="mono" style="text-align:right">{{ $tx->sold_at ? \Carbon\Carbon::parse($tx->sold_at)->format('d/m') : '-' }}</span>
+                            </div>
+                        @empty
+                            <div class="cms-data-row"><span>Chưa có giao dịch ghi nhận.</span><span></span><span></span></div>
+                        @endforelse
+                    </div>
+
+                    <div class="cms-panel-head"><h3 class="cms-panel-title">Người được mời gần đây</h3></div>
+                    <div class="cms-data-list">
+                        @forelse ($selectedAccountReferrals as $referral)
+                            <div class="cms-data-row">
+                                <span class="cms-truncate">{{ $referral->name }}</span>
+                                <span class="mono">{{ $referral->phone ?: '-' }}</span>
+                                <span class="mono" style="text-align:right">{{ optional($referral->created_at)->format('d/m') }}</span>
+                            </div>
+                        @empty
+                            <div class="cms-data-row"><span>Chưa mời tài khoản nào.</span><span></span><span></span></div>
+                        @endforelse
+                    </div>
+                @else
+                    <div style="padding:32px; text-align:center; color:var(--text-secondary);">
+                        Chọn một tài khoản để xem toàn bộ dữ liệu liên quan: tin đăng, lead, yêu thích, tìm kiếm lưu, người mời và giao dịch.
+                    </div>
+                @endif
+            </section>
+        </div>
     @elseif ($activeTab === 'leads')
         <section class="cms-panel">
             <div class="cms-panel-head">
@@ -482,6 +644,78 @@
                     @empty
                         <div class="cms-data-row"><span>Chưa có dữ liệu lượt xem.</span><span></span><span></span></div>
                     @endforelse
+                </div>
+            </section>
+        </div>
+    @endif
+
+    @if ($showAccountModal)
+        <div class="cms-modal-backdrop">
+            <section class="cms-modal">
+                <div class="cms-panel-head">
+                    <h2 class="cms-panel-title">{{ $accountEditingId ? 'Sửa tài khoản' : 'Thêm tài khoản' }}</h2>
+                    <button class="cms-icon-btn" wire:click="closeAccountModal"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <div class="cms-form-grid">
+                    <label class="cms-field"><span class="cms-label">Họ và tên *</span><input class="cms-input" wire:model="accountName"></label>
+                    <label class="cms-field"><span class="cms-label">Số điện thoại *</span><input class="cms-input mono" wire:model="accountPhone"></label>
+                    <label class="cms-field"><span class="cms-label">Vai trò</span><select class="cms-select" wire:model="accountRoleValue"><option value="buyer">Người đăng tin</option><option value="ctv">Cộng tác viên</option><option value="admin">Quản trị viên</option></select></label>
+                    <label class="cms-field"><span class="cms-label">PIN xem SĐT</span><input class="cms-input mono" wire:model="accountViewPhonePin"></label>
+                    <label class="cms-field full">
+                        <span class="cms-label">Người mời</span>
+                        <select class="cms-select" wire:model="accountInviterUserId">
+                            <option value="">Tài khoản gốc, không có người mời</option>
+                            @foreach ($accountInviters as $inviter)
+                                <option value="{{ $inviter->id }}">{{ $inviter->name }}{{ $inviter->phone ? ' - ' . $inviter->phone : '' }}{{ $inviter->invite_code ? ' - Mã: ' . $inviter->invite_code : ' - chưa có mã' }}</option>
+                            @endforeach
+                        </select>
+                    </label>
+                    <label class="cms-field full">
+                        <span class="cms-label">Mã mời tài khoản</span>
+                        @if ($accountEditingId && $accountExistingInviteCode)
+                            <input class="cms-input mono" value="{{ $accountExistingInviteCode }}" disabled>
+                        @else
+                            <input class="cms-input mono" wire:model="accountRootInviteCode" placeholder="Nhập mã gốc nếu không chọn người mời">
+                        @endif
+                    </label>
+                    <div class="cms-field full">
+                        <span class="cms-label">Loại BĐS được phân công</span>
+                        <div style="display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px; max-height:180px; overflow:auto; border:1px solid var(--border); padding:8px; background:var(--bg-raised);">
+                            @foreach ($propertyTypeOptions as $id => $name)
+                                <label style="display:flex; align-items:center; gap:6px; color:var(--text-secondary);">
+                                    <input type="checkbox" wire:model="accountPropertyTypes" value="{{ $id }}">
+                                    <span>{{ $name }}</span>
+                                </label>
+                            @endforeach
+                        </div>
+                        <div style="color:var(--text-muted); font-size:11px;">Dùng cho CTV/nhân sự nội bộ. Người đăng tin thường có thể để trống nếu không cần giới hạn.</div>
+                    </div>
+                    @if ($errors->any())
+                        <div class="cms-field full" style="color:var(--danger); font-size:12px;">
+                            @foreach ($errors->all() as $error)
+                                <div>{{ $error }}</div>
+                            @endforeach
+                        </div>
+                    @endif
+                </div>
+                <div class="cms-panel-head" style="justify-content:flex-end;">
+                    <button class="cms-btn" wire:click="closeAccountModal">Hủy</button>
+                    <button class="cms-btn primary" wire:click="saveAccount">Lưu tài khoản</button>
+                </div>
+            </section>
+        </div>
+    @endif
+
+    @if ($showAccountDeleteModal)
+        <div class="cms-modal-backdrop">
+            <section class="cms-modal" style="width: min(480px, calc(100vw - 48px));">
+                <div class="cms-panel-head"><h2 class="cms-panel-title">Xác nhận xóa tài khoản</h2></div>
+                <div style="padding:14px; color:var(--text-secondary);">
+                    Hành động này sẽ xóa tài khoản người dùng khỏi hệ thống. Các dữ liệu liên quan có thể bị ảnh hưởng theo ràng buộc cơ sở dữ liệu.
+                </div>
+                <div class="cms-panel-head" style="justify-content:flex-end;">
+                    <button class="cms-btn" wire:click="closeAccountDeleteModal">Hủy</button>
+                    <button class="cms-btn danger" wire:click="deleteAccount">Xóa tài khoản</button>
                 </div>
             </section>
         </div>

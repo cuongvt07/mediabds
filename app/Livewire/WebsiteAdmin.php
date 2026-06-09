@@ -6,11 +6,14 @@ use App\Models\BlogPost;
 use App\Models\ListingCategory;
 use App\Models\ListingContactRequest;
 use App\Models\RealEstateListing;
+use App\Models\User;
+use App\Models\UserInvite;
 use App\Models\WebsiteHomeSection;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -80,6 +83,21 @@ class WebsiteAdmin extends Component
     public $leadStatusValue = 'new';
     public $leadAdminNote = '';
 
+    public $accountSearch = '';
+    public $accountRole = 'all';
+    public $selectedAccountId = null;
+    public $showAccountModal = false;
+    public $showAccountDeleteModal = false;
+    public $accountEditingId = null;
+    public $accountName = '';
+    public $accountPhone = '';
+    public $accountRoleValue = 'buyer';
+    public $accountPropertyTypes = [];
+    public $accountInviterUserId = '';
+    public $accountRootInviteCode = '';
+    public $accountExistingInviteCode = '';
+    public $accountViewPhonePin = '';
+
     protected $queryString = [
         'activeTab' => ['except' => 'overview', 'as' => 'tab'],
         'listingSearch' => ['except' => ''],
@@ -90,11 +108,13 @@ class WebsiteAdmin extends Component
         'blogStatus' => ['except' => 'all'],
         'leadSearch' => ['except' => ''],
         'leadStatus' => ['except' => 'all'],
+        'accountSearch' => ['except' => ''],
+        'accountRole' => ['except' => 'all'],
     ];
 
     public function setTab($tab)
     {
-        $allowed = ['overview', 'home', 'listings', 'categories', 'blogs', 'leads', 'favorites', 'saved-searches', 'analytics'];
+        $allowed = ['overview', 'home', 'listings', 'categories', 'blogs', 'accounts', 'leads', 'favorites', 'saved-searches', 'analytics'];
         if (in_array($tab, $allowed, true)) {
             $this->activeTab = $tab;
             $this->resetPage();
@@ -103,7 +123,7 @@ class WebsiteAdmin extends Component
 
     public function updated($property)
     {
-        if (Str::contains($property, ['Search', 'Status', 'Vip'])) {
+        if (Str::contains($property, ['Search', 'Status', 'Vip', 'Role'])) {
             $this->resetPage();
         }
     }
@@ -119,6 +139,14 @@ class WebsiteAdmin extends Component
             'categories' => $this->categories(),
             'blogs' => $this->blogs(),
             'leads' => $this->leads(),
+            'accounts' => $this->accounts(),
+            'accountInviters' => $this->accountInviters(),
+            'selectedAccount' => $this->selectedAccount(),
+            'selectedAccountStats' => $this->selectedAccountStats(),
+            'selectedAccountTransactions' => $this->selectedAccountTransactions(),
+            'selectedAccountReferrals' => $this->selectedAccountReferrals(),
+            'selectedAccountListings' => $this->selectedAccountListings(),
+            'propertyTypeOptions' => $this->propertyTypeOptions(),
             'favorites' => $this->favorites(),
             'savedSearches' => $this->savedSearches(),
             'topViewedListings' => $this->topViewedListings(),
@@ -496,6 +524,163 @@ class WebsiteAdmin extends Component
         $this->leadAdminNote = '';
     }
 
+    public function selectAccount($id)
+    {
+        $this->selectedAccountId = $id;
+    }
+
+    public function createAccount()
+    {
+        $this->resetAccountForm();
+        $this->showAccountModal = true;
+    }
+
+    public function editAccount($id)
+    {
+        $user = User::findOrFail($id);
+        $this->accountEditingId = $user->id;
+        $this->accountName = $user->name ?: '';
+        $this->accountPhone = $user->phone ?: '';
+        $this->accountRoleValue = $user->role ?: 'buyer';
+        $this->accountPropertyTypes = $user->property_types ?: [];
+        $this->accountInviterUserId = $user->invited_by_user_id ?: '';
+        $this->accountExistingInviteCode = $user->invite_code ?: '';
+        $this->accountRootInviteCode = $user->invite_code ?: '';
+        $this->accountViewPhonePin = $user->view_phone_pin ?: '';
+        $this->showAccountModal = true;
+    }
+
+    public function saveAccount()
+    {
+        $this->accountRootInviteCode = Str::upper(trim((string) $this->accountRootInviteCode));
+        if ($this->accountRootInviteCode === '') {
+            $this->accountRootInviteCode = null;
+        }
+
+        $data = $this->validate([
+            'accountName' => 'required|string|min:3|max:255',
+            'accountPhone' => [
+                'required',
+                'regex:/^([0-9\s\-\+\(\)]*)$/',
+                Rule::unique('users', 'phone')->ignore($this->accountEditingId),
+            ],
+            'accountRoleValue' => 'required|in:admin,ctv,buyer',
+            'accountPropertyTypes' => 'nullable|array',
+            'accountInviterUserId' => 'nullable|exists:users,id',
+            'accountRootInviteCode' => [
+                Rule::requiredIf(fn () => blank($this->accountInviterUserId) && blank($this->accountExistingInviteCode)),
+                'nullable',
+                'regex:/^[A-Z0-9]+$/',
+                Rule::unique('users', 'invite_code')->ignore($this->accountEditingId),
+            ],
+            'accountViewPhonePin' => 'nullable|string|max:10',
+        ]);
+
+        $inviter = null;
+        if (! blank($data['accountInviterUserId'])) {
+            if ($this->accountEditingId && (int) $data['accountInviterUserId'] === (int) $this->accountEditingId) {
+                $this->addError('accountInviterUserId', 'Không thể chọn chính tài khoản này làm người mời.');
+                return;
+            }
+
+            $inviter = User::select('id', 'invite_code')->find($data['accountInviterUserId']);
+            if (! $inviter || blank($inviter->invite_code)) {
+                $this->addError('accountInviterUserId', 'Người mời được chọn chưa có mã mời hợp lệ.');
+                return;
+            }
+        }
+
+        DB::transaction(function () use ($data, $inviter) {
+            if ($this->accountEditingId) {
+                $user = User::findOrFail($this->accountEditingId);
+                $oldInviterId = $user->invited_by_user_id;
+                $updates = [
+                    'name' => $data['accountName'],
+                    'phone' => $data['accountPhone'],
+                    'role' => $data['accountRoleValue'],
+                    'property_types' => $data['accountPropertyTypes'] ?: [],
+                    'invited_by_user_id' => $inviter?->id,
+                    'view_phone_pin' => $data['accountViewPhonePin'] ?: null,
+                ];
+
+                if (blank($user->invite_code)) {
+                    $updates['invite_code'] = $inviter ? ($inviter->invite_code . $user->id) : $this->accountRootInviteCode;
+                }
+
+                $user->update($updates);
+
+                if ($inviter && $oldInviterId !== $inviter->id && Schema::hasTable('user_invites')) {
+                    UserInvite::create([
+                        'inviter_user_id' => $inviter->id,
+                        'invited_user_id' => $user->id,
+                        'inviter_code' => $inviter->invite_code,
+                    ]);
+                }
+
+                $this->selectedAccountId = $user->id;
+            } else {
+                $user = User::create([
+                    'name' => $data['accountName'],
+                    'phone' => $data['accountPhone'],
+                    'role' => $data['accountRoleValue'],
+                    'password' => bcrypt(Str::random(16)),
+                    'property_types' => $data['accountPropertyTypes'] ?: [],
+                    'invited_by_user_id' => $inviter?->id,
+                    'view_phone_pin' => $data['accountViewPhonePin'] ?: null,
+                ]);
+
+                $user->update([
+                    'invite_code' => $inviter ? ($inviter->invite_code . $user->id) : $this->accountRootInviteCode,
+                ]);
+
+                if ($inviter && Schema::hasTable('user_invites')) {
+                    UserInvite::create([
+                        'inviter_user_id' => $inviter->id,
+                        'invited_user_id' => $user->id,
+                        'inviter_code' => $inviter->invite_code,
+                    ]);
+                }
+
+                $this->selectedAccountId = $user->id;
+            }
+        });
+
+        session()->flash('message', 'Đã lưu tài khoản người dùng.');
+        $this->closeAccountModal();
+    }
+
+    public function confirmDeleteAccount($id)
+    {
+        $this->accountEditingId = $id;
+        $this->showAccountDeleteModal = true;
+    }
+
+    public function deleteAccount()
+    {
+        if ($this->accountEditingId) {
+            User::where('id', $this->accountEditingId)->delete();
+            if ((int) $this->selectedAccountId === (int) $this->accountEditingId) {
+                $this->selectedAccountId = null;
+            }
+            session()->flash('message', 'Đã xóa tài khoản người dùng.');
+        }
+
+        $this->showAccountDeleteModal = false;
+        $this->accountEditingId = null;
+    }
+
+    public function closeAccountModal()
+    {
+        $this->showAccountModal = false;
+        $this->resetAccountForm();
+    }
+
+    public function closeAccountDeleteModal()
+    {
+        $this->showAccountDeleteModal = false;
+        $this->accountEditingId = null;
+    }
+
     private function resetCategoryForm()
     {
         $this->categoryEditing = false;
@@ -524,6 +709,20 @@ class WebsiteAdmin extends Component
         $this->blogPublishedAt = '';
     }
 
+    private function resetAccountForm()
+    {
+        $this->accountEditingId = null;
+        $this->accountName = '';
+        $this->accountPhone = '';
+        $this->accountRoleValue = 'buyer';
+        $this->accountPropertyTypes = [];
+        $this->accountInviterUserId = '';
+        $this->accountRootInviteCode = '';
+        $this->accountExistingInviteCode = '';
+        $this->accountViewPhonePin = '';
+        $this->resetValidation();
+    }
+
     private function stats()
     {
         return [
@@ -533,6 +732,7 @@ class WebsiteAdmin extends Component
             'blogs' => $this->countTable('blog_posts'),
             'leads' => $this->countTable('listing_contact_requests'),
             'open_leads' => $this->countLeadStatus('new'),
+            'accounts' => $this->countTable('users'),
             'favorites' => $this->countTable('listing_favorites'),
             'saved_searches' => $this->countTable('saved_searches'),
             'views' => $this->countTable('listing_view_events'),
@@ -757,6 +957,221 @@ class WebsiteAdmin extends Component
             })
             ->latest()
             ->paginate(10, ['*'], 'leadsPage');
+    }
+
+    private function accounts()
+    {
+        return User::query()
+            ->with('inviter')
+            ->withCount(['invitees', 'sentInviteLogs'])
+            ->when($this->accountSearch, function ($query) {
+                $query->where(function ($q) {
+                    $q->where('name', 'like', '%' . $this->accountSearch . '%')
+                        ->orWhere('phone', 'like', '%' . $this->accountSearch . '%')
+                        ->orWhere('invite_code', 'like', '%' . $this->accountSearch . '%');
+                });
+            })
+            ->when($this->accountRole !== 'all', function ($query) {
+                $query->where('role', $this->accountRole);
+            })
+            ->orderByDesc('sent_invite_logs_count')
+            ->latest()
+            ->paginate(10, ['*'], 'accountsPage');
+    }
+
+    private function accountInviters()
+    {
+        return User::query()
+            ->orderBy('name')
+            ->get(['id', 'name', 'phone', 'invite_code']);
+    }
+
+    private function selectedAccount()
+    {
+        if (! $this->selectedAccountId) {
+            return null;
+        }
+
+        return User::query()
+            ->with('inviter')
+            ->withCount(['invitees', 'sentInviteLogs'])
+            ->find($this->selectedAccountId);
+    }
+
+    private function selectedAccountStats()
+    {
+        $user = $this->selectedAccount();
+        if (! $user) {
+            return [];
+        }
+
+        return [
+            'total_revenue' => $user->total_revenue,
+            'invitees' => (int) $user->invitees_count,
+            'invite_uses' => (int) $user->sent_invite_logs_count,
+            'listings' => $this->countUserListings($user->id),
+            'direct_leads' => $this->countUserDirectLeads($user->id),
+            'listing_leads' => $this->countUserListingLeads($user->id),
+            'customers' => $this->countUserCustomers($user->id),
+            'favorites' => $this->countUserFavorites($user->id),
+            'saved_searches' => $this->countUserSavedSearches($user->id),
+        ];
+    }
+
+    public function countUserListings($userId)
+    {
+        try {
+            return $this->userListingIdQuery($userId)->count();
+        } catch (\Throwable $e) {
+            return 0;
+        }
+    }
+
+    private function countUserCustomers($userId)
+    {
+        if (! Schema::hasTable('customers') || ! Schema::hasColumn('customers', 'assigned_user_id')) {
+            return 0;
+        }
+
+        return DB::table('customers')->where('assigned_user_id', $userId)->count();
+    }
+
+    private function countUserDirectLeads($userId)
+    {
+        if (! Schema::hasTable('listing_contact_requests') || ! Schema::hasColumn('listing_contact_requests', 'user_id')) {
+            return 0;
+        }
+
+        return DB::table('listing_contact_requests')->where('user_id', $userId)->count();
+    }
+
+    private function countUserListingLeads($userId)
+    {
+        if (! Schema::hasTable('listing_contact_requests') || ! Schema::hasColumn('listing_contact_requests', 'listing_id')) {
+            return 0;
+        }
+
+        try {
+            $listingIds = $this->userListingIdQuery($userId)->pluck('id');
+            if ($listingIds->isEmpty()) {
+                return 0;
+            }
+
+            return DB::table('listing_contact_requests')->whereIn('listing_id', $listingIds)->count();
+        } catch (\Throwable $e) {
+            return 0;
+        }
+    }
+
+    private function countUserFavorites($userId)
+    {
+        if (! Schema::hasTable('listing_favorites')) {
+            return 0;
+        }
+
+        return DB::table('listing_favorites')->where('user_id', $userId)->count();
+    }
+
+    private function countUserSavedSearches($userId)
+    {
+        if (! Schema::hasTable('saved_searches')) {
+            return 0;
+        }
+
+        return DB::table('saved_searches')->where('user_id', $userId)->count();
+    }
+
+    private function selectedAccountTransactions()
+    {
+        if (! $this->selectedAccountId || ! Schema::hasTable('real_estate_listing_sales') || ! Schema::hasTable('real_estate_listing_sale_members')) {
+            return collect();
+        }
+
+        try {
+            return DB::table('real_estate_listing_sale_members')
+                ->join('real_estate_listing_sales', 'real_estate_listing_sale_members.sale_id', '=', 'real_estate_listing_sales.id')
+                ->join('real_estate_listings', 'real_estate_listing_sales.listing_id', '=', 'real_estate_listings.id')
+                ->where('real_estate_listing_sale_members.user_id', $this->selectedAccountId)
+                ->select(
+                    'real_estate_listings.title as listing_title',
+                    'real_estate_listing_sales.project_name',
+                    'real_estate_listing_sales.actual_price',
+                    'real_estate_listing_sales.revenue_amount',
+                    'real_estate_listing_sale_members.received_amount',
+                    'real_estate_listing_sales.sold_at'
+                )
+                ->orderByDesc('sold_at')
+                ->limit(8)
+                ->get();
+        } catch (\Throwable $e) {
+            return collect();
+        }
+    }
+
+    private function selectedAccountReferrals()
+    {
+        if (! $this->selectedAccountId) {
+            return collect();
+        }
+
+        return User::query()
+            ->where('invited_by_user_id', $this->selectedAccountId)
+            ->latest()
+            ->limit(8)
+            ->get(['id', 'name', 'phone', 'invite_code', 'created_at']);
+    }
+
+    private function selectedAccountListings()
+    {
+        if (! $this->selectedAccountId) {
+            return collect();
+        }
+
+        try {
+            return $this->userListingIdQuery($this->selectedAccountId)->latest()->limit(8)->get();
+        } catch (\Throwable $e) {
+            return collect();
+        }
+    }
+
+    private function userListingIdQuery($userId)
+    {
+        $query = RealEstateListing::query();
+        if (Schema::hasColumn('real_estate_listings', 'reporter_id') && Schema::hasColumn('real_estate_listings', 'user_id')) {
+            return $query->where(function ($q) use ($userId) {
+                $q->where('reporter_id', $userId)->orWhere('user_id', $userId);
+            });
+        }
+
+        if (Schema::hasColumn('real_estate_listings', 'reporter_id')) {
+            return $query->where('reporter_id', $userId);
+        }
+
+        if (Schema::hasColumn('real_estate_listings', 'user_id')) {
+            return $query->where('user_id', $userId);
+        }
+
+        return $query->whereRaw('1 = 0');
+    }
+
+    private function propertyTypeOptions()
+    {
+        return [
+            110 => 'Bất động sản khác',
+            102 => 'Biệt thự',
+            103 => 'Căn hộ - chung cư',
+            104 => 'Đất',
+            105 => 'Đất nền dự án',
+            106 => 'Mặt tiền',
+            107 => 'Nhà mặt phố',
+            111 => 'Nhà mặt phố (lộ giới 4m-5m)',
+            108 => 'Nhà riêng',
+            109 => 'Trang trại',
+            112 => 'Khách sạn',
+            113 => 'Nhà nghỉ',
+            114 => 'Homestay',
+            115 => 'Nhà trọ',
+        ];
     }
 
     private function favorites()
