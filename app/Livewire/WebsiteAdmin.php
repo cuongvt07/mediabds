@@ -123,7 +123,10 @@ class WebsiteAdmin extends Component
             'savedSearches' => $this->savedSearches(),
             'topViewedListings' => $this->topViewedListings(),
             'dailyViews' => $this->dailyViews(),
-        ])->layout('components.layouts.website-cms', ['title' => 'Website CMS']);
+        ])->layout('components.layouts.website-cms', [
+            'title' => 'Quản trị website BĐS',
+            'stats' => $this->stats(),
+        ]);
     }
 
     public function createCategory()

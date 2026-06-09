@@ -1,122 +1,490 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="vi">
 
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ $title ?? 'Website CMS' }}</title>
+    <title>{{ $title ?? 'Quản trị BĐS' }}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/intersect@3.x.x/dist/cdn.min.js"></script>
     @livewireStyles
     <style>
-        body { font-family: 'Inter', sans-serif; }
+        :root {
+            --bg-base: #0f1117;
+            --bg-surface: #181c27;
+            --bg-raised: #222636;
+            --border: #2e3347;
+            --text-primary: #e8eaf0;
+            --text-secondary: #8b91a7;
+            --text-muted: #4e5368;
+            --accent: #3d6fff;
+            --accent-dim: #1a2e6b;
+            --success: #22c55e;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --info: #06b6d4;
+        }
+
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: var(--bg-base);
+            color: var(--text-primary);
+            font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            font-size: 13px;
+        }
+
+        a { color: inherit; text-decoration: none; }
+        button, input, select, textarea { font: inherit; }
+        .mono { font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Consolas, monospace; }
+
+        .cms-shell {
+            display: grid;
+            grid-template-columns: 220px minmax(0, 1fr);
+            grid-template-rows: 40px minmax(0, 1fr) 28px;
+            height: 100vh;
+            min-width: 1280px;
+            background: var(--bg-base);
+        }
+
+        .cms-topbar {
+            grid-column: 1 / -1;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border);
+            background: #10131b;
+            padding: 0 12px;
+        }
+
+        .cms-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 800;
+            letter-spacing: .02em;
+        }
+
+        .cms-brand-mark {
+            display: grid;
+            width: 24px;
+            height: 24px;
+            place-items: center;
+            border: 1px solid #385aa8;
+            background: var(--accent-dim);
+            color: #9bb7ff;
+            font-size: 12px;
+        }
+
+        .cms-breadcrumb {
+            color: var(--text-secondary);
+            font-size: 12px;
+        }
+
+        .cms-top-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-secondary);
+        }
+
+        .cms-icon-btn {
+            display: inline-grid;
+            width: 28px;
+            height: 28px;
+            place-items: center;
+            border: 1px solid var(--border);
+            background: var(--bg-surface);
+            color: var(--text-secondary);
+            cursor: pointer;
+        }
+
+        .cms-icon-btn:hover { border-color: var(--accent); color: var(--text-primary); }
+
+        .cms-sidebar {
+            grid-row: 2 / 4;
+            border-right: 1px solid var(--border);
+            background: var(--bg-surface);
+            overflow-y: auto;
+        }
+
+        .cms-sidebar-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 36px;
+            border-bottom: 1px solid var(--border);
+            padding: 0 10px;
+            color: var(--text-secondary);
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .cms-nav { padding: 10px 0 12px; }
+        .cms-nav-group { margin-bottom: 10px; }
+        .cms-nav-title {
+            padding: 8px 12px 5px;
+            color: var(--text-muted);
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+        }
+
+        .cms-nav-link {
+            display: grid;
+            grid-template-columns: 22px minmax(0, 1fr) auto;
+            align-items: center;
+            gap: 8px;
+            min-height: 32px;
+            border-left: 2px solid transparent;
+            padding: 0 10px;
+            color: var(--text-secondary);
+        }
+
+        .cms-nav-link:hover { background: var(--bg-raised); color: var(--text-primary); }
+        .cms-nav-link.is-active {
+            border-left-color: var(--accent);
+            background: var(--accent-dim);
+            color: var(--text-primary);
+        }
+
+        .cms-main {
+            display: grid;
+            grid-template-rows: 36px minmax(0, 1fr);
+            min-width: 0;
+            background: var(--bg-base);
+        }
+
+        .cms-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            border-bottom: 1px solid var(--border);
+            background: #121620;
+            padding: 0 12px;
+        }
+
+        .cms-page-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 0;
+            font-size: 12px;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .cms-content {
+            min-width: 0;
+            overflow: auto;
+            padding: 12px;
+        }
+
+        .cms-statusbar {
+            grid-column: 2;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-top: 1px solid var(--border);
+            background: #10131b;
+            padding: 0 12px;
+            color: var(--text-muted);
+            font-size: 11px;
+        }
+
         .cms-scrollbar::-webkit-scrollbar { width: 10px; height: 10px; }
-        .cms-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 999px; border: 3px solid #f8fafc; }
-        .cms-scrollbar::-webkit-scrollbar-track { background: #f8fafc; }
+        .cms-scrollbar::-webkit-scrollbar-thumb { background: #343a50; border: 2px solid var(--bg-base); }
+        .cms-scrollbar::-webkit-scrollbar-track { background: var(--bg-base); }
+
+        .cms-panel {
+            border: 1px solid var(--border);
+            background: var(--bg-surface);
+        }
+
+        .cms-panel-head {
+            display: flex;
+            min-height: 36px;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            border-bottom: 1px solid var(--border);
+            padding: 0 10px;
+        }
+
+        .cms-panel-title {
+            color: var(--text-primary);
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+        }
+
+        .cms-grid-2 {
+            display: grid;
+            grid-template-columns: minmax(0, 1.35fr) minmax(360px, .65fr);
+            gap: 12px;
+        }
+
+        .cms-data-list { display: grid; }
+        .cms-data-row {
+            display: grid;
+            grid-template-columns: minmax(180px, 1fr) 100px 86px;
+            align-items: center;
+            min-height: 34px;
+            border-bottom: 1px solid var(--border);
+            padding: 0 10px;
+            gap: 10px;
+        }
+
+        .cms-data-row:last-child { border-bottom: 0; }
+        .cms-data-row:hover, .cms-table tbody tr:hover { background: var(--bg-raised); }
+
+        .cms-table-wrap { overflow-x: auto; }
+        .cms-table {
+            width: 100%;
+            min-width: 980px;
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
+
+        .cms-table th {
+            height: 30px;
+            border-bottom: 1px solid var(--border);
+            background: #11151f;
+            color: var(--text-muted);
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: .08em;
+            text-align: left;
+            text-transform: uppercase;
+        }
+
+        .cms-table td {
+            height: 36px;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-secondary);
+            vertical-align: middle;
+        }
+
+        .cms-table th, .cms-table td { padding: 0 8px; }
+        .cms-table .right { text-align: right; }
+        .cms-truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+        .cms-input, .cms-select, .cms-textarea {
+            border: 1px solid var(--border);
+            background: var(--bg-raised);
+            color: var(--text-primary);
+            outline: none;
+        }
+
+        .cms-input, .cms-select {
+            height: 28px;
+            padding: 0 8px;
+        }
+
+        .cms-textarea {
+            min-height: 96px;
+            padding: 8px;
+            resize: vertical;
+        }
+
+        .cms-input:focus, .cms-select:focus, .cms-textarea:focus { border-color: var(--accent); }
+
+        .cms-btn {
+            display: inline-flex;
+            height: 28px;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            border: 1px solid var(--border);
+            background: var(--bg-raised);
+            color: var(--text-primary);
+            padding: 0 10px;
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            cursor: pointer;
+        }
+
+        .cms-btn:hover { border-color: var(--accent); color: #fff; }
+        .cms-btn.primary { border-color: var(--accent); background: var(--accent); color: #fff; }
+        .cms-btn.danger { border-color: rgba(239,68,68,.45); background: #2e0f0f; color: var(--danger); }
+        .cms-btn.success { border-color: rgba(34,197,94,.45); background: #0f2e1a; color: var(--success); }
+
+        .cms-badge {
+            display: inline-flex;
+            height: 22px;
+            align-items: center;
+            gap: 5px;
+            border: 1px solid var(--border);
+            padding: 0 7px;
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .cms-badge.success { border-color: rgba(34,197,94,.35); background: #0f2e1a; color: var(--success); }
+        .cms-badge.warning { border-color: rgba(245,158,11,.35); background: #3d2e00; color: var(--warning); }
+        .cms-badge.danger { border-color: rgba(239,68,68,.35); background: #2e0f0f; color: var(--danger); }
+        .cms-badge.muted { color: var(--text-secondary); }
+        .cms-badge.info { border-color: rgba(6,182,212,.35); background: #06252c; color: var(--info); }
+
+        .cms-kpi-row {
+            display: grid;
+            grid-template-columns: minmax(200px, 1fr) 110px 82px;
+            min-height: 34px;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            padding: 0 10px;
+        }
+
+        .cms-pagination {
+            border-top: 1px solid var(--border);
+            padding: 8px 10px;
+            color: var(--text-secondary);
+        }
+
+        .cms-flash {
+            position: fixed;
+            right: 14px;
+            bottom: 40px;
+            z-index: 80;
+            width: 320px;
+            border: 1px solid rgba(34,197,94,.35);
+            background: #0f2e1a;
+            color: var(--success);
+            padding: 10px 12px;
+            font-weight: 700;
+        }
+
+        .cms-modal-backdrop {
+            position: fixed;
+            inset: 0;
+            z-index: 70;
+            display: grid;
+            place-items: center;
+            background: rgba(0,0,0,.72);
+        }
+
+        .cms-modal {
+            width: min(720px, calc(100vw - 48px));
+            max-height: calc(100vh - 48px);
+            overflow: auto;
+            border: 1px solid var(--border);
+            background: var(--bg-surface);
+        }
+
+        .cms-form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+            padding: 12px;
+        }
+
+        .cms-field { display: grid; gap: 4px; }
+        .cms-field.full { grid-column: 1 / -1; }
+        .cms-label {
+            color: var(--text-muted);
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+        }
+
+        @media (max-width: 1439px) {
+            .cms-shell { grid-template-columns: 48px minmax(0, 1fr); }
+            .cms-nav-title, .cms-nav-text, .cms-sidebar-head span { display: none; }
+            .cms-nav-link { grid-template-columns: 26px; justify-content: center; padding: 0; }
+        }
     </style>
 </head>
 
 @php
     $activeTab = request('tab', 'overview');
     $mainItems = [
-        'overview' => ['Tong quan', 'fa-chart-pie', 'Suc khoe website public'],
-        'home' => ['Trang user', 'fa-house-chimney-window', 'Cau hinh khoi trang chu'],
+        'overview' => ['Tổng quan', 'fa-chart-pie', null],
+        'listings' => ['Tin đăng', 'fa-newspaper', $stats['pending_listings'] ?? null],
+        'home' => ['Trang chủ', 'fa-house-chimney-window', null],
     ];
-    $contentItems = [
-        'listings' => ['Tin public', 'fa-newspaper', 'Duyet va hien thi tin'],
-        'categories' => ['Danh muc', 'fa-layer-group', 'Danh muc website'],
-        'blogs' => ['Blog', 'fa-pen-nib', 'Bai viet va SEO'],
+    $catalogItems = [
+        'categories' => ['Danh mục', 'fa-layer-group', null],
+        'blogs' => ['Bài viết/SEO', 'fa-pen-nib', null],
     ];
-    $engagementItems = [
-        'leads' => ['Lead', 'fa-address-book', 'Yeu cau tu van'],
-        'favorites' => ['Yeu thich', 'fa-heart', 'Hanh vi luu tin'],
-        'saved-searches' => ['Tim kiem luu', 'fa-bookmark', 'Bo loc nguoi dung'],
-        'analytics' => ['Analytics', 'fa-chart-line', 'Luot xem va do luong'],
+    $userItems = [
+        'leads' => ['Khách liên hệ', 'fa-address-book', $stats['open_leads'] ?? null],
+        'favorites' => ['Yêu thích', 'fa-heart', null],
+        'saved-searches' => ['Tìm kiếm lưu', 'fa-bookmark', null],
+        'analytics' => ['Thống kê', 'fa-chart-line', null],
     ];
 @endphp
 
-<body class="antialiased bg-slate-950 text-slate-800" x-data="{ mobileMenuOpen: false }">
-    <div class="min-h-screen lg:flex">
-        <div x-show="mobileMenuOpen" x-transition.opacity class="fixed inset-0 z-40 bg-slate-950/70 backdrop-blur-sm lg:hidden" @click="mobileMenuOpen = false" style="display: none;"></div>
-
-        <aside :class="mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
-            class="fixed inset-y-0 left-0 z-50 flex w-80 flex-col border-r border-slate-800 bg-slate-950 text-white transition-transform duration-300 lg:static lg:translate-x-0">
-            <div class="border-b border-slate-800 px-5 py-5">
-                <a href="{{ route('website.admin') }}" class="flex items-center gap-3">
-                    <span class="grid h-11 w-11 place-items-center rounded-2xl bg-emerald-500 text-white shadow-lg shadow-emerald-500/20">
-                        <i class="fa-solid fa-globe text-lg"></i>
-                    </span>
-                    <span>
-                        <span class="block text-[10px] font-black uppercase tracking-[0.28em] text-emerald-300">Website CMS</span>
-                        <span class="mt-1 block text-lg font-black tracking-tight text-white">Phong Phat Land</span>
-                    </span>
-                </a>
+<body>
+    <div class="cms-shell">
+        <header class="cms-topbar">
+            <div class="cms-brand">
+                <span class="cms-brand-mark"><i class="fa-solid fa-building"></i></span>
+                <span>QUẢN TRỊ BĐS</span>
+                <span class="cms-breadcrumb">/ quản trị website bất động sản</span>
             </div>
+            <div class="cms-top-actions">
+                <a class="cms-btn" href="{{ route('listings') }}"><i class="fa-solid fa-arrow-left"></i> Quản trị nội bộ</a>
+                <a class="cms-btn" href="{{ route('docs.api') }}" target="_blank"><i class="fa-solid fa-code"></i> API</a>
+                <a class="cms-icon-btn" href="https://b-s-pink.vercel.app" target="_blank" title="Mở website"><i class="fa-solid fa-up-right-from-square"></i></a>
+                <form action="{{ route('logout') }}" method="POST">
+                    @csrf
+                    <button class="cms-icon-btn" type="submit" title="Đăng xuất"><i class="fa-solid fa-right-from-bracket"></i></button>
+                </form>
+            </div>
+        </header>
 
-            <nav class="cms-scrollbar flex-1 overflow-y-auto px-4 py-5">
-                <x-website-cms-nav-group title="Van hanh" :items="$mainItems" :active-tab="$activeTab" />
-                <x-website-cms-nav-group title="Noi dung" :items="$contentItems" :active-tab="$activeTab" />
-                <x-website-cms-nav-group title="Nguoi dung & do luong" :items="$engagementItems" :active-tab="$activeTab" />
+        <aside class="cms-sidebar cms-scrollbar">
+            <div class="cms-sidebar-head">
+                <span>{{ auth()->user()->name ?? 'Quản trị viên' }}</span>
+                <i class="fa-solid fa-bars"></i>
+            </div>
+            <nav class="cms-nav">
+                <x-website-cms-nav-group title="Vận hành" :items="$mainItems" :active-tab="$activeTab" />
+                <x-website-cms-nav-group title="Nội dung" :items="$catalogItems" :active-tab="$activeTab" />
+                <x-website-cms-nav-group title="Người dùng" :items="$userItems" :active-tab="$activeTab" />
             </nav>
-
-            <div class="border-t border-slate-800 p-4">
-                <div class="grid grid-cols-2 gap-2">
-                    <a href="{{ route('listings') }}"
-                        class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-700 px-3 py-2 text-xs font-black uppercase tracking-widest text-slate-300 hover:border-blue-400 hover:text-white">
-                        <i class="fa-solid fa-arrow-left"></i> Admin
-                    </a>
-                    <a href="https://b-s-pink.vercel.app" target="_blank"
-                        class="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-500 px-3 py-2 text-xs font-black uppercase tracking-widest text-white hover:bg-emerald-400">
-                        <i class="fa-solid fa-up-right-from-square"></i> Site
-                    </a>
-                </div>
-                <div class="mt-4 flex items-center gap-3 rounded-2xl bg-slate-900 p-3">
-                    <span class="grid h-9 w-9 place-items-center rounded-full bg-gradient-to-tr from-emerald-500 to-cyan-500 text-sm font-black text-white">
-                        {{ substr(auth()->user()->name ?? 'U', 0, 1) }}
-                    </span>
-                    <div class="min-w-0 flex-1">
-                        <p class="truncate text-xs font-black text-white">{{ auth()->user()->name ?? 'Admin' }}</p>
-                        <p class="truncate text-[11px] text-slate-400">{{ auth()->user()->phone ?? auth()->user()->email ?? '' }}</p>
-                    </div>
-                    <form action="{{ route('logout') }}" method="POST">
-                        @csrf
-                        <button type="submit" class="grid h-8 w-8 place-items-center rounded-lg text-slate-400 hover:bg-red-500/10 hover:text-red-300" title="Dang xuat">
-                            <i class="fa-solid fa-right-from-bracket"></i>
-                        </button>
-                    </form>
-                </div>
-            </div>
         </aside>
 
-        <main class="min-h-screen flex-1 bg-slate-50 lg:min-w-0">
-            <header class="sticky top-0 z-30 border-b border-slate-200 bg-white/90 px-4 py-3 backdrop-blur lg:px-6">
-                <div class="flex items-center justify-between gap-4">
-                    <div class="flex min-w-0 items-center gap-3">
-                        <button type="button" class="grid h-10 w-10 place-items-center rounded-xl border border-slate-200 text-slate-600 lg:hidden" @click="mobileMenuOpen = true">
-                            <i class="fa-solid fa-bars-staggered"></i>
-                        </button>
-                        <div class="min-w-0">
-                            <p class="text-[10px] font-black uppercase tracking-[0.22em] text-emerald-600">CMS quan tri website public</p>
-                            <h1 class="mt-0.5 truncate text-xl font-black tracking-tight text-slate-900">Quan tri website BDS</h1>
-                        </div>
-                    </div>
-                    <div class="hidden items-center gap-2 sm:flex">
-                        <a href="{{ route('docs.api') }}" target="_blank"
-                            class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-[11px] font-black uppercase tracking-widest text-slate-600 hover:border-emerald-500 hover:text-emerald-600">
-                            <i class="fa-solid fa-code"></i> API Docs
-                        </a>
-                    </div>
+        <main class="cms-main">
+            <div class="cms-toolbar">
+                <div class="cms-page-title">
+                    <i class="fa-solid fa-gauge-high"></i>
+                    <span>Điều phối quản trị</span>
                 </div>
-            </header>
+                <div class="cms-top-actions">
+                    <span class="mono">{{ now('Asia/Ho_Chi_Minh')->format('d/m/Y H:i') }}</span>
+                    <span>{{ auth()->user()->phone ?? auth()->user()->email ?? '' }}</span>
+                </div>
+            </div>
 
-            <section class="cms-scrollbar h-[calc(100vh-65px)] overflow-y-auto">
+            <section class="cms-content cms-scrollbar">
                 {{ $slot }}
             </section>
         </main>
+
+        <footer class="cms-statusbar">
+            <span>Timezone: Asia/Ho_Chi_Minh</span>
+            <span>Phân hệ: tin đăng, danh mục, trang chủ, bài viết, khách liên hệ, yêu thích, tìm kiếm lưu</span>
+        </footer>
     </div>
+
+    @if (session()->has('message'))
+        <div class="cms-flash" x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 4000)">
+            <i class="fa-solid fa-circle-check"></i> {{ session('message') }}
+        </div>
+    @endif
 
     @livewireScripts
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />

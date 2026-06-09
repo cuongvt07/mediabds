@@ -1,774 +1,595 @@
-<div class="h-full flex flex-col bg-slate-50 relative">
-    <div class="bg-white border-b border-gray-200 px-4 sm:px-6 py-4 shrink-0">
-        <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-                <p class="text-[10px] font-black uppercase tracking-[0.22em] text-emerald-600">Website public</p>
-                <h1 class="mt-1 text-xl sm:text-2xl font-black text-slate-800 tracking-tight flex items-center gap-3">
-                    <span class="p-2 bg-emerald-100 text-emerald-600 rounded-xl">
-                        <i class="fa-solid fa-globe"></i>
-                    </span>
-                    Module website BĐS
-                </h1>
-            </div>
-            <a href="{{ route('docs.api') }}" target="_blank"
-                class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-[11px] font-black uppercase tracking-widest text-slate-600 hover:border-emerald-500 hover:text-emerald-600">
-                <i class="fa-solid fa-code"></i> API Docs
-            </a>
-        </div>
+@php
+    $statusLabels = [
+        'pending' => ['Chờ duyệt', 'warning'],
+        'active' => ['Đã đăng', 'success'],
+        'expired' => ['Hết hạn', 'muted'],
+        'sold' => ['Đã giao dịch', 'info'],
+        'draft' => ['Nháp', 'muted'],
+        'published' => ['Đã đăng', 'success'],
+        'archived' => ['Lưu trữ', 'muted'],
+        'new' => ['Mới', 'warning'],
+        'contacted' => ['Đã liên hệ', 'info'],
+        'qualified' => ['Tiềm năng', 'success'],
+        'closed' => ['Đã chốt', 'success'],
+        'spam' => ['Rác', 'danger'],
+    ];
 
-        @if (session()->has('message'))
-            <div class="mt-4 rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-700"
-                x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 3000)">
-                <i class="fa-solid fa-circle-check mr-2"></i>{{ session('message') }}
-            </div>
-        @endif
-    </div>
+    $propertyKindLabels = [
+        'apartment' => 'Căn hộ',
+        'room' => 'Phòng trọ',
+        'house' => 'Nhà ở',
+        'office' => 'Văn phòng',
+        'land' => 'Đất',
+        'shared' => 'Ở ghép',
+    ];
 
-    <div class="bg-white border-b border-gray-200 px-4 sm:px-6 overflow-x-auto shrink-0">
-        <div class="flex min-w-max gap-1">
-            @foreach ([
-                'overview' => ['Tổng quan', 'fa-chart-pie'],
-                'home' => ['Trang user', 'fa-house-chimney-window'],
-                'listings' => ['Tin public', 'fa-newspaper'],
-                'categories' => ['Danh mục', 'fa-layer-group'],
-                'blogs' => ['Blog', 'fa-pen-nib'],
-                'leads' => ['Lead', 'fa-address-book'],
-                'favorites' => ['Yêu thích', 'fa-heart'],
-                'saved-searches' => ['Tìm kiếm lưu', 'fa-bookmark'],
-                'analytics' => ['Analytics', 'fa-chart-line'],
-            ] as $tab => $meta)
-                <button wire:click="setTab('{{ $tab }}')"
-                    class="px-4 py-4 text-[10px] sm:text-xs font-black uppercase tracking-widest transition-all border-b-2 whitespace-nowrap {{ $activeTab === $tab ? 'border-emerald-600 text-emerald-600' : 'border-transparent text-slate-400 hover:text-slate-700' }}">
-                    <i class="fa-solid {{ $meta[1] }} mr-2"></i>{{ $meta[0] }}
-                </button>
-            @endforeach
-        </div>
-    </div>
+    $sectionTypeLabels = [
+        'listings' => 'Danh sách tin',
+        'regions' => 'Khu vực nổi bật',
+        'tools' => 'Tiện ích',
+        'recently_viewed' => 'Đã xem gần đây',
+        'blogs' => 'Bài viết',
+        'feature_descriptions' => 'Mô tả tính năng',
+        'promo' => 'Khuyến mãi',
+    ];
 
-    <div class="flex-1 overflow-auto p-4 sm:p-6">
-        @if ($activeTab === 'overview')
-            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <x-website-stat label="Tin đang hiển thị" :value="$stats['public_listings']" icon="fa-newspaper" />
-                <x-website-stat label="Tin chờ duyệt" :value="$stats['pending_listings']" icon="fa-hourglass-half" />
-                <x-website-stat label="Danh mục" :value="$stats['categories']" icon="fa-layer-group" />
-                <x-website-stat label="Bài blog" :value="$stats['blogs']" icon="fa-pen-nib" />
-                <x-website-stat label="Lead website" :value="$stats['leads']" icon="fa-address-book" />
-                <x-website-stat label="Lead mới" :value="$stats['open_leads']" icon="fa-bell" />
-                <x-website-stat label="Yêu thích" :value="$stats['favorites']" icon="fa-heart" />
-                <x-website-stat label="Lượt xem" :value="$stats['views']" icon="fa-eye" />
-            </div>
+    $sourceTypeLabels = [
+        'latest' => 'Mới nhất',
+        'vip' => 'Tin ưu tiên',
+        'property' => 'Theo loại BĐS',
+        'category' => 'Theo danh mục',
+        'province' => 'Theo tỉnh/thành',
+        'manual' => 'Chọn thủ công',
+        'regions' => 'Khu vực',
+        'static' => 'Tĩnh',
+        'client' => 'Trình duyệt',
+    ];
+@endphp
 
-            <div class="mt-6 grid grid-cols-1 xl:grid-cols-2 gap-6">
-                <section class="rounded-2xl border border-slate-200 bg-white overflow-hidden">
-                    <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-                        <h2 class="text-sm font-black uppercase tracking-widest text-slate-700">Tin mới từ website</h2>
-                        <button wire:click="setTab('listings')" class="text-[10px] font-black uppercase tracking-widest text-emerald-600">Xem tất cả</button>
-                    </div>
-                    <div class="divide-y divide-slate-100">
-                        @forelse ($recentListings as $listing)
-                            <div class="px-5 py-3 flex items-center justify-between gap-4">
-                                <div class="min-w-0">
-                                    <p class="truncate text-sm font-bold text-slate-800">{{ $listing->title }}</p>
-                                    <p class="text-[11px] text-slate-400 font-mono">{{ $listing->code ?? '#' . $listing->id }} · {{ number_format((float) $listing->price, 2) }} {{ $listing->price_unit }}</p>
-                                </div>
-                                <span class="rounded-lg bg-emerald-50 px-2 py-1 text-[10px] font-black text-emerald-600 uppercase">
-                                    {{ $listing->status ?? ($listing->is_sold ? 'sold' : 'active') }}
-                                </span>
-                            </div>
-                        @empty
-                            <div class="px-5 py-10 text-center text-sm text-slate-400">Chưa có dữ liệu tin website.</div>
-                        @endforelse
-                    </div>
-                </section>
-
-                <section class="rounded-2xl border border-slate-200 bg-white overflow-hidden">
-                    <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-                        <h2 class="text-sm font-black uppercase tracking-widest text-slate-700">Lead mới</h2>
-                        <button wire:click="setTab('leads')" class="text-[10px] font-black uppercase tracking-widest text-emerald-600">Xử lý lead</button>
-                    </div>
-                    <div class="divide-y divide-slate-100">
-                        @forelse ($recentLeads as $lead)
-                            <button wire:click="openLead({{ $lead->id }})" class="block w-full px-5 py-3 text-left hover:bg-slate-50">
-                                <p class="text-sm font-bold text-slate-800">{{ $lead->name ?? 'Khách website' }} · {{ $lead->phone ?? '-' }}</p>
-                                <p class="mt-1 line-clamp-1 text-xs text-slate-400">{{ $lead->message ?? 'Không có ghi chú' }}</p>
-                            </button>
-                        @empty
-                            <div class="px-5 py-10 text-center text-sm text-slate-400">Chưa có lead từ website.</div>
-                        @endforelse
-                    </div>
-                </section>
-            </div>
-        @elseif ($activeTab === 'home')
-            <section class="space-y-4">
-                <div class="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-                    <p class="font-black uppercase tracking-widest text-xs">Trang user dang doc tu API /api/v1/homepage</p>
-                    <p class="mt-1 font-semibold">Moi khoi ben duoi quyet dinh site user hien thi phan nao, lay nguon tin nao va gioi han bao nhieu tin. Cot "Tin match" cho biet hien tai DB co bao nhieu tin public phu hop voi cau hinh khoi.</p>
+<div>
+    @if ($activeTab === 'overview')
+        <div class="cms-grid-2">
+            <section class="cms-panel">
+                <div class="cms-panel-head">
+                    <h2 class="cms-panel-title">Xử lý cần thiết</h2>
+                    <span class="mono" style="color: var(--text-muted)">Hôm nay {{ now('Asia/Ho_Chi_Minh')->format('d/m/Y') }}</span>
                 </div>
-
-                <div class="rounded-2xl border border-slate-200 bg-white overflow-hidden">
-                    <div class="overflow-x-auto">
-                        <table class="w-full min-w-[1100px] text-left">
-                            <thead class="bg-slate-50 text-[10px] font-black uppercase tracking-widest text-slate-400">
-                                <tr>
-                                    <th class="px-5 py-4">Khoi hien thi</th>
-                                    <th class="px-5 py-4">Loai / nguon</th>
-                                    <th class="px-5 py-4">Filter</th>
-                                    <th class="px-5 py-4">Tin match</th>
-                                    <th class="px-5 py-4">Gioi han</th>
-                                    <th class="px-5 py-4">Thu tu</th>
-                                    <th class="px-5 py-4 text-right">Thao tac</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-100 text-sm">
-                                @forelse ($homeSections as $section)
-                                    <tr class="{{ $section->enabled ? 'hover:bg-slate-50' : 'bg-slate-50/70 opacity-70' }}">
-                                        <td class="px-5 py-4">
-                                            <div class="flex items-start gap-3">
-                                                <span class="mt-0.5 inline-flex h-8 w-8 items-center justify-center rounded-xl {{ $section->enabled ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-400' }}">
-                                                    <i class="fa-solid {{ $section->enabled ? 'fa-eye' : 'fa-eye-slash' }}"></i>
-                                                </span>
-                                                <div class="min-w-0">
-                                                    <p class="font-black text-slate-800">{{ $section->title }}</p>
-                                                    <p class="mt-1 text-[11px] font-mono text-slate-400">{{ $section->key }}</p>
-                                                    @if ($section->description)
-                                                        <p class="mt-1 line-clamp-1 text-xs text-slate-500">{{ $section->description }}</p>
-                                                    @endif
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td class="px-5 py-4">
-                                            <p class="font-mono text-xs font-black uppercase text-slate-700">{{ $section->section_type }}</p>
-                                            <p class="mt-1 font-mono text-xs text-slate-400">{{ $section->source_type }}</p>
-                                        </td>
-                                        <td class="px-5 py-4 text-xs text-slate-500">
-                                            <p>GD: {{ $section->transaction_type ?: '-' }}</p>
-                                            <p>Loai: {{ $section->property_kind ?: '-' }}</p>
-                                            <p>Tinh/DM: {{ $section->province_name ?: ($section->category_id ?: '-') }}</p>
-                                            @if (($section->manual_listing_ids ?: []))
-                                                <p>ID: {{ implode(',', $section->manual_listing_ids ?: []) }}</p>
-                                            @endif
-                                        </td>
-                                        <td class="px-5 py-4">
-                                            @if ($section->section_type === 'listings')
-                                                <span class="font-mono text-sm font-black {{ $this->homeSectionCount($section) > 0 ? 'text-emerald-600' : 'text-red-500' }}">
-                                                    {{ number_format($this->homeSectionCount($section)) }}
-                                                </span>
-                                            @else
-                                                <span class="text-xs text-slate-400">static</span>
-                                            @endif
-                                        </td>
-                                        <td class="px-5 py-4 font-mono text-slate-600">{{ $section->limit }}</td>
-                                        <td class="px-5 py-4 font-mono text-slate-600">{{ $section->sort_order_index }}</td>
-                                        <td class="px-5 py-4 text-right space-x-2">
-                                            <button wire:click="toggleHomeSection({{ $section->id }})"
-                                                class="rounded-lg border border-slate-200 px-3 py-1.5 text-[10px] font-black uppercase text-slate-600 hover:border-emerald-500 hover:text-emerald-600">
-                                                {{ $section->enabled ? 'An' : 'Hien' }}
-                                            </button>
-                                            <button wire:click="editHomeSection({{ $section->id }})"
-                                                class="rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-1.5 text-[10px] font-black uppercase text-emerald-600 hover:bg-emerald-100">
-                                                Cau hinh
-                                            </button>
-                                        </td>
-                                    </tr>
-                                @empty
-                                    <tr><td colspan="7" class="px-5 py-10 text-center text-slate-400">Chua co bang website_home_sections. Hay chay migrate.</td></tr>
-                                @endforelse
-                            </tbody>
-                        </table>
+                <div>
+                    <div class="cms-kpi-row">
+                        <span>Tin chờ duyệt</span>
+                        <strong class="mono">{{ number_format($stats['pending_listings']) }}</strong>
+                        <button class="cms-btn" wire:click="setTab('listings')">Xem</button>
+                    </div>
+                    <div class="cms-kpi-row">
+                    <span>Khách liên hệ mới từ trang web</span>
+                        <strong class="mono">{{ number_format($stats['open_leads']) }}</strong>
+                        <button class="cms-btn" wire:click="setTab('leads')">Xử lý</button>
+                    </div>
+                    <div class="cms-kpi-row">
+                        <span>Tổng tin đang hiển thị</span>
+                        <strong class="mono">{{ number_format($stats['public_listings']) }}</strong>
+                        <button class="cms-btn" wire:click="setTab('listings')">Lọc</button>
+                    </div>
+                    <div class="cms-kpi-row">
+                        <span>Khối trang chủ đang cấu hình</span>
+                        <strong class="mono">{{ number_format($homeSections->count()) }}</strong>
+                        <button class="cms-btn" wire:click="setTab('home')">Cấu hình</button>
                     </div>
                 </div>
             </section>
-        @elseif ($activeTab === 'listings')
-            <section class="space-y-4">
-                <div class="rounded-2xl border border-slate-200 bg-white p-4 flex flex-col lg:flex-row gap-3 lg:items-center">
-                    <div class="relative flex-1">
-                        <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
-                        <input wire:model.live.debounce.300ms="listingSearch" type="text" placeholder="Tìm tiêu đề, mã tin, số điện thoại..."
-                            class="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-3 text-sm font-semibold outline-none focus:border-emerald-500 focus:bg-white">
-                    </div>
-                    <select wire:model.live="listingStatus" class="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs font-black uppercase text-slate-600">
+
+            <section class="cms-panel">
+                <div class="cms-panel-head">
+                    <h2 class="cms-panel-title">Hoạt động gần đây</h2>
+                    <span class="cms-badge info">Thời gian thực</span>
+                </div>
+                <div class="cms-data-list">
+                    @forelse ($recentLeads as $lead)
+                        <button type="button" wire:click="openLead({{ $lead->id }})" class="cms-data-row" style="width:100%; border-left:0; border-right:0; border-top:0; background:transparent; color:inherit; text-align:left; cursor:pointer;">
+                            <span class="cms-truncate">{{ $lead->name ?: 'Khách website' }} · {{ $lead->phone ?: '-' }}</span>
+                            <span class="cms-badge {{ $statusLabels[$lead->status ?? 'new'][1] ?? 'muted' }}">{{ $statusLabels[$lead->status ?? 'new'][0] ?? 'Mới' }}</span>
+                            <span class="mono">{{ optional($lead->created_at)->format('H:i') }}</span>
+                        </button>
+                    @empty
+                        <div class="cms-data-row">
+                            <span>Chưa có lead mới.</span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                    @endforelse
+                </div>
+            </section>
+        </div>
+
+        <div class="cms-grid-2" style="margin-top: 12px;">
+            <section class="cms-panel">
+                <div class="cms-panel-head">
+                    <h2 class="cms-panel-title">Thống kê vận hành</h2>
+                    <span class="mono" style="color: var(--text-muted)">30 ngày gần đây</span>
+                </div>
+                <div>
+                    <div class="cms-kpi-row"><span>Danh mục BĐS</span><strong class="mono">{{ number_format($stats['categories']) }}</strong><span></span></div>
+                    <div class="cms-kpi-row"><span>Bài viết/SEO</span><strong class="mono">{{ number_format($stats['blogs']) }}</strong><span></span></div>
+                    <div class="cms-kpi-row"><span>Yêu thích</span><strong class="mono">{{ number_format($stats['favorites']) }}</strong><span></span></div>
+                    <div class="cms-kpi-row"><span>Tìm kiếm đã lưu</span><strong class="mono">{{ number_format($stats['saved_searches']) }}</strong><span></span></div>
+                    <div class="cms-kpi-row"><span>Lượt xem được ghi nhận</span><strong class="mono">{{ number_format($stats['views']) }}</strong><span></span></div>
+                </div>
+            </section>
+
+            <section class="cms-panel">
+                <div class="cms-panel-head">
+                    <h2 class="cms-panel-title">Tin mới từ hệ thống</h2>
+                    <button class="cms-btn" wire:click="setTab('listings')">Tất cả</button>
+                </div>
+                <div class="cms-data-list">
+                    @forelse ($recentListings as $listing)
+                        @php $state = $listing->is_sold ? 'sold' : ($listing->status ?: 'active'); @endphp
+                        <div class="cms-data-row">
+                            <span class="cms-truncate">{{ $listing->title }}</span>
+                            <span class="cms-badge {{ $statusLabels[$state][1] ?? 'muted' }}">{{ $statusLabels[$state][0] ?? $state }}</span>
+                            <span class="mono">{{ $listing->code ?: '#' . $listing->id }}</span>
+                        </div>
+                    @empty
+                        <div class="cms-data-row"><span>Chưa có dữ liệu tin đăng.</span><span></span><span></span></div>
+                    @endforelse
+                </div>
+            </section>
+        </div>
+    @elseif ($activeTab === 'listings')
+        <section class="cms-panel">
+            <div class="cms-panel-head">
+                <h2 class="cms-panel-title">Quản lý tin đăng</h2>
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <input class="cms-input" style="width: 300px;" wire:model.live.debounce.300ms="listingSearch" placeholder="Tìm mã tin, tiêu đề, số điện thoại">
+                    <select class="cms-select" wire:model.live="listingStatus">
                         <option value="all">Tất cả trạng thái</option>
                         <option value="pending">Chờ duyệt</option>
-                        <option value="active">Đang hiển thị</option>
+                        <option value="active">Đã đăng</option>
                         <option value="expired">Hết hạn</option>
-                        <option value="sold">Đã bán/thuê</option>
+                        <option value="sold">Đã giao dịch</option>
                     </select>
-                    <select wire:model.live="listingVip" class="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs font-black uppercase text-slate-600">
-                        <option value="all">Tất cả VIP</option>
-                        <option value="normal">Normal</option>
-                        <option value="vip1">VIP 1</option>
-                        <option value="vip2">VIP 2</option>
-                        <option value="vip3">VIP 3</option>
+                    <select class="cms-select" wire:model.live="listingVip">
+                        <option value="all">Tất cả mức ưu tiên</option>
+                        <option value="normal">Thường</option>
+                        <option value="vip1">Ưu tiên 1</option>
+                        <option value="vip2">Ưu tiên 2</option>
+                        <option value="vip3">Ưu tiên 3</option>
                     </select>
                 </div>
-
-                <div class="rounded-2xl border border-slate-200 bg-white overflow-hidden">
-                    <div class="overflow-x-auto">
-                        <table class="w-full min-w-[980px] text-left">
-                            <thead class="bg-slate-50 text-[10px] font-black uppercase tracking-widest text-slate-400">
-                                <tr>
-                                    <th class="px-5 py-4">Tin đăng</th>
-                                    <th class="px-5 py-4">Giá/DT</th>
-                                    <th class="px-5 py-4">Trạng thái</th>
-                                    <th class="px-5 py-4">VIP</th>
-                                    <th class="px-5 py-4">View</th>
-                                    <th class="px-5 py-4 text-right">Thao tác</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-100 text-sm">
-                                @forelse ($listings as $listing)
-                                    <tr class="hover:bg-slate-50">
-                                        <td class="px-5 py-4">
-                                            <p class="font-bold text-slate-800 line-clamp-1">{{ $listing->title }}</p>
-                                            <p class="mt-1 text-[11px] font-mono text-slate-400">{{ $listing->code ?? '#' . $listing->id }} · {{ $listing->province_name ?? '-' }}</p>
-                                        </td>
-                                        <td class="px-5 py-4">
-                                            <p class="font-mono font-bold text-emerald-700">{{ number_format((float) $listing->price, 2) }} {{ $listing->price_unit }}</p>
-                                            <p class="text-xs text-slate-400">{{ $listing->area }} m²</p>
-                                        </td>
-                                        <td class="px-5 py-4">
-                                            <select wire:change="updateListingStatus({{ $listing->id }}, $event.target.value)"
-                                                class="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-[11px] font-black uppercase text-slate-600">
-                                                @foreach (['pending' => 'Chờ duyệt', 'active' => 'Hiển thị', 'expired' => 'Hết hạn', 'sold' => 'Đã xong'] as $value => $label)
-                                                    <option value="{{ $value }}" @selected(($listing->is_sold ? 'sold' : ($listing->status ?? 'active')) === $value)>{{ $label }}</option>
-                                                @endforeach
-                                            </select>
-                                        </td>
-                                        <td class="px-5 py-4">
-                                            <select wire:change="updateListingVip({{ $listing->id }}, $event.target.value)"
-                                                class="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-[11px] font-black uppercase text-slate-600">
-                                                @foreach (['normal', 'vip1', 'vip2', 'vip3'] as $value)
-                                                    <option value="{{ $value }}" @selected(($listing->vip_tier ?? 'normal') === $value)>{{ strtoupper($value) }}</option>
-                                                @endforeach
-                                            </select>
-                                        </td>
-                                        <td class="px-5 py-4 font-mono text-slate-600">{{ number_format((int) ($listing->view_count ?? 0)) }}</td>
-                                        <td class="px-5 py-4 text-right">
-                                            <button wire:click="deleteListing({{ $listing->id }})" wire:confirm="Xóa tin website này?"
-                                                class="rounded-lg border border-red-100 bg-red-50 px-3 py-1.5 text-[10px] font-black uppercase text-red-600 hover:bg-red-100">
-                                                Xóa
-                                            </button>
-                                        </td>
-                                    </tr>
-                                @empty
-                                    <tr><td colspan="6" class="px-5 py-10 text-center text-slate-400">Không có tin phù hợp.</td></tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-                    </div>
-                    <div class="border-t border-slate-100 px-5 py-3">{{ $listings->links(data: ['scrollTo' => false]) }}</div>
+            </div>
+            <div class="cms-table-wrap cms-scrollbar">
+                <table class="cms-table">
+                    <thead>
+                        <tr>
+                            <th style="width:32px;"><input type="checkbox"></th>
+                            <th style="width:90px;">Mã tin</th>
+                            <th>Tiêu đề</th>
+                            <th style="width:110px;">Khu vực</th>
+                            <th class="right" style="width:110px;">Giá</th>
+                            <th style="width:86px;">Diện tích</th>
+                            <th style="width:125px;">Trạng thái</th>
+                            <th style="width:88px;">Ưu tiên</th>
+                            <th class="right" style="width:80px;">Lượt xem</th>
+                            <th style="width:112px;">Ngày đăng</th>
+                            <th class="right" style="width:76px;">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse ($listings as $listing)
+                            @php $state = $listing->is_sold ? 'sold' : ($listing->status ?: 'active'); @endphp
+                            <tr>
+                                <td><input type="checkbox"></td>
+                                <td class="mono" style="color: var(--text-primary)">{{ $listing->code ?: '#' . $listing->id }}</td>
+                                <td><div class="cms-truncate" title="{{ $listing->title }}">{{ $listing->title }}</div></td>
+                                <td><div class="cms-truncate">{{ $listing->district_name ?: $listing->province_name ?: '-' }}</div></td>
+                                <td class="right mono" style="color: var(--success)">{{ number_format((float) $listing->price, 2) }} {{ $listing->price_unit }}</td>
+                                <td class="mono">{{ $listing->area ? $listing->area . ' m²' : '-' }}</td>
+                                <td>
+                                    <select class="cms-select" wire:change="updateListingStatus({{ $listing->id }}, $event.target.value)">
+                                        @foreach (['pending' => 'Chờ duyệt', 'active' => 'Đã đăng', 'expired' => 'Hết hạn', 'sold' => 'Đã giao dịch'] as $value => $label)
+                                            <option value="{{ $value }}" @selected($state === $value)>{{ $label }}</option>
+                                        @endforeach
+                                    </select>
+                                </td>
+                                <td>
+                                    <select class="cms-select" wire:change="updateListingVip({{ $listing->id }}, $event.target.value)">
+                                        @foreach (['normal' => 'Thường', 'vip1' => 'Ưu tiên 1', 'vip2' => 'Ưu tiên 2', 'vip3' => 'Ưu tiên 3'] as $value => $label)
+                                            <option value="{{ $value }}" @selected(($listing->vip_tier ?: 'normal') === $value)>{{ $label }}</option>
+                                        @endforeach
+                                    </select>
+                                </td>
+                                <td class="right mono">{{ number_format((int) ($listing->view_count ?? 0)) }}</td>
+                                <td class="mono">{{ optional($listing->created_at)->format('d/m/Y') }}</td>
+                                <td class="right">
+                                    <button class="cms-btn danger" wire:click="deleteListing({{ $listing->id }})" wire:confirm="Xóa tin đăng này?"><i class="fa-solid fa-trash"></i></button>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="11" style="text-align:center; height:72px;">Không có tin nào khớp bộ lọc.</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+            <div class="cms-pagination">{{ $listings->links(data: ['scrollTo' => false]) }}</div>
+        </section>
+    @elseif ($activeTab === 'home')
+        <section class="cms-panel">
+            <div class="cms-panel-head">
+                <h2 class="cms-panel-title">Cấu hình trang chủ website</h2>
+                <span style="color: var(--text-secondary)">Nguồn dữ liệu: /api/v1/homepage</span>
+            </div>
+            <div class="cms-table-wrap cms-scrollbar">
+                <table class="cms-table">
+                    <thead>
+                        <tr>
+                            <th style="width:70px;">Bật</th>
+                            <th>Khối hiển thị</th>
+                            <th style="width:130px;">Loại</th>
+                            <th style="width:130px;">Nguồn</th>
+                            <th style="width:180px;">Điều kiện</th>
+                            <th class="right" style="width:90px;">Tin khớp</th>
+                            <th class="right" style="width:70px;">Giới hạn</th>
+                            <th class="right" style="width:70px;">Thứ tự</th>
+                            <th class="right" style="width:92px;">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse ($homeSections as $section)
+                            <tr style="{{ $section->enabled ? '' : 'opacity:.58' }}">
+                                <td><button class="cms-badge {{ $section->enabled ? 'success' : 'muted' }}" wire:click="toggleHomeSection({{ $section->id }})">{{ $section->enabled ? 'Bật' : 'Tắt' }}</button></td>
+                                <td>
+                                    <div class="cms-truncate" style="color: var(--text-primary); font-weight:700">{{ $section->title }}</div>
+                                    <div class="mono cms-truncate" style="color: var(--text-muted); font-size:11px">{{ $section->key }}</div>
+                                </td>
+                                <td>{{ $sectionTypeLabels[$section->section_type] ?? $section->section_type }}</td>
+                                <td>{{ $sourceTypeLabels[$section->source_type] ?? $section->source_type }}</td>
+                                <td class="cms-truncate">
+                                    {{ $section->transaction_type ?: 'Tất cả' }} · {{ $propertyKindLabels[$section->property_kind] ?? ($section->property_kind ?: 'mọi loại') }} · {{ $section->province_name ?: ($section->category_id ?: '-') }}
+                                </td>
+                                <td class="right mono">{{ $section->section_type === 'listings' ? number_format($this->homeSectionCount($section)) : '-' }}</td>
+                                <td class="right mono">{{ $section->limit }}</td>
+                                <td class="right mono">{{ $section->sort_order_index }}</td>
+                                <td class="right"><button class="cms-btn" wire:click="editHomeSection({{ $section->id }})">Sửa</button></td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="9" style="text-align:center; height:72px;">Chưa có bảng website_home_sections. Hãy chạy migration/seeder.</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    @elseif ($activeTab === 'categories')
+        <section class="cms-panel">
+            <div class="cms-panel-head">
+                <h2 class="cms-panel-title">Danh mục bất động sản</h2>
+                <div style="display:flex; gap:8px;">
+                    <input class="cms-input" style="width: 260px;" wire:model.live.debounce.300ms="categorySearch" placeholder="Tìm tên, slug, mã danh mục">
+                    <button class="cms-btn primary" wire:click="createCategory"><i class="fa-solid fa-plus"></i> Thêm</button>
                 </div>
-            </section>
-        @elseif ($activeTab === 'categories')
-            <section class="space-y-4">
-                <div class="rounded-2xl border border-slate-200 bg-white p-4 flex flex-col sm:flex-row gap-3 sm:items-center">
-                    <div class="relative flex-1">
-                        <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
-                        <input wire:model.live.debounce.300ms="categorySearch" type="text" placeholder="Tìm danh mục..."
-                            class="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-3 text-sm font-semibold outline-none focus:border-emerald-500 focus:bg-white">
-                    </div>
-                    <button wire:click="createCategory"
-                        class="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-black uppercase tracking-widest text-white hover:bg-emerald-700">
-                        <i class="fa-solid fa-plus"></i> Thêm danh mục
-                    </button>
-                </div>
-
-                <div class="rounded-2xl border border-slate-200 bg-white overflow-hidden">
-                    <div class="overflow-x-auto">
-                        <table class="w-full min-w-[860px] text-left">
-                            <thead class="bg-slate-50 text-[10px] font-black uppercase tracking-widest text-slate-400">
-                                <tr>
-                                    <th class="px-5 py-4">ID</th>
-                                    <th class="px-5 py-4">Tên</th>
-                                    <th class="px-5 py-4">Slug</th>
-                                    <th class="px-5 py-4">Giao dịch</th>
-                                    <th class="px-5 py-4">Loại BĐS</th>
-                                    <th class="px-5 py-4 text-right">Thao tác</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-100 text-sm">
-                                @forelse ($categories as $category)
-                                    <tr class="hover:bg-slate-50">
-                                        <td class="px-5 py-3 font-mono text-xs text-slate-500">{{ $category->id }}</td>
-                                        <td class="px-5 py-3 font-bold text-slate-800">{{ $category->name }}</td>
-                                        <td class="px-5 py-3 font-mono text-xs text-slate-500">{{ $category->slug }}</td>
-                                        <td class="px-5 py-3">{{ $category->transaction_type }}</td>
-                                        <td class="px-5 py-3">{{ $category->property_type ?? '-' }}</td>
-                                        <td class="px-5 py-3 text-right space-x-2">
-                                            <button wire:click="editCategory('{{ $category->id }}')" class="rounded-lg border border-slate-200 px-3 py-1.5 text-[10px] font-black uppercase text-slate-600 hover:border-emerald-500 hover:text-emerald-600">Sửa</button>
-                                            <button wire:click="deleteCategory('{{ $category->id }}')" wire:confirm="Xóa danh mục này?" class="rounded-lg border border-red-100 bg-red-50 px-3 py-1.5 text-[10px] font-black uppercase text-red-600">Xóa</button>
-                                        </td>
-                                    </tr>
-                                @empty
-                                    <tr><td colspan="6" class="px-5 py-10 text-center text-slate-400">Chưa có danh mục.</td></tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-                    </div>
-                    <div class="border-t border-slate-100 px-5 py-3">{{ $categories->links(data: ['scrollTo' => false]) }}</div>
-                </div>
-            </section>
-        @elseif ($activeTab === 'blogs')
-            <section class="space-y-4">
-                <div class="rounded-2xl border border-slate-200 bg-white p-4 flex flex-col lg:flex-row gap-3 lg:items-center">
-                    <div class="relative flex-1">
-                        <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
-                        <input wire:model.live.debounce.300ms="blogSearch" type="text" placeholder="Tìm bài viết..."
-                            class="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-3 text-sm font-semibold outline-none focus:border-emerald-500 focus:bg-white">
-                    </div>
-                    <select wire:model.live="blogStatus" class="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs font-black uppercase text-slate-600">
+            </div>
+            <div class="cms-table-wrap cms-scrollbar">
+                <table class="cms-table">
+                    <thead>
+                        <tr>
+                            <th style="width:120px;">Mã</th>
+                            <th>Tên danh mục</th>
+                            <th>Slug</th>
+                            <th style="width:110px;">Giao dịch</th>
+                            <th style="width:130px;">Loại BĐS</th>
+                            <th class="right" style="width:90px;">Thứ tự</th>
+                            <th class="right" style="width:130px;">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse ($categories as $category)
+                            <tr>
+                                <td class="mono">{{ $category->id }}</td>
+                                <td style="color: var(--text-primary); font-weight:700">{{ $category->name }}</td>
+                                <td class="mono cms-truncate">{{ $category->slug }}</td>
+                                <td>{{ $category->transaction_type ?: '-' }}</td>
+                                <td>{{ $category->property_type ?: '-' }}</td>
+                                <td class="right mono">{{ $category->sort_order }}</td>
+                                <td class="right">
+                                    <button class="cms-btn" wire:click="editCategory('{{ $category->id }}')">Sửa</button>
+                                    <button class="cms-btn danger" wire:click="deleteCategory('{{ $category->id }}')" wire:confirm="Xóa danh mục này?">Xóa</button>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="7" style="text-align:center; height:72px;">Chưa có danh mục.</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+            <div class="cms-pagination">{{ $categories->links(data: ['scrollTo' => false]) }}</div>
+        </section>
+    @elseif ($activeTab === 'blogs')
+        <section class="cms-panel">
+            <div class="cms-panel-head">
+                <h2 class="cms-panel-title">Bài viết và SEO</h2>
+                <div style="display:flex; gap:8px;">
+                    <input class="cms-input" style="width: 280px;" wire:model.live.debounce.300ms="blogSearch" placeholder="Tìm bài viết, slug, tag">
+                    <select class="cms-select" wire:model.live="blogStatus">
                         <option value="all">Tất cả</option>
                         <option value="published">Đã đăng</option>
                         <option value="draft">Nháp</option>
                         <option value="archived">Lưu trữ</option>
                     </select>
-                    <button wire:click="createBlog"
-                        class="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-black uppercase tracking-widest text-white hover:bg-emerald-700">
-                        <i class="fa-solid fa-plus"></i> Viết bài
-                    </button>
+                    <button class="cms-btn primary" wire:click="createBlog"><i class="fa-solid fa-plus"></i> Viết bài</button>
                 </div>
-
-                <div class="rounded-2xl border border-slate-200 bg-white overflow-hidden">
-                    <div class="overflow-x-auto">
-                        <table class="w-full min-w-[980px] text-left">
-                            <thead class="bg-slate-50 text-[10px] font-black uppercase tracking-widest text-slate-400">
-                                <tr>
-                                    <th class="px-5 py-4">Bài viết</th>
-                                    <th class="px-5 py-4">Tag</th>
-                                    <th class="px-5 py-4">Trạng thái</th>
-                                    <th class="px-5 py-4">Xuất bản</th>
-                                    <th class="px-5 py-4 text-right">Thao tác</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-100 text-sm">
-                                @forelse ($blogs as $post)
-                                    <tr class="hover:bg-slate-50">
-                                        <td class="px-5 py-4">
-                                            <p class="font-bold text-slate-800 line-clamp-1">{{ $post->title }}</p>
-                                            <p class="mt-1 font-mono text-[11px] text-slate-400">{{ $post->slug }}</p>
-                                        </td>
-                                        <td class="px-5 py-4">{{ $post->category_tag ?? '-' }}</td>
-                                        <td class="px-5 py-4">
-                                            <button wire:click="toggleBlogStatus({{ $post->id }})"
-                                                class="rounded-lg px-2 py-1 text-[10px] font-black uppercase {{ $post->status === 'published' ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-500' }}">
-                                                {{ $post->status }}
-                                            </button>
-                                        </td>
-                                        <td class="px-5 py-4 text-xs text-slate-500">{{ optional($post->published_at)->format('d/m/Y H:i') ?? '-' }}</td>
-                                        <td class="px-5 py-4 text-right space-x-2">
-                                            <button wire:click="editBlog({{ $post->id }})" class="rounded-lg border border-slate-200 px-3 py-1.5 text-[10px] font-black uppercase text-slate-600 hover:border-emerald-500 hover:text-emerald-600">Sửa</button>
-                                            <button wire:click="deleteBlog({{ $post->id }})" wire:confirm="Xóa bài viết này?" class="rounded-lg border border-red-100 bg-red-50 px-3 py-1.5 text-[10px] font-black uppercase text-red-600">Xóa</button>
-                                        </td>
-                                    </tr>
-                                @empty
-                                    <tr><td colspan="5" class="px-5 py-10 text-center text-slate-400">Chưa có bài viết.</td></tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-                    </div>
-                    <div class="border-t border-slate-100 px-5 py-3">{{ $blogs->links(data: ['scrollTo' => false]) }}</div>
-                </div>
-            </section>
-        @elseif ($activeTab === 'leads')
-            <section class="space-y-4">
-                <div class="rounded-2xl border border-slate-200 bg-white p-4 flex flex-col lg:flex-row gap-3 lg:items-center">
-                    <div class="relative flex-1">
-                        <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
-                        <input wire:model.live.debounce.300ms="leadSearch" type="text" placeholder="Tìm khách, số điện thoại, nội dung..."
-                            class="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-3 text-sm font-semibold outline-none focus:border-emerald-500 focus:bg-white">
-                    </div>
-                    <select wire:model.live="leadStatus" class="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs font-black uppercase text-slate-600">
+            </div>
+            <div class="cms-table-wrap cms-scrollbar">
+                <table class="cms-table">
+                    <thead>
+                        <tr>
+                            <th>Bài viết</th>
+                            <th style="width:150px;">Tag</th>
+                            <th style="width:110px;">Trạng thái</th>
+                            <th style="width:120px;">Thời lượng</th>
+                            <th style="width:130px;">Xuất bản</th>
+                            <th class="right" style="width:140px;">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse ($blogs as $post)
+                            <tr>
+                                <td>
+                                    <div class="cms-truncate" style="color: var(--text-primary); font-weight:700">{{ $post->title }}</div>
+                                    <div class="mono cms-truncate" style="color: var(--text-muted); font-size:11px">{{ $post->slug }}</div>
+                                </td>
+                                <td>{{ $post->category_tag ?: '-' }}</td>
+                                <td><button class="cms-badge {{ $statusLabels[$post->status ?? 'draft'][1] ?? 'muted' }}" wire:click="toggleBlogStatus({{ $post->id }})">{{ $statusLabels[$post->status ?? 'draft'][0] ?? $post->status }}</button></td>
+                                <td class="mono">{{ $post->reading_minutes }} phút</td>
+                                <td class="mono">{{ optional($post->published_at)->format('d/m/Y') ?: '-' }}</td>
+                                <td class="right">
+                                    <button class="cms-btn" wire:click="editBlog({{ $post->id }})">Sửa</button>
+                                    <button class="cms-btn danger" wire:click="deleteBlog({{ $post->id }})" wire:confirm="Xóa bài viết này?">Xóa</button>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="6" style="text-align:center; height:72px;">Chưa có bài viết.</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+            <div class="cms-pagination">{{ $blogs->links(data: ['scrollTo' => false]) }}</div>
+        </section>
+    @elseif ($activeTab === 'leads')
+        <section class="cms-panel">
+            <div class="cms-panel-head">
+                <h2 class="cms-panel-title">Khách liên hệ từ trang web</h2>
+                <div style="display:flex; gap:8px;">
+                    <input class="cms-input" style="width: 300px;" wire:model.live.debounce.300ms="leadSearch" placeholder="Tìm khách, số điện thoại, nội dung">
+                    <select class="cms-select" wire:model.live="leadStatus">
                         <option value="all">Tất cả lead</option>
                         <option value="new">Mới</option>
                         <option value="contacted">Đã liên hệ</option>
                         <option value="qualified">Tiềm năng</option>
                         <option value="closed">Đã chốt</option>
-                        <option value="spam">Spam</option>
+                        <option value="spam">Rác</option>
                     </select>
                 </div>
-
-                <div class="rounded-2xl border border-slate-200 bg-white overflow-hidden">
-                    <div class="overflow-x-auto">
-                        <table class="w-full min-w-[980px] text-left">
-                            <thead class="bg-slate-50 text-[10px] font-black uppercase tracking-widest text-slate-400">
-                                <tr>
-                                    <th class="px-5 py-4">Khách</th>
-                                    <th class="px-5 py-4">Nội dung</th>
-                                    <th class="px-5 py-4">Trạng thái</th>
-                                    <th class="px-5 py-4">Nguồn</th>
-                                    <th class="px-5 py-4">Ngày</th>
-                                    <th class="px-5 py-4 text-right">Thao tác</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-100 text-sm">
-                                @forelse ($leads as $lead)
-                                    <tr class="hover:bg-slate-50">
-                                        <td class="px-5 py-4">
-                                            <p class="font-bold text-slate-800">{{ $lead->name }}</p>
-                                            <p class="font-mono text-xs text-slate-400">{{ $lead->phone }}</p>
-                                        </td>
-                                        <td class="px-5 py-4 max-w-md">
-                                            <p class="line-clamp-2 text-slate-600">{{ $lead->message ?? '-' }}</p>
-                                        </td>
-                                        <td class="px-5 py-4">
-                                            <select wire:change="quickLeadStatus({{ $lead->id }}, $event.target.value)"
-                                                class="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-[11px] font-black uppercase text-slate-600">
-                                                @foreach (['new' => 'Mới', 'contacted' => 'Đã gọi', 'qualified' => 'Tiềm năng', 'closed' => 'Đã chốt', 'spam' => 'Spam'] as $value => $label)
-                                                    <option value="{{ $value }}" @selected(($lead->status ?? 'new') === $value)>{{ $label }}</option>
-                                                @endforeach
-                                            </select>
-                                        </td>
-                                        <td class="px-5 py-4 text-xs text-slate-500">{{ $lead->source ?? 'website' }}</td>
-                                        <td class="px-5 py-4 text-xs text-slate-500">{{ optional($lead->created_at)->format('d/m/Y H:i') }}</td>
-                                        <td class="px-5 py-4 text-right space-x-2">
-                                            <button wire:click="openLead({{ $lead->id }})" class="rounded-lg border border-slate-200 px-3 py-1.5 text-[10px] font-black uppercase text-slate-600 hover:border-emerald-500 hover:text-emerald-600">Ghi chú</button>
-                                            <button wire:click="deleteLead({{ $lead->id }})" wire:confirm="Xóa lead này?" class="rounded-lg border border-red-100 bg-red-50 px-3 py-1.5 text-[10px] font-black uppercase text-red-600">Xóa</button>
-                                        </td>
-                                    </tr>
-                                @empty
-                                    <tr><td colspan="6" class="px-5 py-10 text-center text-slate-400">Chưa có lead phù hợp.</td></tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-                    </div>
-                    <div class="border-t border-slate-100 px-5 py-3">{{ $leads->links(data: ['scrollTo' => false]) }}</div>
-                </div>
-            </section>
-        @elseif ($activeTab === 'favorites')
-            <section class="rounded-2xl border border-slate-200 bg-white overflow-hidden">
-                <div class="px-5 py-4 border-b border-slate-100">
-                    <h2 class="text-sm font-black uppercase tracking-widest text-slate-700">Người dùng yêu thích tin</h2>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full min-w-[860px] text-left">
-                        <thead class="bg-slate-50 text-[10px] font-black uppercase tracking-widest text-slate-400">
+            </div>
+            <div class="cms-table-wrap cms-scrollbar">
+                <table class="cms-table">
+                    <thead>
+                        <tr>
+                            <th style="width:180px;">Khách</th>
+                            <th>Nội dung</th>
+                            <th style="width:130px;">Trạng thái</th>
+                            <th style="width:120px;">Nguồn</th>
+                            <th style="width:132px;">Ngày nhận</th>
+                            <th class="right" style="width:130px;">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse ($leads as $lead)
                             <tr>
-                                <th class="px-5 py-4">Người dùng</th>
-                                <th class="px-5 py-4">Tin</th>
-                                <th class="px-5 py-4">Mã tin</th>
-                                <th class="px-5 py-4">Ngày lưu</th>
+                                <td>
+                                    <div style="color: var(--text-primary); font-weight:700">{{ $lead->name ?: 'Khách website' }}</div>
+                                    <div class="mono" style="color: var(--text-muted); font-size:11px">{{ $lead->phone ?: '-' }}</div>
+                                </td>
+                                <td><div class="cms-truncate" title="{{ $lead->message }}">{{ $lead->message ?: '-' }}</div></td>
+                                <td>
+                                    <select class="cms-select" wire:change="quickLeadStatus({{ $lead->id }}, $event.target.value)">
+                                        @foreach (['new' => 'Mới', 'contacted' => 'Đã liên hệ', 'qualified' => 'Tiềm năng', 'closed' => 'Đã chốt', 'spam' => 'Rác'] as $value => $label)
+                                            <option value="{{ $value }}" @selected(($lead->status ?: 'new') === $value)>{{ $label }}</option>
+                                        @endforeach
+                                    </select>
+                                </td>
+                                <td>{{ $lead->source ?: 'trang web' }}</td>
+                                <td class="mono">{{ optional($lead->created_at)->format('d/m/Y H:i') }}</td>
+                                <td class="right">
+                                    <button class="cms-btn" wire:click="openLead({{ $lead->id }})">Mở</button>
+                                    <button class="cms-btn danger" wire:click="deleteLead({{ $lead->id }})" wire:confirm="Xóa khách liên hệ này?">Xóa</button>
+                                </td>
                             </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-100 text-sm">
-                            @forelse ($favorites as $item)
-                                <tr>
-                                    <td class="px-5 py-3 font-bold text-slate-800">{{ $item->user_name ?? 'User #' . $item->user_id }} <span class="font-mono text-xs text-slate-400">{{ $item->user_phone }}</span></td>
-                                    <td class="px-5 py-3">{{ $item->listing_title ?? 'Tin #' . $item->listing_id }}</td>
-                                    <td class="px-5 py-3 font-mono text-xs text-slate-500">{{ $item->listing_code ?? '-' }}</td>
-                                    <td class="px-5 py-3 text-xs text-slate-500">{{ $item->created_at }}</td>
-                                </tr>
-                            @empty
-                                <tr><td colspan="4" class="px-5 py-10 text-center text-slate-400">Chưa có dữ liệu yêu thích.</td></tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
-                <div class="border-t border-slate-100 px-5 py-3">{{ $favorites->links(data: ['scrollTo' => false]) }}</div>
-            </section>
-        @elseif ($activeTab === 'saved-searches')
-            <section class="rounded-2xl border border-slate-200 bg-white overflow-hidden">
-                <div class="px-5 py-4 border-b border-slate-100">
-                    <h2 class="text-sm font-black uppercase tracking-widest text-slate-700">Tìm kiếm đã lưu</h2>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full min-w-[860px] text-left">
-                        <thead class="bg-slate-50 text-[10px] font-black uppercase tracking-widest text-slate-400">
+                        @empty
+                            <tr><td colspan="6" style="text-align:center; height:72px;">Chưa có lead phù hợp.</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+            <div class="cms-pagination">{{ $leads->links(data: ['scrollTo' => false]) }}</div>
+        </section>
+    @elseif ($activeTab === 'favorites')
+        <section class="cms-panel">
+            <div class="cms-panel-head"><h2 class="cms-panel-title">Tin được yêu thích</h2></div>
+            <div class="cms-table-wrap cms-scrollbar">
+                <table class="cms-table">
+                    <thead><tr><th>Người dùng</th><th>Tin đăng</th><th style="width:160px;">Thời gian</th></tr></thead>
+                    <tbody>
+                        @forelse ($favorites as $item)
                             <tr>
-                                <th class="px-5 py-4">Người dùng</th>
-                                <th class="px-5 py-4">Tên bộ lọc</th>
-                                <th class="px-5 py-4">Params</th>
-                                <th class="px-5 py-4">Ngày lưu</th>
+                                <td>{{ $item->user_name ?: $item->user_phone ?: 'Người dùng' }}</td>
+                                <td>{{ $item->listing_title ?: ($item->listing_code ?: '#' . $item->listing_id) }}</td>
+                                <td class="mono">{{ $item->created_at }}</td>
                             </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-100 text-sm">
-                            @forelse ($savedSearches as $item)
-                                <tr>
-                                    <td class="px-5 py-3 font-bold text-slate-800">{{ $item->user_name ?? 'User #' . $item->user_id }} <span class="font-mono text-xs text-slate-400">{{ $item->user_phone }}</span></td>
-                                    <td class="px-5 py-3">{{ $item->label }}</td>
-                                    <td class="px-5 py-3"><code class="text-[11px] text-slate-500">{{ \Illuminate\Support\Str::limit($item->params, 120) }}</code></td>
-                                    <td class="px-5 py-3 text-xs text-slate-500">{{ $item->created_at }}</td>
-                                </tr>
-                            @empty
-                                <tr><td colspan="4" class="px-5 py-10 text-center text-slate-400">Chưa có tìm kiếm đã lưu.</td></tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
-                <div class="border-t border-slate-100 px-5 py-3">{{ $savedSearches->links(data: ['scrollTo' => false]) }}</div>
-            </section>
-        @elseif ($activeTab === 'analytics')
-            <section class="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                <div class="rounded-2xl border border-slate-200 bg-white overflow-hidden">
-                    <div class="px-5 py-4 border-b border-slate-100">
-                        <h2 class="text-sm font-black uppercase tracking-widest text-slate-700">Top tin nhiều lượt xem</h2>
-                    </div>
-                    <div class="divide-y divide-slate-100">
-                        @forelse ($topViewedListings as $listing)
-                            <div class="px-5 py-3 flex items-center justify-between gap-4">
-                                <div class="min-w-0">
-                                    <p class="truncate text-sm font-bold text-slate-800">{{ $listing->title }}</p>
-                                    <p class="text-[11px] font-mono text-slate-400">{{ $listing->code ?? '#' . $listing->id }}</p>
-                                </div>
-                                <span class="font-mono text-sm font-black text-emerald-600">{{ number_format((int) ($listing->view_count ?? 0)) }}</span>
-                            </div>
                         @empty
-                            <div class="px-5 py-10 text-center text-sm text-slate-400">Chưa có dữ liệu lượt xem.</div>
+                            <tr><td colspan="3" style="text-align:center; height:72px;">Chưa có dữ liệu yêu thích.</td></tr>
                         @endforelse
-                    </div>
-                </div>
-
-                <div class="rounded-2xl border border-slate-200 bg-white overflow-hidden">
-                    <div class="px-5 py-4 border-b border-slate-100">
-                        <h2 class="text-sm font-black uppercase tracking-widest text-slate-700">Lượt xem 14 ngày</h2>
-                    </div>
-                    <div class="p-5 space-y-3">
-                        @forelse ($dailyViews as $row)
-                            @php $width = min(100, max(8, (int) $row->total * 8)); @endphp
-                            <div>
-                                <div class="mb-1 flex items-center justify-between text-xs font-bold text-slate-500">
-                                    <span>{{ $row->day }}</span>
-                                    <span>{{ number_format((int) $row->total) }}</span>
-                                </div>
-                                <div class="h-2 rounded-full bg-slate-100 overflow-hidden">
-                                    <div class="h-full rounded-full bg-emerald-500" style="width: {{ $width }}%"></div>
-                                </div>
-                            </div>
+                    </tbody>
+                </table>
+            </div>
+            <div class="cms-pagination">{{ $favorites->links(data: ['scrollTo' => false]) }}</div>
+        </section>
+    @elseif ($activeTab === 'saved-searches')
+        <section class="cms-panel">
+            <div class="cms-panel-head"><h2 class="cms-panel-title">Tìm kiếm đã lưu</h2></div>
+            <div class="cms-table-wrap cms-scrollbar">
+                <table class="cms-table">
+                    <thead><tr><th>Người dùng</th><th>Tên bộ lọc</th><th>Điều kiện</th><th style="width:160px;">Thời gian</th></tr></thead>
+                    <tbody>
+                        @forelse ($savedSearches as $item)
+                            <tr>
+                                <td>{{ $item->user_name ?: $item->user_phone ?: 'Người dùng' }}</td>
+                                <td>{{ $item->name ?: 'Bộ lọc' }}</td>
+                                <td><div class="cms-truncate mono">{{ json_encode($item->filters ?? [], JSON_UNESCAPED_UNICODE) }}</div></td>
+                                <td class="mono">{{ $item->created_at }}</td>
+                            </tr>
                         @empty
-                            <div class="py-10 text-center text-sm text-slate-400">Chưa có analytics view event.</div>
+                            <tr><td colspan="4" style="text-align:center; height:72px;">Chưa có tìm kiếm đã lưu.</td></tr>
                         @endforelse
-                    </div>
+                    </tbody>
+                </table>
+            </div>
+            <div class="cms-pagination">{{ $savedSearches->links(data: ['scrollTo' => false]) }}</div>
+        </section>
+    @elseif ($activeTab === 'analytics')
+        <div class="cms-grid-2">
+            <section class="cms-panel">
+                <div class="cms-panel-head"><h2 class="cms-panel-title">Tin có lượt xem cao</h2></div>
+                <div class="cms-data-list">
+                    @forelse ($topViewedListings as $listing)
+                        <div class="cms-data-row">
+                            <span class="cms-truncate">{{ $listing->title }}</span>
+                            <span class="mono">{{ $listing->code ?: '#' . $listing->id }}</span>
+                            <strong class="mono" style="text-align:right">{{ number_format((int) $listing->view_count) }}</strong>
+                        </div>
+                    @empty
+                        <div class="cms-data-row"><span>Chưa có dữ liệu xem tin.</span><span></span><span></span></div>
+                    @endforelse
                 </div>
             </section>
-        @endif
-    </div>
+            <section class="cms-panel">
+                <div class="cms-panel-head"><h2 class="cms-panel-title">Lượt xem theo ngày</h2></div>
+                <div class="cms-data-list">
+                    @forelse ($dailyViews as $row)
+                        <div class="cms-data-row">
+                            <span class="mono">{{ $row->day }}</span>
+                            <span></span>
+                            <strong class="mono" style="text-align:right">{{ number_format((int) $row->total) }}</strong>
+                        </div>
+                    @empty
+                        <div class="cms-data-row"><span>Chưa có dữ liệu lượt xem.</span><span></span><span></span></div>
+                    @endforelse
+                </div>
+            </section>
+        </div>
+    @endif
 
     @if ($showHomeSectionModal)
-        <div class="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" wire:click="closeHomeSectionModal"></div>
-            <form wire:submit.prevent="saveHomeSection" class="relative w-full max-w-4xl max-h-[calc(100vh-2rem)] overflow-y-auto rounded-2xl bg-white shadow-2xl border border-slate-200">
-                <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white z-10">
-                    <div>
-                        <h3 class="font-black text-slate-800 uppercase tracking-widest text-sm">Cau hinh khoi trang user</h3>
-                        <p class="mt-1 text-xs font-mono text-slate-400">{{ $homeSectionKey }}</p>
-                    </div>
-                    <button type="button" wire:click="closeHomeSectionModal" class="text-slate-400 hover:text-red-500"><i class="fa-solid fa-xmark"></i></button>
+        <div class="cms-modal-backdrop">
+            <section class="cms-modal">
+                <div class="cms-panel-head">
+                    <h2 class="cms-panel-title">Cấu hình khối trang chủ</h2>
+                    <button class="cms-icon-btn" wire:click="closeHomeSectionModal"><i class="fa-solid fa-xmark"></i></button>
                 </div>
-                <div class="p-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    <x-admin-field label="Tieu de khoi" model="homeSectionTitle" />
-                    <x-admin-field label="Thu tu hien thi" model="homeSectionSortOrderIndex" type="number" />
-                    <div class="lg:col-span-2">
-                        <label class="mb-1 block text-xs font-black uppercase tracking-widest text-slate-500">Mo ta</label>
-                        <textarea wire:model="homeSectionDescription" rows="3" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold"></textarea>
-                    </div>
-                    <div>
-                        <label class="mb-1 block text-xs font-black uppercase tracking-widest text-slate-500">Bat hien thi</label>
-                        <select wire:model="homeSectionEnabled" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold">
-                            <option value="1">Hien tren site user</option>
-                            <option value="0">An khoi nay</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="mb-1 block text-xs font-black uppercase tracking-widest text-slate-500">Loai khoi</label>
-                        <select wire:model="homeSectionType" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold">
-                            <option value="listings">Tin dang</option>
-                            <option value="regions">Khu vuc</option>
-                            <option value="tools">Tien ich</option>
-                            <option value="recently_viewed">Da xem gan day</option>
-                            <option value="blogs">Blog</option>
-                            <option value="feature_descriptions">Mo ta dich vu</option>
-                            <option value="promo">Banner</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="mb-1 block text-xs font-black uppercase tracking-widest text-slate-500">Nguon du lieu</label>
-                        <select wire:model="homeSectionSourceType" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold">
-                            <option value="latest">Moi nhat</option>
-                            <option value="vip">VIP</option>
-                            <option value="property">Theo loai BDS</option>
-                            <option value="category">Theo danh muc</option>
-                            <option value="province">Theo tinh/thanh</option>
-                            <option value="manual">Chon ID thu cong</option>
-                            <option value="regions">Khu vuc tinh thanh</option>
-                            <option value="static">Noi dung tinh</option>
-                            <option value="client">Du lieu client</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="mb-1 block text-xs font-black uppercase tracking-widest text-slate-500">Giao dich</label>
-                        <select wire:model="homeSectionTransactionType" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold">
-                            <option value="">Tat ca</option>
-                            <option value="sale">Mua ban</option>
-                            <option value="rent">Cho thue</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="mb-1 block text-xs font-black uppercase tracking-widest text-slate-500">Loai BDS</label>
-                        <select wire:model="homeSectionPropertyKind" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold">
-                            <option value="">Tat ca</option>
-                            <option value="apartment">Can ho</option>
-                            <option value="room">Phong tro</option>
-                            <option value="house">Nha</option>
-                            <option value="office">Mat tien / van phong</option>
-                            <option value="land">Dat</option>
-                            <option value="shared">O ghep</option>
-                        </select>
-                    </div>
-                    <x-admin-field label="ID danh muc" model="homeSectionCategoryId" />
-                    <x-admin-field label="Tinh/thanh hoac ma tinh" model="homeSectionProvinceName" />
-                    <div>
-                        <label class="mb-1 block text-xs font-black uppercase tracking-widest text-slate-500">Sap xep theo</label>
-                        <select wire:model="homeSectionSortBy" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold">
-                            <option value="created_at">Ngay dang</option>
-                            <option value="price">Gia</option>
-                            <option value="area">Dien tich</option>
-                            <option value="view_count">Luot xem</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="mb-1 block text-xs font-black uppercase tracking-widest text-slate-500">Chieu sap xep</label>
-                        <select wire:model="homeSectionSortOrder" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold">
-                            <option value="desc">Giam dan</option>
-                            <option value="asc">Tang dan</option>
-                        </select>
-                    </div>
-                    <x-admin-field label="So luong tin toi da" model="homeSectionLimit" type="number" />
-                    <x-admin-field label="Link xem tat ca" model="homeSectionHref" />
-                    <div class="lg:col-span-2">
-                        <label class="mb-1 block text-xs font-black uppercase tracking-widest text-slate-500">ID tin thu cong, cach nhau dau phay</label>
-                        <input wire:model="homeSectionManualIds" type="text" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-mono">
-                        <p class="mt-1 text-xs text-slate-400">Dung khi nguon du lieu = Chon ID thu cong. Vi du: 2246,2245,2244</p>
-                    </div>
+                <div class="cms-form-grid">
+                    <label class="cms-field full"><span class="cms-label">Tiêu đề *</span><input class="cms-input" wire:model="homeSectionTitle"></label>
+                    <label class="cms-field full"><span class="cms-label">Mô tả</span><input class="cms-input" wire:model="homeSectionDescription"></label>
+                    <label class="cms-field"><span class="cms-label">Loại khối</span><select class="cms-select" wire:model="homeSectionType">@foreach($sectionTypeLabels as $value => $label)<option value="{{ $value }}">{{ $label }}</option>@endforeach</select></label>
+                    <label class="cms-field"><span class="cms-label">Nguồn dữ liệu</span><select class="cms-select" wire:model="homeSectionSourceType">@foreach($sourceTypeLabels as $value => $label)<option value="{{ $value }}">{{ $label }}</option>@endforeach</select></label>
+                    <label class="cms-field"><span class="cms-label">Giao dịch</span><select class="cms-select" wire:model="homeSectionTransactionType"><option value="">Tất cả</option><option value="sale">Bán</option><option value="rent">Cho thuê</option></select></label>
+                    <label class="cms-field"><span class="cms-label">Loại BĐS</span><select class="cms-select" wire:model="homeSectionPropertyKind"><option value="">Tất cả</option>@foreach($propertyKindLabels as $value => $label)<option value="{{ $value }}">{{ $label }}</option>@endforeach</select></label>
+                    <label class="cms-field"><span class="cms-label">Danh mục</span><input class="cms-input" wire:model="homeSectionCategoryId"></label>
+                    <label class="cms-field"><span class="cms-label">Tỉnh/Thành</span><input class="cms-input" wire:model="homeSectionProvinceName"></label>
+                    <label class="cms-field"><span class="cms-label">Sắp xếp theo</span><select class="cms-select" wire:model="homeSectionSortBy"><option value="created_at">Ngày đăng</option><option value="price">Giá</option><option value="area">Diện tích</option><option value="view_count">Lượt xem</option></select></label>
+                    <label class="cms-field"><span class="cms-label">Chiều sắp xếp</span><select class="cms-select" wire:model="homeSectionSortOrder"><option value="desc">Giảm dần</option><option value="asc">Tăng dần</option></select></label>
+                    <label class="cms-field"><span class="cms-label">Giới hạn</span><input class="cms-input mono" type="number" wire:model="homeSectionLimit"></label>
+                    <label class="cms-field"><span class="cms-label">Thứ tự</span><input class="cms-input mono" type="number" wire:model="homeSectionSortOrderIndex"></label>
+                    <label class="cms-field full"><span class="cms-label">Đường dẫn</span><input class="cms-input" wire:model="homeSectionHref"></label>
+                    <label class="cms-field full"><span class="cms-label">ID tin thủ công, cách nhau bằng dấu phẩy</span><input class="cms-input mono" wire:model="homeSectionManualIds"></label>
+                    <label class="cms-field"><span class="cms-label">Trạng thái</span><select class="cms-select" wire:model="homeSectionEnabled"><option value="1">Bật</option><option value="0">Tắt</option></select></label>
                 </div>
-                <div class="px-6 py-4 border-t border-slate-100 flex justify-end gap-2 sticky bottom-0 bg-white">
-                    <button type="button" wire:click="closeHomeSectionModal" class="rounded-xl bg-slate-100 px-4 py-2 text-xs font-black uppercase text-slate-600">Huy</button>
-                    <button type="submit" class="rounded-xl bg-emerald-600 px-4 py-2 text-xs font-black uppercase text-white">Luu cau hinh</button>
+                <div class="cms-panel-head" style="justify-content:flex-end;">
+                    <button class="cms-btn" wire:click="closeHomeSectionModal">Hủy</button>
+                    <button class="cms-btn primary" wire:click="saveHomeSection">Lưu cấu hình</button>
                 </div>
-            </form>
+            </section>
         </div>
     @endif
 
     @if ($showCategoryModal)
-        <div class="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" wire:click="closeCategoryModal"></div>
-            <form wire:submit.prevent="saveCategory" class="relative w-full max-w-2xl rounded-2xl bg-white shadow-2xl border border-slate-200">
-                <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-                    <h3 class="font-black text-slate-800 uppercase tracking-widest text-sm">{{ $categoryEditing ? 'Sửa danh mục' : 'Thêm danh mục' }}</h3>
-                    <button type="button" wire:click="closeCategoryModal" class="text-slate-400 hover:text-red-500"><i class="fa-solid fa-xmark"></i></button>
+        <div class="cms-modal-backdrop">
+            <section class="cms-modal">
+                <div class="cms-panel-head">
+                    <h2 class="cms-panel-title">{{ $categoryEditing ? 'Sửa danh mục' : 'Thêm danh mục' }}</h2>
+                    <button class="cms-icon-btn" wire:click="closeCategoryModal"><i class="fa-solid fa-xmark"></i></button>
                 </div>
-                <div class="p-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <x-admin-field label="ID" model="categoryId" :disabled="$categoryEditing" />
-                    <x-admin-field label="Tên danh mục" model="categoryName" />
-                    <x-admin-field label="Slug" model="categorySlug" />
-                    <x-admin-field label="Icon FontAwesome" model="categoryIcon" />
-                    <div>
-                        <label class="mb-1 block text-xs font-black uppercase tracking-widest text-slate-500">Giao dịch</label>
-                        <select wire:model="categoryTransactionType" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold">
-                            <option value="both">Cả hai</option>
-                            <option value="rent">Cho thuê</option>
-                            <option value="sale">Mua bán</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="mb-1 block text-xs font-black uppercase tracking-widest text-slate-500">Loại BĐS</label>
-                        <select wire:model="categoryPropertyType" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold">
-                            <option value="">Không cố định</option>
-                            <option value="apartment">Căn hộ</option>
-                            <option value="room">Phòng trọ</option>
-                            <option value="house">Nhà</option>
-                            <option value="office">Văn phòng</option>
-                            <option value="land">Đất</option>
-                            <option value="shared">Ở ghép</option>
-                        </select>
-                    </div>
-                    <x-admin-field label="Thứ tự" model="categorySortOrder" type="number" />
+                <div class="cms-form-grid">
+                    <label class="cms-field"><span class="cms-label">Mã danh mục *</span><input class="cms-input mono" wire:model="categoryId" @disabled($categoryEditing)></label>
+                    <label class="cms-field"><span class="cms-label">Tên *</span><input class="cms-input" wire:model="categoryName"></label>
+                    <label class="cms-field"><span class="cms-label">Slug</span><input class="cms-input mono" wire:model="categorySlug"></label>
+                    <label class="cms-field"><span class="cms-label">Giao dịch</span><select class="cms-select" wire:model="categoryTransactionType"><option value="both">Cả hai</option><option value="sale">Bán</option><option value="rent">Cho thuê</option></select></label>
+                    <label class="cms-field"><span class="cms-label">Loại BĐS</span><input class="cms-input" wire:model="categoryPropertyType"></label>
+                    <label class="cms-field"><span class="cms-label">Icon</span><input class="cms-input mono" wire:model="categoryIcon"></label>
+                    <label class="cms-field"><span class="cms-label">Thứ tự</span><input class="cms-input mono" type="number" wire:model="categorySortOrder"></label>
                 </div>
-                <div class="px-6 py-4 border-t border-slate-100 flex justify-end gap-2">
-                    <button type="button" wire:click="closeCategoryModal" class="rounded-xl bg-slate-100 px-4 py-2 text-xs font-black uppercase text-slate-600">Hủy</button>
-                    <button type="submit" class="rounded-xl bg-emerald-600 px-4 py-2 text-xs font-black uppercase text-white">Lưu</button>
+                <div class="cms-panel-head" style="justify-content:flex-end;">
+                    <button class="cms-btn" wire:click="closeCategoryModal">Hủy</button>
+                    <button class="cms-btn primary" wire:click="saveCategory">Lưu danh mục</button>
                 </div>
-            </form>
+            </section>
         </div>
     @endif
 
     @if ($showBlogModal)
-        <div class="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" wire:click="closeBlogModal"></div>
-            <form wire:submit.prevent="saveBlog" class="relative w-full max-w-5xl max-h-[calc(100vh-2rem)] overflow-y-auto rounded-2xl bg-white shadow-2xl border border-slate-200">
-                <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white z-10">
-                    <h3 class="font-black text-slate-800 uppercase tracking-widest text-sm">{{ $blogEditingId ? 'Sửa bài blog' : 'Viết bài blog' }}</h3>
-                    <button type="button" wire:click="closeBlogModal" class="text-slate-400 hover:text-red-500"><i class="fa-solid fa-xmark"></i></button>
+        <div class="cms-modal-backdrop">
+            <section class="cms-modal">
+                <div class="cms-panel-head">
+                    <h2 class="cms-panel-title">{{ $blogEditingId ? 'Sửa bài viết' : 'Viết bài mới' }}</h2>
+                    <button class="cms-icon-btn" wire:click="closeBlogModal"><i class="fa-solid fa-xmark"></i></button>
                 </div>
-                <div class="p-6 grid grid-cols-1 lg:grid-cols-3 gap-4">
-                    <div class="lg:col-span-2 space-y-4">
-                        <x-admin-field label="Tiêu đề" model="blogTitle" />
-                        <x-admin-field label="Slug" model="blogSlug" />
-                        <div>
-                            <label class="mb-1 block text-xs font-black uppercase tracking-widest text-slate-500">Tóm tắt</label>
-                            <textarea wire:model="blogExcerpt" rows="3" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold"></textarea>
-                        </div>
-                        <div>
-                            <label class="mb-1 block text-xs font-black uppercase tracking-widest text-slate-500">Nội dung Markdown</label>
-                            <textarea wire:model="blogContent" rows="14" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-mono"></textarea>
-                            @error('blogContent') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
-                        </div>
-                    </div>
-                    <div class="space-y-4">
-                        <x-admin-field label="Ảnh bìa URL" model="blogCoverImage" />
-                        <x-admin-field label="Tác giả" model="blogAuthorName" />
-                        <x-admin-field label="Nhóm bài" model="blogCategoryTag" />
-                        <x-admin-field label="Tags, cách nhau bằng dấu phẩy" model="blogTags" />
-                        <x-admin-field label="Phút đọc" model="blogReadingMinutes" type="number" />
-                        <div>
-                            <label class="mb-1 block text-xs font-black uppercase tracking-widest text-slate-500">Trạng thái</label>
-                            <select wire:model="blogStatusValue" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold">
-                                <option value="draft">Nháp</option>
-                                <option value="published">Đã đăng</option>
-                                <option value="archived">Lưu trữ</option>
-                            </select>
-                        </div>
-                        <x-admin-field label="Ngày xuất bản" model="blogPublishedAt" type="datetime-local" />
-                    </div>
+                <div class="cms-form-grid">
+                    <label class="cms-field full"><span class="cms-label">Tiêu đề *</span><input class="cms-input" wire:model="blogTitle"></label>
+                    <label class="cms-field full"><span class="cms-label">Slug</span><input class="cms-input mono" wire:model="blogSlug"></label>
+                    <label class="cms-field full"><span class="cms-label">Tóm tắt</span><textarea class="cms-textarea" style="min-height:70px" wire:model="blogExcerpt"></textarea></label>
+                    <label class="cms-field full"><span class="cms-label">Nội dung *</span><textarea class="cms-textarea" style="min-height:220px" wire:model="blogContent"></textarea></label>
+                    <label class="cms-field full"><span class="cms-label">Ảnh đại diện</span><input class="cms-input" wire:model="blogCoverImage"></label>
+                    <label class="cms-field"><span class="cms-label">Tác giả</span><input class="cms-input" wire:model="blogAuthorName"></label>
+                    <label class="cms-field"><span class="cms-label">Tag chính</span><input class="cms-input" wire:model="blogCategoryTag"></label>
+                    <label class="cms-field"><span class="cms-label">Tags</span><input class="cms-input" wire:model="blogTags"></label>
+                    <label class="cms-field"><span class="cms-label">Phút đọc</span><input class="cms-input mono" type="number" wire:model="blogReadingMinutes"></label>
+                    <label class="cms-field"><span class="cms-label">Trạng thái</span><select class="cms-select" wire:model="blogStatusValue"><option value="draft">Nháp</option><option value="published">Đã đăng</option><option value="archived">Lưu trữ</option></select></label>
+                    <label class="cms-field"><span class="cms-label">Xuất bản lúc</span><input class="cms-input mono" type="datetime-local" wire:model="blogPublishedAt"></label>
                 </div>
-                <div class="px-6 py-4 border-t border-slate-100 flex justify-end gap-2 sticky bottom-0 bg-white">
-                    <button type="button" wire:click="closeBlogModal" class="rounded-xl bg-slate-100 px-4 py-2 text-xs font-black uppercase text-slate-600">Hủy</button>
-                    <button type="submit" class="rounded-xl bg-emerald-600 px-4 py-2 text-xs font-black uppercase text-white">Lưu bài viết</button>
+                <div class="cms-panel-head" style="justify-content:flex-end;">
+                    <button class="cms-btn" wire:click="closeBlogModal">Hủy</button>
+                    <button class="cms-btn primary" wire:click="saveBlog">Lưu bài viết</button>
                 </div>
-            </form>
+            </section>
         </div>
     @endif
 
     @if ($showLeadModal)
-        <div class="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" wire:click="closeLeadModal"></div>
-            <form wire:submit.prevent="saveLead" class="relative w-full max-w-2xl rounded-2xl bg-white shadow-2xl border border-slate-200">
-                <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-                    <div>
-                        <h3 class="font-black text-slate-800 uppercase tracking-widest text-sm">{{ $leadName }} · {{ $leadPhone }}</h3>
-                        <p class="mt-1 text-xs text-slate-500">{{ $leadMessage ?: 'Không có nội dung khách để lại.' }}</p>
-                    </div>
-                    <button type="button" wire:click="closeLeadModal" class="text-slate-400 hover:text-red-500"><i class="fa-solid fa-xmark"></i></button>
+        <div class="cms-modal-backdrop">
+            <section class="cms-modal" style="width: min(520px, calc(100vw - 48px));">
+                <div class="cms-panel-head">
+                    <h2 class="cms-panel-title">Xử lý lead</h2>
+                    <button class="cms-icon-btn" wire:click="closeLeadModal"><i class="fa-solid fa-xmark"></i></button>
                 </div>
-                <div class="p-6 space-y-4">
-                    <div>
-                        <label class="mb-1 block text-xs font-black uppercase tracking-widest text-slate-500">Trạng thái xử lý</label>
-                        <select wire:model="leadStatusValue" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold">
-                            <option value="new">Mới</option>
-                            <option value="contacted">Đã liên hệ</option>
-                            <option value="qualified">Tiềm năng</option>
-                            <option value="closed">Đã chốt</option>
-                            <option value="spam">Spam</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="mb-1 block text-xs font-black uppercase tracking-widest text-slate-500">Ghi chú nội bộ</label>
-                        <textarea wire:model="leadAdminNote" rows="6" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold"></textarea>
-                    </div>
+                <div class="cms-form-grid">
+                    <div class="cms-field"><span class="cms-label">Khách</span><div style="color:var(--text-primary); font-weight:700">{{ $leadName ?: 'Khách website' }}</div></div>
+                    <div class="cms-field"><span class="cms-label">Điện thoại</span><div class="mono">{{ $leadPhone ?: '-' }}</div></div>
+                    <div class="cms-field full"><span class="cms-label">Nội dung</span><div style="color:var(--text-secondary)">{{ $leadMessage ?: '-' }}</div></div>
+                    <label class="cms-field full"><span class="cms-label">Trạng thái</span><select class="cms-select" wire:model="leadStatusValue"><option value="new">Mới</option><option value="contacted">Đã liên hệ</option><option value="qualified">Tiềm năng</option><option value="closed">Đã chốt</option><option value="spam">Rác</option></select></label>
+                    <label class="cms-field full"><span class="cms-label">Ghi chú nội bộ</span><textarea class="cms-textarea" wire:model="leadAdminNote"></textarea></label>
                 </div>
-                <div class="px-6 py-4 border-t border-slate-100 flex justify-end gap-2">
-                    <button type="button" wire:click="closeLeadModal" class="rounded-xl bg-slate-100 px-4 py-2 text-xs font-black uppercase text-slate-600">Hủy</button>
-                    <button type="submit" class="rounded-xl bg-emerald-600 px-4 py-2 text-xs font-black uppercase text-white">Lưu xử lý</button>
+                <div class="cms-panel-head" style="justify-content:flex-end;">
+                    <button class="cms-btn" wire:click="closeLeadModal">Hủy</button>
+                    <button class="cms-btn primary" wire:click="saveLead">Lưu khách liên hệ</button>
                 </div>
-            </form>
+            </section>
         </div>
     @endif
 </div>
