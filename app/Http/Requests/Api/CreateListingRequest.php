@@ -14,7 +14,7 @@ class CreateListingRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'title' => 'required|string|min:10|max:255',
+            'title' => 'required|string|min:5|max:255',
             'type' => 'required|string|max:50',
             'property_type' => 'required',
             'category_id' => 'nullable|string|max:80',
