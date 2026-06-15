@@ -107,7 +107,7 @@
                         <span>Thông tin liên hệ</span>
                         <strong>{{ $listing->contact_type ?: 'Quản lý phòng' }}</strong>
                         @if($listing->contact_phone)
-                            @php($zaloUrl = ($siteContact['zaloHref'])($listing->contact_phone))
+                            @php $zaloUrl = $siteContact['zaloHref']($listing->contact_phone); @endphp
                             <div class="site-contact-phone-row">
                                 <a href="tel:{{ preg_replace('/\D+/', '', $listing->contact_phone) }}">{{ $listing->contact_phone }}</a>
                                 @if($zaloUrl)

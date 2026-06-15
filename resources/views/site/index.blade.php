@@ -352,8 +352,10 @@
                 <h2>Bạn cần hỗ trợ tìm phòng?</h2>
                 <p>Liên hệ trực tiếp để được kiểm tra phòng còn trống và sắp xếp lịch xem phòng tại TP.HCM.</p>
             </div>
-            @php($contactPhone = $siteContact['phone'] ?: config('app.contact_phone', '0900000000'))
-            @php($zaloUrl = ($siteContact['zaloHref'])($contactPhone))
+            @php
+                $contactPhone = $siteContact['phone'] ?: config('app.contact_phone', '0900000000');
+                $zaloUrl = $siteContact['zaloHref']($contactPhone);
+            @endphp
             <div class="site-contact-actions">
                 <a href="tel:{{ preg_replace('/\D+/', '', $contactPhone) }}"><small>Điện thoại</small><strong>{{ $contactPhone }}</strong></a>
                 @if($zaloUrl)
