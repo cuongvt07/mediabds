@@ -21,6 +21,14 @@
                 <i class="fa-regular fa-images"></i>
                 <span>Banner slider</span>
             </button>
+            <button type="button" role="tab" class="site-cms-nav {{ $activeTab === 'amenities' ? 'is-active' : '' }}" wire:click="setTab('amenities')">
+                <i class="fa-solid fa-couch"></i>
+                <span>Tiện ích &amp; nội thất</span>
+            </button>
+            <button type="button" role="tab" class="site-cms-nav {{ $activeTab === 'accounts' ? 'is-active' : '' }}" wire:click="setTab('accounts')">
+                <i class="fa-solid fa-users"></i>
+                <span>Tài khoản</span>
+            </button>
             <button type="button" role="tab" class="site-cms-nav {{ $activeTab === 'identity' ? 'is-active' : '' }}" wire:click="setTab('identity')">
                 <i class="fa-solid fa-palette"></i>
                 <span>Logo</span>
@@ -41,6 +49,10 @@
                         Tin đăng
                     @elseif($activeTab === 'banners')
                         Banner slider
+                    @elseif($activeTab === 'amenities')
+                        Tiện ích & nội thất
+                    @elseif($activeTab === 'accounts')
+                        Tài khoản
                     @elseif($activeTab === 'identity')
                         Logo & nhận diện
                     @else
@@ -59,6 +71,14 @@
                 @elseif($activeTab === 'banners')
                     <button type="button" class="cms-btn primary" wire:click="createBanner">
                         <i class="fa-solid fa-plus"></i> Thêm banner
+                    </button>
+                @elseif($activeTab === 'accounts')
+                    <button type="button" class="cms-btn primary" wire:click="createAccount">
+                        <i class="fa-solid fa-user-plus"></i> Thêm tài khoản
+                    </button>
+                @elseif($activeTab === 'amenities')
+                    <button type="button" class="cms-btn primary" wire:click="createAmenity">
+                        <i class="fa-solid fa-plus"></i> Thêm tiện ích
                     </button>
                 @endif
             </div>
@@ -201,6 +221,16 @@
                         <input class="cms-input" type="file" wire:model="logoFile" accept="image/*">
                         @error('logoFile') <span class="cms-error">{{ $message }}</span> @enderror
                     </label>
+                    <label class="cms-field">
+                        <span class="cms-label">Số điện thoại liên hệ</span>
+                        <input class="cms-input mono" wire:model="contactPhone" placeholder="VD: 0981847977">
+                        @error('contactPhone') <span class="cms-error">{{ $message }}</span> @enderror
+                    </label>
+                    <label class="cms-field">
+                        <span class="cms-label">Zalo (số hoặc link)</span>
+                        <input class="cms-input" wire:model="contactZalo" placeholder="VD: 0981847977 hoặc https://zalo.me/...">
+                        @error('contactZalo') <span class="cms-error">{{ $message }}</span> @enderror
+                    </label>
                     <div class="cms-field full">
                         <span class="cms-label">Preview</span>
                         <div class="site-cms-logo-preview">
@@ -272,6 +302,130 @@
                     </table>
                 </div>
                 <div class="cms-pagination">{{ $banners->links(data: ['scrollTo' => false]) }}</div>
+            </section>
+        @elseif($activeTab === 'accounts')
+            <section class="cms-panel">
+                <div class="cms-panel-head">
+                    <h2 class="cms-panel-title">Quản lý tài khoản</h2>
+                    <div class="site-cms-inline-actions">
+                        <input class="cms-input site-cms-search" wire:model.live.debounce.350ms="accountSearch" placeholder="Tìm tên, số điện thoại">
+                        <button type="button" class="cms-btn primary" wire:click="createAccount">
+                            <i class="fa-solid fa-user-plus"></i> Thêm tài khoản
+                        </button>
+                    </div>
+                </div>
+                <div class="site-cms-panel-note">
+                    Tài khoản đăng nhập bằng số điện thoại. Tài khoản vai trò <strong>Quản trị</strong> mới vào được CMS này.
+                </div>
+                <div class="cms-table-wrap cms-scrollbar">
+                    <table class="cms-table">
+                        <thead>
+                            <tr>
+                                <th>Tài khoản</th>
+                                <th style="width:160px;">Số điện thoại</th>
+                                <th style="width:150px;">Vai trò</th>
+                                <th style="width:130px;">Ngày tạo</th>
+                                <th style="width:100px;" class="right">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($siteAccounts as $account)
+                                <tr>
+                                    <td>
+                                        <div class="cms-truncate" style="color:var(--text-primary);font-weight:900;">{{ $account->name ?: '(Chưa đặt tên)' }}</div>
+                                        <div class="cms-truncate" style="font-size:11px;color:var(--text-muted);">{{ $account->email ?: 'Không có email' }}</div>
+                                    </td>
+                                    <td class="mono">{{ $account->phone ?: '-' }}</td>
+                                    <td>
+                                        <span class="cms-badge {{ $account->isAdmin() ? 'success' : 'muted' }}">
+                                            {{ $roleOptions[$account->role] ?? ($account->role ?: '-') }}
+                                        </span>
+                                    </td>
+                                    <td class="mono" style="font-size:11px;">{{ optional($account->created_at)->format('d/m/Y') ?: '-' }}</td>
+                                    <td class="right">
+                                        <div class="cms-row-actions">
+                                            <button type="button" class="cms-act" wire:click="editAccount({{ $account->id }})" title="Sửa tài khoản" aria-label="Sửa tài khoản"><i class="fa-solid fa-pen"></i></button>
+                                            @if($account->id !== auth()->id())
+                                                <button type="button" class="cms-act danger" wire:click="deleteAccount({{ $account->id }})" wire:confirm="Xóa tài khoản này?" title="Xóa tài khoản" aria-label="Xóa tài khoản"><i class="fa-solid fa-trash-can"></i></button>
+                                            @endif
+                                        </div>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="5" style="height:72px;text-align:center;">Chưa có tài khoản.</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+                <div class="cms-pagination">{{ $siteAccounts->links(data: ['scrollTo' => false]) }}</div>
+            </section>
+        @elseif($activeTab === 'amenities')
+            <section class="cms-panel">
+                <div class="cms-panel-head">
+                    <h2 class="cms-panel-title">Tiện ích &amp; nội thất</h2>
+                    <button type="button" class="cms-btn primary" wire:click="createAmenity">
+                        <i class="fa-solid fa-plus"></i> Thêm tiện ích
+                    </button>
+                </div>
+                <div class="site-cms-panel-note">
+                    Tải ảnh làm icon + đặt tên. Mục bật "Nội thất" sẽ hiển thị thêm ở bộ lọc <strong>Nội thất</strong> ngoài trang chủ. Người dùng lấy đúng danh sách này.
+                </div>
+                <div class="cms-table-wrap cms-scrollbar">
+                    <table class="cms-table">
+                        <thead>
+                            <tr>
+                                <th style="width:90px;">Icon</th>
+                                <th>Tên hiển thị</th>
+                                <th style="width:150px;">Mã (key)</th>
+                                <th style="width:110px;">Nội thất</th>
+                                <th style="width:90px;" class="right">Thứ tự</th>
+                                <th style="width:96px;">Trạng thái</th>
+                                <th style="width:100px;" class="right">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($siteAmenities as $amenity)
+                                <tr style="{{ $amenity->is_active ? '' : 'opacity:.58' }}">
+                                    <td>
+                                        @if($amenity->icon)
+                                            <img src="{{ $amenity->icon }}" alt="{{ $amenity->name }}" class="site-cms-amenity-icon">
+                                        @else
+                                            <div class="site-cms-empty-cover" style="width:44px;height:44px;border-radius:12px;"><i class="fa-regular fa-image"></i></div>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        <div class="cms-truncate" style="color:var(--text-primary);font-weight:900;">{{ $amenity->name }}</div>
+                                    </td>
+                                    <td class="mono" style="font-size:11px;color:var(--text-muted);">{{ $amenity->key }}</td>
+                                    <td>
+                                        <span class="cms-badge {{ $amenity->is_furniture ? 'success' : 'muted' }}">
+                                            {{ $amenity->is_furniture ? 'Có' : 'Không' }}
+                                        </span>
+                                    </td>
+                                    <td class="right mono">{{ $amenity->sort_order }}</td>
+                                    <td>
+                                        <button type="button" class="cms-badge {{ $amenity->is_active ? 'success' : 'muted' }}" wire:click="toggleAmenity({{ $amenity->id }})" title="Bật/tắt">
+                                            <i class="fa-solid {{ $amenity->is_active ? 'fa-toggle-on' : 'fa-toggle-off' }}"></i> {{ $amenity->is_active ? 'Hiện' : 'Ẩn' }}
+                                        </button>
+                                    </td>
+                                    <td class="right">
+                                        <div class="cms-row-actions">
+                                            <button type="button" class="cms-act" wire:click="editAmenity({{ $amenity->id }})" title="Sửa" aria-label="Sửa"><i class="fa-solid fa-pen"></i></button>
+                                            <button type="button" class="cms-act danger" wire:click="deleteAmenity({{ $amenity->id }})" wire:confirm="Xóa mục này?" title="Xóa" aria-label="Xóa"><i class="fa-solid fa-trash-can"></i></button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="7" style="height:72px;text-align:center;">Chưa có tiện ích / nội thất.</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+                <div class="cms-pagination">{{ $siteAmenities->links(data: ['scrollTo' => false]) }}</div>
             </section>
         @endif
     </section>
@@ -499,6 +653,112 @@
                 <div class="cms-panel-head" style="justify-content:flex-end;">
                     <button type="button" class="cms-btn" wire:click="closeBannerModal"><i class="fa-solid fa-xmark"></i> Hủy</button>
                     <button type="button" class="cms-btn primary" wire:click="saveBanner"><i class="fa-solid fa-floppy-disk"></i> Lưu banner</button>
+                </div>
+            </section>
+        </div>
+    @endif
+
+    @if($showAccountModal)
+        <div class="cms-modal-backdrop">
+            <section class="cms-modal">
+                <div class="cms-panel-head">
+                    <h2 class="cms-panel-title">{{ $accountEditingId ? 'Sửa tài khoản' : 'Thêm tài khoản' }}</h2>
+                    <button type="button" class="cms-icon-btn" wire:click="closeAccountModal"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <div class="cms-form-grid">
+                    <label class="cms-field full">
+                        <span class="cms-label">Họ và tên</span>
+                        <input class="cms-input" wire:model="accountName" placeholder="VD: Nguyễn Văn A">
+                        @error('accountName') <span class="cms-error">{{ $message }}</span> @enderror
+                    </label>
+                    <label class="cms-field">
+                        <span class="cms-label">Số điện thoại (đăng nhập)</span>
+                        <input class="cms-input mono" wire:model="accountPhone" placeholder="098...">
+                        @error('accountPhone') <span class="cms-error">{{ $message }}</span> @enderror
+                    </label>
+                    <label class="cms-field">
+                        <span class="cms-label">Vai trò</span>
+                        <select class="cms-select" wire:model="accountRole">
+                            @foreach($roleOptions as $value => $label)
+                                <option value="{{ $value }}">{{ $label }}</option>
+                            @endforeach
+                        </select>
+                        @error('accountRole') <span class="cms-error">{{ $message }}</span> @enderror
+                    </label>
+                    <label class="cms-field full">
+                        <span class="cms-label">Mật khẩu {{ $accountEditingId ? '(để trống nếu không đổi)' : '' }}</span>
+                        <input class="cms-input" type="password" wire:model="accountPassword" placeholder="{{ $accountEditingId ? 'Nhập để đặt mật khẩu mới' : 'Tối thiểu 6 ký tự' }}" autocomplete="new-password">
+                        @error('accountPassword') <span class="cms-error">{{ $message }}</span> @enderror
+                    </label>
+                </div>
+                <div class="cms-panel-head" style="justify-content:flex-end;">
+                    <button type="button" class="cms-btn" wire:click="closeAccountModal"><i class="fa-solid fa-xmark"></i> Hủy</button>
+                    <button type="button" class="cms-btn primary" wire:click="saveAccount"><i class="fa-solid fa-floppy-disk"></i> Lưu tài khoản</button>
+                </div>
+            </section>
+        </div>
+    @endif
+
+    @if($showAmenityModal)
+        <div class="cms-modal-backdrop">
+            <section class="cms-modal">
+                <div class="cms-panel-head">
+                    <h2 class="cms-panel-title">{{ $amenityEditingId ? 'Sửa tiện ích' : 'Thêm tiện ích' }}</h2>
+                    <button type="button" class="cms-icon-btn" wire:click="closeAmenityModal"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <div class="cms-form-grid">
+                    <label class="cms-field full">
+                        <span class="cms-label">Tên hiển thị</span>
+                        <input class="cms-input" wire:model="amenityName" placeholder="VD: Máy lạnh">
+                        @error('amenityName') <span class="cms-error">{{ $message }}</span> @enderror
+                    </label>
+                    <label class="cms-field">
+                        <span class="cms-label">Mã (key) — để trống sẽ tự sinh</span>
+                        <input class="cms-input mono" wire:model="amenityKey" placeholder="vd: air_conditioner" {{ $amenityEditingId ? 'readonly' : '' }}>
+                        @error('amenityKey') <span class="cms-error">{{ $message }}</span> @enderror
+                    </label>
+                    <label class="cms-field">
+                        <span class="cms-label">Thứ tự</span>
+                        <input class="cms-input mono" type="number" wire:model="amenitySortOrder">
+                        @error('amenitySortOrder') <span class="cms-error">{{ $message }}</span> @enderror
+                    </label>
+                    <label class="cms-field">
+                        <span class="cms-label">Là nội thất?</span>
+                        <select class="cms-select" wire:model="amenityIsFurniture">
+                            <option value="0">Không (chỉ là tiện ích)</option>
+                            <option value="1">Có (hiện ở bộ lọc Nội thất)</option>
+                        </select>
+                    </label>
+                    <label class="cms-field">
+                        <span class="cms-label">Trạng thái</span>
+                        <select class="cms-select" wire:model="amenityIsActive">
+                            <option value="1">Hiện</option>
+                            <option value="0">Ẩn</option>
+                        </select>
+                    </label>
+                    <label class="cms-field full">
+                        <span class="cms-label">Ảnh icon (upload local)</span>
+                        <input class="cms-input" type="file" wire:model="amenityIconFile" accept="image/*">
+                        @error('amenityIconFile') <span class="cms-error">{{ $message }}</span> @enderror
+                    </label>
+                    <div class="cms-field full">
+                        <span class="cms-label">Preview icon</span>
+                        <div class="site-cms-logo-preview">
+                            @if($amenityIconFile)
+                                <img src="{{ $amenityIconFile->temporaryUrl() }}" alt="Icon preview">
+                            @elseif($amenityIconUrl)
+                                <img src="{{ $amenityIconUrl }}" alt="Icon hiện tại">
+                            @else
+                                <span><i class="fa-solid fa-couch"></i></span>
+                            @endif
+                            <strong>{{ $amenityName ?: 'Tên tiện ích' }}</strong>
+                            <em>Icon hiển thị ngoài trang chủ cho người dùng.</em>
+                        </div>
+                    </div>
+                </div>
+                <div class="cms-panel-head" style="justify-content:flex-end;">
+                    <button type="button" class="cms-btn" wire:click="closeAmenityModal"><i class="fa-solid fa-xmark"></i> Hủy</button>
+                    <button type="button" class="cms-btn primary" wire:click="saveAmenity"><i class="fa-solid fa-floppy-disk"></i> Lưu tiện ích</button>
                 </div>
             </section>
         </div>

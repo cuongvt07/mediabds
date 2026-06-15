@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Auth;
 class Login extends Component
 {
     public $phone = '';
+    public $password = '';
     public $remember = true;
 
     public function mount()
@@ -35,6 +36,7 @@ class Login extends Component
 
         return [
             'phone' => 'required',
+            'password' => 'required',
         ];
     }
 
@@ -51,6 +53,7 @@ class Login extends Component
             'registerInviteCode.exists' => 'Mã giới thiệu không tồn tại. Vui lòng kiểm tra lại.',
             'phone.required' => 'Vui lòng nhập số điện thoại.',
             'phone.exists' => 'Số điện thoại này chưa được đăng ký.',
+            'password.required' => 'Vui lòng nhập mật khẩu.',
         ];
     }
 
@@ -63,24 +66,26 @@ class Login extends Component
     public function login()
     {
         $this->validate([
-            'phone' => 'required|exists:users,phone',
+            'phone' => 'required',
+            'password' => 'required',
         ]);
 
-        $user = \App\Models\User::where('phone', $this->phone)->first();
-
-        if ($user) {
-            Auth::login($user, $this->remember);
-            session()->regenerate();
-
-            // Admin luôn vào thẳng CMS, không theo "intended URL" cũ.
-            if ($user->isAdmin()) {
-                return redirect()->route('site.admin');
-            }
-
-            return redirect()->intended(route('site.home'));
+        // Đăng nhập bằng số điện thoại + mật khẩu (Auth::attempt tự kiểm tra hash).
+        if (! Auth::attempt(['phone' => $this->phone, 'password' => $this->password], $this->remember)) {
+            $this->addError('phone', 'Số điện thoại hoặc mật khẩu không đúng.');
+            return;
         }
 
-        $this->addError('phone', 'Có lỗi xảy ra khi đăng nhập.');
+        session()->regenerate();
+
+        $user = Auth::user();
+
+        // Admin luôn vào thẳng CMS, không theo "intended URL" cũ.
+        if ($user->isAdmin()) {
+            return redirect()->route('site.admin');
+        }
+
+        return redirect()->intended(route('site.home'));
     }
 
     public function register()

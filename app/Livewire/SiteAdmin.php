@@ -4,9 +4,14 @@ namespace App\Livewire;
 
 use App\Models\RealEstateListing as ListingModel;
 use App\Models\SiteBanner;
+use App\Models\SiteAmenity;
 use App\Models\SiteSetting;
+use App\Models\User;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use Livewire\WithPagination;
@@ -83,9 +88,35 @@ class SiteAdmin extends Component
     // Component (not model) — resolves to App\Livewire\RealEstateListing in this namespace.
     public const PROVINCES = RealEstateListing::PROVINCES;
 
+    public const ROLE_OPTIONS = [
+        'admin' => 'Quản trị',
+        'ctv' => 'Cộng tác viên',
+        'buyer' => 'Người dùng',
+    ];
+
+    public $showAccountModal = false;
+    public $accountEditingId = null;
+    public $accountSearch = '';
+    public $accountName = '';
+    public $accountPhone = '';
+    public $accountRole = 'ctv';
+    public $accountPassword = '';
+
+    public $showAmenityModal = false;
+    public $amenityEditingId = null;
+    public $amenityName = '';
+    public $amenityKey = '';
+    public $amenityIsFurniture = false;
+    public $amenitySortOrder = 0;
+    public $amenityIsActive = true;
+    public $amenityIconUrl = '';
+    public $amenityIconFile;
+
     public $siteName = 'NHÀ TRỌ SÀI GÒN';
     public $logoUrl = '';
     public $logoFile;
+    public $contactPhone = '';
+    public $contactZalo = '';
 
     protected $queryString = [
         'activeTab' => ['except' => 'dashboard', 'as' => 'tab'],
@@ -98,6 +129,8 @@ class SiteAdmin extends Component
     {
         $this->siteName = SiteSetting::query()->whereKey('site_name')->value('value') ?: 'NHÀ TRỌ SÀI GÒN';
         $this->logoUrl = SiteSetting::query()->whereKey('logo_url')->value('value') ?: '';
+        $this->contactPhone = SiteSetting::query()->whereKey('contact_phone')->value('value') ?: '';
+        $this->contactZalo = SiteSetting::query()->whereKey('contact_zalo')->value('value') ?: '';
         $this->loadDistricts($this->listingProvinceId);
     }
 
@@ -115,10 +148,19 @@ class SiteAdmin extends Component
             'activeBannerCount' => SiteBanner::query()->where('is_active', true)->count(),
             'listingCount' => $this->publicRoomQuery()->count(),
             'availableListingCount' => $this->publicRoomQuery()->where('is_sold', false)->count(),
+            'siteAccounts' => $this->accountQuery()
+                ->orderByDesc('id')
+                ->paginate(10, ['*'], 'accountPage'),
+            'accountCount' => User::query()->count(),
+            'siteAmenities' => SiteAmenity::query()
+                ->ordered()
+                ->paginate(20, ['*'], 'amenityPage'),
+            'amenityCount' => SiteAmenity::query()->count(),
             'roomTypes' => self::ROOM_TYPES,
             'furnishTypes' => self::FURNISH_TYPES,
-            'amenityOptions' => self::AMENITIES,
+            'amenityOptions' => SiteAmenity::query()->active()->ordered()->pluck('name', 'key')->all(),
             'provinces' => self::PROVINCES,
+            'roleOptions' => self::ROLE_OPTIONS,
         ])->layout('components.layouts.site-admin', [
             'title' => 'Quản trị nhà trọ',
         ]);
@@ -126,13 +168,20 @@ class SiteAdmin extends Component
 
     public function setTab(string $tab): void
     {
-        if (! in_array($tab, ['dashboard', 'listings', 'banners', 'identity'], true)) {
+        if (! in_array($tab, ['dashboard', 'listings', 'banners', 'accounts', 'amenities', 'identity'], true)) {
             return;
         }
 
         $this->activeTab = $tab;
         $this->resetPage('listingPage');
         $this->resetPage('bannerPage');
+        $this->resetPage('accountPage');
+        $this->resetPage('amenityPage');
+    }
+
+    public function updatedAccountSearch(): void
+    {
+        $this->resetPage('accountPage');
     }
 
     public function updatedListingSearch(): void
@@ -211,7 +260,7 @@ class SiteAdmin extends Component
             'listingRoomType' => 'required|in:duplex,studio,loft,balcony',
             'listingFurnish' => 'nullable|in:full,basic,empty',
             'listingAmenities' => 'array',
-            'listingAmenities.*' => 'in:' . implode(',', array_keys(self::AMENITIES)),
+            'listingAmenities.*' => 'in:' . implode(',', SiteAmenity::query()->pluck('key')->all() ?: ['_none']),
             'listingBedrooms' => 'nullable|integer|min:0|max:20',
             'listingToilets' => 'nullable|integer|min:0|max:20',
             'listingDescription' => 'nullable|string',
@@ -365,6 +414,8 @@ class SiteAdmin extends Component
         $data = $this->validate([
             'siteName' => 'required|string|max:80',
             'logoFile' => 'nullable|image|max:2048',
+            'contactPhone' => 'nullable|string|max:40',
+            'contactZalo' => 'nullable|string|max:255',
         ]);
 
         if ($this->logoFile) {
@@ -373,10 +424,12 @@ class SiteAdmin extends Component
 
         SiteSetting::updateOrCreate(['key' => 'site_name'], ['value' => $data['siteName']]);
         SiteSetting::updateOrCreate(['key' => 'logo_url'], ['value' => $this->logoUrl ?: null]);
+        SiteSetting::updateOrCreate(['key' => 'contact_phone'], ['value' => $this->contactPhone ?: null]);
+        SiteSetting::updateOrCreate(['key' => 'contact_zalo'], ['value' => $this->contactZalo ?: null]);
 
         $this->logoFile = null;
         $this->activeTab = 'identity';
-        session()->flash('message', 'Đã cập nhật logo nhà trọ.');
+        session()->flash('message', 'Đã cập nhật nhận diện & liên hệ.');
     }
 
     public function toggleBanner(int $id): void
@@ -399,6 +452,171 @@ class SiteAdmin extends Component
         $this->resetBannerForm();
     }
 
+    public function createAccount(): void
+    {
+        $this->resetAccountForm();
+        $this->activeTab = 'accounts';
+        $this->showAccountModal = true;
+    }
+
+    public function editAccount(int $id): void
+    {
+        $user = User::findOrFail($id);
+        $this->accountEditingId = $user->id;
+        $this->accountName = $user->name ?: '';
+        $this->accountPhone = $user->phone ?: '';
+        $this->accountRole = $user->role ?: 'ctv';
+        $this->accountPassword = '';
+        $this->activeTab = 'accounts';
+        $this->showAccountModal = true;
+    }
+
+    public function saveAccount(): void
+    {
+        $data = $this->validate([
+            'accountName' => 'required|string|max:255',
+            'accountPhone' => [
+                'required',
+                'regex:/^0\d{9}$/',
+                Rule::unique('users', 'phone')->ignore($this->accountEditingId),
+            ],
+            'accountRole' => 'required|in:' . implode(',', array_keys(self::ROLE_OPTIONS)),
+            // Tạo mới: bắt buộc đặt mật khẩu. Sửa: để trống = giữ mật khẩu cũ.
+            'accountPassword' => [$this->accountEditingId ? 'nullable' : 'required', 'string', 'min:6', 'max:255'],
+        ], [
+            'accountPhone.regex' => 'Số điện thoại phải gồm 10 số và bắt đầu bằng 0.',
+            'accountPhone.unique' => 'Số điện thoại này đã có tài khoản.',
+            'accountPassword.required' => 'Vui lòng đặt mật khẩu cho tài khoản mới.',
+            'accountPassword.min' => 'Mật khẩu phải có ít nhất 6 ký tự.',
+        ]);
+
+        $payload = [
+            'name' => $data['accountName'],
+            'phone' => $data['accountPhone'],
+            'role' => $data['accountRole'],
+        ];
+
+        // password là NOT NULL. Đặt khi tạo mới, hoặc khi sửa mà có nhập mật khẩu mới.
+        if (! empty($data['accountPassword'])) {
+            $payload['password'] = Hash::make($data['accountPassword']);
+        }
+
+        User::updateOrCreate(['id' => $this->accountEditingId], $payload);
+
+        session()->flash('message', 'Đã lưu tài khoản.');
+        $this->activeTab = 'accounts';
+        $this->closeAccountModal();
+    }
+
+    public function deleteAccount(int $id): void
+    {
+        $this->activeTab = 'accounts';
+
+        if ($id === auth()->id()) {
+            session()->flash('message', 'Không thể xóa chính tài khoản đang đăng nhập.');
+            return;
+        }
+
+        User::whereKey($id)->delete();
+        session()->flash('message', 'Đã xóa tài khoản.');
+    }
+
+    public function closeAccountModal(): void
+    {
+        $this->showAccountModal = false;
+        $this->resetAccountForm();
+    }
+
+    public function createAmenity(): void
+    {
+        $this->resetAmenityForm();
+        $this->amenitySortOrder = (int) (SiteAmenity::query()->max('sort_order') ?? 0) + 1;
+        $this->activeTab = 'amenities';
+        $this->showAmenityModal = true;
+    }
+
+    public function editAmenity(int $id): void
+    {
+        $amenity = SiteAmenity::findOrFail($id);
+        $this->amenityEditingId = $amenity->id;
+        $this->amenityName = $amenity->name;
+        $this->amenityKey = $amenity->key;
+        $this->amenityIsFurniture = (bool) $amenity->is_furniture;
+        $this->amenitySortOrder = (int) $amenity->sort_order;
+        $this->amenityIsActive = (bool) $amenity->is_active;
+        $this->amenityIconUrl = $amenity->icon ?: '';
+        $this->amenityIconFile = null;
+        $this->activeTab = 'amenities';
+        $this->showAmenityModal = true;
+    }
+
+    public function saveAmenity(): void
+    {
+        // Tự sinh key từ tên nếu chưa nhập.
+        if (! $this->amenityKey && $this->amenityName) {
+            $this->amenityKey = Str::slug($this->amenityName, '_');
+        }
+
+        $data = $this->validate([
+            'amenityName' => 'required|string|max:120',
+            'amenityKey' => [
+                'required',
+                'string',
+                'max:80',
+                'regex:/^[a-z0-9_]+$/',
+                Rule::unique('site_amenities', 'key')->ignore($this->amenityEditingId),
+            ],
+            'amenityIsFurniture' => 'boolean',
+            'amenitySortOrder' => 'required|integer|min:0|max:9999',
+            'amenityIsActive' => 'boolean',
+            'amenityIconFile' => 'nullable|image|max:2048',
+        ], [
+            'amenityKey.regex' => 'Mã chỉ gồm chữ thường, số và dấu gạch dưới.',
+            'amenityKey.unique' => 'Mã này đã tồn tại.',
+        ]);
+
+        $iconUrl = $this->amenityIconUrl ?: null;
+        if ($this->amenityIconFile) {
+            $iconUrl = Storage::disk('public')->url($this->amenityIconFile->store('site/amenities', 'public'));
+        }
+
+        SiteAmenity::updateOrCreate(
+            ['id' => $this->amenityEditingId],
+            [
+                'key' => $data['amenityKey'],
+                'name' => $data['amenityName'],
+                'icon' => $iconUrl,
+                'is_furniture' => (bool) $data['amenityIsFurniture'],
+                'sort_order' => (int) $data['amenitySortOrder'],
+                'is_active' => (bool) $data['amenityIsActive'],
+            ]
+        );
+
+        session()->flash('message', 'Đã lưu tiện ích / nội thất.');
+        $this->activeTab = 'amenities';
+        $this->closeAmenityModal();
+    }
+
+    public function toggleAmenity(int $id): void
+    {
+        $amenity = SiteAmenity::findOrFail($id);
+        $amenity->update(['is_active' => ! $amenity->is_active]);
+        $this->activeTab = 'amenities';
+    }
+
+    public function deleteAmenity(int $id): void
+    {
+        SiteAmenity::whereKey($id)->delete();
+        $this->activeTab = 'amenities';
+        session()->flash('message', 'Đã xóa tiện ích / nội thất.');
+    }
+
+    public function closeAmenityModal(): void
+    {
+        $this->showAmenityModal = false;
+        $this->resetAmenityForm();
+    }
+
     private function listingQuery()
     {
         return $this->publicRoomQuery()
@@ -418,6 +636,42 @@ class SiteAdmin extends Component
     {
         return ListingModel::query()
             ->where('property_type', 115);
+    }
+
+    private function accountQuery()
+    {
+        return User::query()
+            ->when($this->accountSearch, function ($query) {
+                $term = '%' . trim($this->accountSearch) . '%';
+                $query->where(function ($subQuery) use ($term) {
+                    $subQuery->where('name', 'like', $term)
+                        ->orWhere('phone', 'like', $term)
+                        ->orWhere('email', 'like', $term);
+                });
+            });
+    }
+
+    private function resetAccountForm(): void
+    {
+        $this->accountEditingId = null;
+        $this->accountName = '';
+        $this->accountPhone = '';
+        $this->accountRole = 'ctv';
+        $this->accountPassword = '';
+        $this->resetValidation();
+    }
+
+    private function resetAmenityForm(): void
+    {
+        $this->amenityEditingId = null;
+        $this->amenityName = '';
+        $this->amenityKey = '';
+        $this->amenityIsFurniture = false;
+        $this->amenitySortOrder = 0;
+        $this->amenityIsActive = true;
+        $this->amenityIconUrl = '';
+        $this->amenityIconFile = null;
+        $this->resetValidation();
     }
 
     private function resetListingForm(): void

@@ -1,138 +1,107 @@
-<div
-    class="bg-slate-800 p-8 sm:p-10 rounded-3xl border border-slate-700 shadow-2xl ring-1 ring-white/10 animate-in fade-in slide-in-from-bottom-8 duration-700 w-full">
+<div class="bg-white rounded-3xl border border-slate-200 shadow-[0_24px_70px_rgba(17,17,17,0.12)] p-8 sm:p-10 w-full animate-in fade-in slide-in-from-bottom-6 duration-500">
 
-    <div class="text-center mb-10">
-        <img src="https://s3-hcm5-r1.longvan.net/postmedia/2026/03/logo11_1774458655_729a.png" alt="OpenFiles"
-            class="h-16 mx-auto mb-4 object-contain">
-        <h2 class="text-2xl font-black text-white tracking-widest uppercase font-mono">
-            VM PHÚ THỊNH LAND
-        </h2>
-        <p class="mt-2 text-slate-400 text-sm font-medium tracking-wide">
-            SECURE CLOUD STORAGE
+    <div class="text-center mb-8">
+        <div class="w-16 h-16 mx-auto mb-4 grid place-items-center rounded-2xl bg-slate-900 text-white text-2xl shadow-lg">
+            <i class="fa-solid fa-house"></i>
+        </div>
+        <h2 class="text-2xl font-black text-slate-900 tracking-tight">NHÀ TRỌ SÀI GÒN</h2>
+        <p class="mt-1 text-slate-500 text-sm font-semibold">
+            {{ $isRegistering ? 'Tạo tài khoản mới' : 'Đăng nhập trang quản trị' }}
         </p>
     </div>
 
     @if(!$isRegistering)
-        <form wire:submit="login" class="space-y-6">
-            <div class="space-y-4">
-                <!-- Phone Input -->
-                <div>
-                    <label for="phone" class="sr-only">Phone Number</label>
-                    <div class="relative group">
-                        <div
-                            class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors group-focus-within:text-blue-500 text-slate-500">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z">
-                                </path>
-                            </svg>
-                        </div>
-                        <input id="phone" name="phone" type="text" wire:model="phone" required=""
-                            class="block w-full pl-11 pr-4 py-3.5 bg-slate-900 border border-slate-700 rounded-xl text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all sm:text-sm font-medium hover:bg-slate-900/70"
-                            placeholder="Phone Number">
-                    </div>
-                    @error('phone')
-                        <span class="text-red-400 text-xs mt-1">{{ $message }}</span>
-                    @enderror
+        <form wire:submit="login" class="space-y-5">
+            {{-- Phone --}}
+            <div>
+                <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Số điện thoại</label>
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 pl-4 flex items-center text-slate-400">
+                        <i class="fa-solid fa-phone"></i>
+                    </span>
+                    <input type="text" wire:model="phone" autocomplete="username"
+                        class="block w-full pl-11 pr-4 h-12 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 font-medium focus:outline-none focus:ring-2 focus:ring-slate-900/15 focus:border-slate-900 focus:bg-white transition"
+                        placeholder="Nhập số điện thoại">
                 </div>
+                @error('phone') <span class="block text-red-500 text-xs mt-1.5 font-medium">{{ $message }}</span> @enderror
             </div>
 
-            <div class="pt-2">
-                <button type="submit"
-                    class="group relative w-full flex justify-center py-3.5 px-4 border border-transparent text-sm font-bold rounded-xl text-white bg-blue-600 hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-blue-500 transition-all shadow-[0_0_20px_rgba(37,99,235,0.3)] hover:shadow-[0_0_30px_rgba(37,99,235,0.5)]">
-                    <span class="absolute left-0 inset-y-0 flex items-center pl-3">
-                        <svg class="h-5 w-5 text-blue-300 group-hover:text-blue-200 transition-colors" fill="none"
-                            viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
-                        </svg>
+            {{-- Password --}}
+            <div>
+                <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Mật khẩu</label>
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 pl-4 flex items-center text-slate-400">
+                        <i class="fa-solid fa-lock"></i>
                     </span>
-                    Sign In
-                </button>
+                    <input type="password" wire:model="password" autocomplete="current-password"
+                        class="block w-full pl-11 pr-4 h-12 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 font-medium focus:outline-none focus:ring-2 focus:ring-slate-900/15 focus:border-slate-900 focus:bg-white transition"
+                        placeholder="Nhập mật khẩu">
+                </div>
+                @error('password') <span class="block text-red-500 text-xs mt-1.5 font-medium">{{ $message }}</span> @enderror
             </div>
-            
-            <div class="text-center mt-4">
-                <button type="button" wire:click="toggleRegister" class="text-sm text-blue-400 hover:text-blue-300 transition-colors cursor-pointer">
-                    Chưa có tài khoản? Đăng ký ngay
+
+            <label class="flex items-center gap-2 text-sm text-slate-600 select-none cursor-pointer">
+                <input type="checkbox" wire:model="remember" class="w-4 h-4 rounded accent-slate-900">
+                Ghi nhớ đăng nhập
+            </label>
+
+            <button type="submit" wire:loading.attr="disabled"
+                class="w-full h-12 flex items-center justify-center gap-2 rounded-xl bg-slate-900 text-white font-bold tracking-wide hover:bg-black focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 transition disabled:opacity-60">
+                <span wire:loading.remove wire:target="login"><i class="fa-solid fa-arrow-right-to-bracket mr-1"></i> Đăng nhập</span>
+                <span wire:loading wire:target="login"><i class="fa-solid fa-spinner fa-spin"></i> Đang xử lý...</span>
+            </button>
+
+            <div class="text-center pt-1">
+                <button type="button" wire:click="toggleRegister" class="text-sm font-semibold text-slate-500 hover:text-slate-900 transition">
+                    Chưa có tài khoản? <span class="underline">Đăng ký ngay</span>
                 </button>
             </div>
         </form>
     @else
-        <form wire:submit="register" class="space-y-6">
-            <div class="space-y-4">
-                <!-- Name Input -->
-                <div>
-                    <label for="registerName" class="sr-only">Họ và Tên</label>
-                    <div class="relative group">
-                        <div
-                            class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors group-focus-within:text-blue-500 text-slate-500">
-                            <i class="fa-solid fa-user"></i>
-                        </div>
-                        <input id="registerName" type="text" wire:model="registerName" required
-                            class="block w-full pl-11 pr-4 py-3.5 bg-slate-900 border border-slate-700 rounded-xl text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all sm:text-sm font-medium hover:bg-slate-900/70"
-                            placeholder="Họ và Tên">
-                    </div>
-                    @error('registerName')
-                        <span class="text-red-400 text-xs mt-1">{{ $message }}</span>
-                    @enderror
+        <form wire:submit="register" class="space-y-5">
+            <div>
+                <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Họ và tên</label>
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 pl-4 flex items-center text-slate-400"><i class="fa-solid fa-user"></i></span>
+                    <input type="text" wire:model="registerName"
+                        class="block w-full pl-11 pr-4 h-12 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 font-medium focus:outline-none focus:ring-2 focus:ring-slate-900/15 focus:border-slate-900 focus:bg-white transition"
+                        placeholder="Họ và tên">
                 </div>
-
-                <!-- Phone Input -->
-                <div>
-                    <label for="registerPhone" class="sr-only">Số điện thoại</label>
-                    <div class="relative group">
-                        <div
-                            class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors group-focus-within:text-blue-500 text-slate-500">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z">
-                                </path>
-                            </svg>
-                        </div>
-                        <input id="registerPhone" type="text" wire:model="registerPhone" required
-                            class="block w-full pl-11 pr-4 py-3.5 bg-slate-900 border border-slate-700 rounded-xl text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all sm:text-sm font-medium hover:bg-slate-900/70"
-                            placeholder="Số điện thoại">
-                    </div>
-                    @error('registerPhone')
-                        <span class="text-red-400 text-xs mt-1">{{ $message }}</span>
-                    @enderror
-                </div>
-
-                <!-- Invite Code Input -->
-                <div>
-                    <label for="registerInviteCode" class="sr-only">Người giới thiệu (Mã mời)</label>
-                    <div class="relative group">
-                        <div
-                            class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors group-focus-within:text-emerald-500 text-slate-500">
-                            <i class="fa-solid fa-gift"></i>
-                        </div>
-                        <input id="registerInviteCode" type="text" wire:model="registerInviteCode" required
-                            class="block w-full pl-11 pr-4 py-3.5 bg-slate-900 border border-slate-700 rounded-xl text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all sm:text-sm font-medium hover:bg-slate-900/70"
-                            placeholder="Mã người giới thiệu (* Bắt buộc)">
-                    </div>
-                    @error('registerInviteCode')
-                        <span class="text-red-400 text-xs mt-1">{{ $message }}</span>
-                    @enderror
-                </div>
+                @error('registerName') <span class="block text-red-500 text-xs mt-1.5 font-medium">{{ $message }}</span> @enderror
             </div>
 
-            <div class="pt-2">
-                <button type="submit"
-                    class="group relative w-full flex justify-center py-3.5 px-4 border border-transparent text-sm font-bold rounded-xl text-white bg-emerald-600 hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-emerald-500 transition-all shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:shadow-[0_0_30px_rgba(16,185,129,0.5)]">
-                    <span class="absolute left-0 inset-y-0 flex items-center pl-3">
-                        <i class="fa-solid fa-user-plus text-emerald-300 group-hover:text-emerald-200 transition-colors"></i>
-                    </span>
-                    Đăng Ký
-                </button>
+            <div>
+                <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Số điện thoại</label>
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 pl-4 flex items-center text-slate-400"><i class="fa-solid fa-phone"></i></span>
+                    <input type="text" wire:model="registerPhone"
+                        class="block w-full pl-11 pr-4 h-12 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 font-medium focus:outline-none focus:ring-2 focus:ring-slate-900/15 focus:border-slate-900 focus:bg-white transition"
+                        placeholder="Số điện thoại">
+                </div>
+                @error('registerPhone') <span class="block text-red-500 text-xs mt-1.5 font-medium">{{ $message }}</span> @enderror
             </div>
 
-            <div class="text-center mt-4">
-                <button type="button" wire:click="toggleRegister" class="text-sm text-slate-400 hover:text-slate-300 transition-colors cursor-pointer">
-                    Đã có tài khoản? Quay lại đăng nhập
+            <div>
+                <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Mã giới thiệu</label>
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 pl-4 flex items-center text-slate-400"><i class="fa-solid fa-gift"></i></span>
+                    <input type="text" wire:model="registerInviteCode"
+                        class="block w-full pl-11 pr-4 h-12 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 font-medium focus:outline-none focus:ring-2 focus:ring-slate-900/15 focus:border-slate-900 focus:bg-white transition"
+                        placeholder="Mã người giới thiệu (bắt buộc)">
+                </div>
+                @error('registerInviteCode') <span class="block text-red-500 text-xs mt-1.5 font-medium">{{ $message }}</span> @enderror
+            </div>
+
+            <button type="submit"
+                class="w-full h-12 flex items-center justify-center gap-2 rounded-xl bg-slate-900 text-white font-bold tracking-wide hover:bg-black focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 transition">
+                <i class="fa-solid fa-user-plus"></i> Đăng ký
+            </button>
+
+            <div class="text-center pt-1">
+                <button type="button" wire:click="toggleRegister" class="text-sm font-semibold text-slate-500 hover:text-slate-900 transition">
+                    Đã có tài khoản? <span class="underline">Quay lại đăng nhập</span>
                 </button>
             </div>
         </form>
     @endif
-
-
 </div>

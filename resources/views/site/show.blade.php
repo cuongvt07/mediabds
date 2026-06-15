@@ -7,19 +7,14 @@
     if (empty($images)) $images = ['https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=1400&q=85'];
     $roomLabels = ['duplex' => 'Duplex', 'studio' => 'Studio', 'loft' => 'Phòng có gác', 'balcony' => 'Phòng ban công'];
     $furnishLabels = ['full' => 'Đầy đủ nội thất', 'basic' => 'Nội thất cơ bản', 'empty' => 'Phòng trống'];
-    $amenityLabels = [
-        'bed' => ['Giường', '▭'],
-        'mattress' => ['Nệm', '◒'],
-        'wardrobe' => ['Tủ quần áo', '▦'],
-        'elevator' => ['Thang máy', '↕'],
-        'wifi' => ['Wifi', '⌁'],
-        'air_conditioner' => ['Máy lạnh', '✳'],
-        'kitchen' => ['Kệ bếp', '⌘'],
-        'water_heater' => ['Nước nóng', '☼'],
-        'fridge' => ['Tủ lạnh', '▱'],
-        'loft' => ['Gác', '⌂'],
-    ];
-    $amenities = is_array($listing->amenities) ? $listing->amenities : [];
+    // $amenities (truyền từ controller) = danh mục CMS; $listingAmenities = key đã chọn trên tin.
+    $listingAmenities = is_array($listing->amenities) ? $listing->amenities : [];
+    $amenityIconHtml = function ($item) {
+        if (! empty($item->icon)) {
+            return '<img src="' . e($item->icon) . '" alt="' . e($item->name) . '" class="site-amenity-img" loading="lazy">';
+        }
+        return '<i>' . e(mb_substr($item->name, 0, 1)) . '</i>';
+    };
     $location = implode(', ', array_filter([$listing->address, $listing->ward_name, $listing->district_name, 'TP.HCM']));
 @endphp
 
@@ -64,10 +59,10 @@
                             <span>Đã xác thực</span>
                         </div>
                         <div class="site-detail-amenities">
-                            @foreach($amenityLabels as $value => [$label, $icon])
-                                <div class="{{ in_array($value, $amenities, true) ? 'is-active' : '' }}">
-                                    <i>{{ $icon }}</i>
-                                    <span>{{ $label }}</span>
+                            @foreach($amenities as $item)
+                                <div class="{{ in_array($item->key, $listingAmenities, true) ? 'is-active' : '' }}">
+                                    {!! $amenityIconHtml($item) !!}
+                                    <span>{{ $item->name }}</span>
                                 </div>
                             @endforeach
                         </div>
@@ -78,7 +73,7 @@
                         <div class="site-detail-costs">
                             <div><span>Điện</span><strong>Liên hệ</strong></div>
                             <div><span>Nước</span><strong>Liên hệ</strong></div>
-                            <div><span>Internet</span><strong>{{ in_array('wifi', $amenities, true) ? 'Có Wifi' : 'Liên hệ' }}</strong></div>
+                            <div><span>Internet</span><strong>{{ in_array('wifi', $listingAmenities, true) ? 'Có Wifi' : 'Liên hệ' }}</strong></div>
                             <div><span>Giữ xe</span><strong>Liên hệ</strong></div>
                         </div>
                     </section>
@@ -88,7 +83,7 @@
                         <div class="site-detail-info-grid">
                             <div>Toilet: <strong>{{ $listing->toilets ?: 'Liên hệ' }}</strong></div>
                             <div>Giờ giấc: <strong>Tự do</strong></div>
-                            <div>Máy lạnh: <strong>{{ in_array('air_conditioner', $amenities, true) ? 'Có' : 'Không' }}</strong></div>
+                            <div>Máy lạnh: <strong>{{ in_array('air_conditioner', $listingAmenities, true) ? 'Có' : 'Không' }}</strong></div>
                             <div>Cửa sổ: <strong>Liên hệ</strong></div>
                             <div>Ban công: <strong>{{ $listing->room_type === 'balcony' ? 'Có' : 'Không' }}</strong></div>
                             <div>Thú cưng: <strong>Liên hệ</strong></div>
@@ -112,7 +107,15 @@
                         <span>Thông tin liên hệ</span>
                         <strong>{{ $listing->contact_type ?: 'Quản lý phòng' }}</strong>
                         @if($listing->contact_phone)
-                            <a href="tel:{{ preg_replace('/\D+/', '', $listing->contact_phone) }}">{{ $listing->contact_phone }}</a>
+                            @php($zaloUrl = ($siteContact['zaloHref'])($listing->contact_phone))
+                            <div class="site-contact-phone-row">
+                                <a href="tel:{{ preg_replace('/\D+/', '', $listing->contact_phone) }}">{{ $listing->contact_phone }}</a>
+                                @if($zaloUrl)
+                                    <a class="site-zalo-btn" href="{{ $zaloUrl }}" target="_blank" rel="noopener" title="Chat Zalo" aria-label="Chat Zalo">
+                                        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3C6.5 3 2 6.6 2 11.1c0 2.5 1.4 4.8 3.6 6.3-.1.9-.5 2.2-1.3 3.2-.2.3 0 .7.4.6 1.9-.4 3.3-1.1 4.2-1.7 1 .2 2 .4 3.1.4 5.5 0 10-3.6 10-8.1S17.5 3 12 3Z"/></svg>
+                                    </a>
+                                @endif
+                            </div>
                         @else
                             <p>Liên hệ để được tư vấn xem phòng.</p>
                         @endif

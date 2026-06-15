@@ -362,6 +362,16 @@
             border-radius: 10px;
         }
 
+        .site-cms-amenity-icon {
+            width: 44px;
+            height: 44px;
+            object-fit: contain;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background: #fff;
+            padding: 4px;
+        }
+
         .site-cms-inline-actions {
             display: flex;
             align-items: center;
@@ -693,7 +703,7 @@
         @media (max-width: 1024px) {
             .site-cms { grid-template-columns: 1fr; }
             .site-cms-sidebar { position: static; }
-            .site-cms-nav-list { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+            .site-cms-nav-list { grid-template-columns: repeat(3, minmax(0, 1fr)); }
             .site-cms-nav { justify-content: center; }
             .site-cms-sidebar-note { display: none; }
             .site-cms-stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }

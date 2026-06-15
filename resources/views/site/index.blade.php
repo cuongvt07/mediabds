@@ -22,25 +22,20 @@
         '5_6' => '5tr-6tr',
         'over_6' => 'Trên 6tr',
     ];
-    $amenityLabels = [
-        'bed' => ['Giường', '▭'],
-        'mattress' => ['Nệm', '◒'],
-        'wardrobe' => ['Tủ quần áo', '▦'],
-        'elevator' => ['Thang máy', '↕'],
-        'wifi' => ['Wifi', '⌁'],
-        'air_conditioner' => ['Máy lạnh', '✳'],
-        'kitchen' => ['Kệ bếp', '⌘'],
-        'water_heater' => ['Nước nóng', '☼'],
-        'fridge' => ['Tủ lạnh', '▱'],
-        'loft' => ['Gác', '⌂'],
-    ];
-    $furnitureLabels = collect($amenityLabels)->except(['elevator', 'loft'])->all();
     $selectedAmenities = array_filter((array) request('amenities', []));
     $selectedFurniture = array_filter((array) request('furniture', []));
+    $furnitureNameByKey = $furnitureItems->pluck('name', 'key');
     $selectedFurnitureText = collect($selectedFurniture)
-        ->map(fn ($value) => $furnitureLabels[$value][0] ?? null)
+        ->map(fn ($value) => $furnitureNameByKey[$value] ?? null)
         ->filter()
         ->implode(', ');
+    // Icon động từ CMS: dùng ảnh upload nếu có, không thì rơi về chữ cái đầu.
+    $amenityIconHtml = function ($item) {
+        if (! empty($item->icon)) {
+            return '<img src="' . e($item->icon) . '" alt="' . e($item->name) . '" class="site-amenity-img" loading="lazy">';
+        }
+        return '<i>' . e(mb_substr($item->name, 0, 1)) . '</i>';
+    };
     $currentDistrict = $districts->firstWhere('district_id', request('district'));
     $formatPrice = fn ($listing) => number_format((float) $listing->price, 0, ',', '.');
 @endphp
@@ -127,10 +122,10 @@
                                 <i>⌄</i>
                             </summary>
                             <div class="site-multi-options">
-                                @foreach($furnitureLabels as $value => [$label, $icon])
+                                @foreach($furnitureItems as $item)
                                     <label>
-                                        <input type="checkbox" name="furniture[]" value="{{ $value }}" @checked(in_array($value, $selectedFurniture, true))>
-                                        <span><i>{{ $icon }}</i>{{ $label }}</span>
+                                        <input type="checkbox" name="furniture[]" value="{{ $item->key }}" @checked(in_array($item->key, $selectedFurniture, true))>
+                                        <span>{!! $amenityIconHtml($item) !!}{{ $item->name }}</span>
                                     </label>
                                 @endforeach
                             </div>
@@ -140,12 +135,12 @@
                     <div class="site-amenity-filter">
                         <h3>Tiện ích phòng trọ</h3>
                         <div class="site-amenity-options">
-                            @foreach($amenityLabels as $value => [$label, $icon])
+                            @foreach($amenities as $item)
                                 <label class="site-amenity-card">
-                                    <input type="checkbox" name="amenities[]" value="{{ $value }}" @checked(in_array($value, $selectedAmenities, true))>
+                                    <input type="checkbox" name="amenities[]" value="{{ $item->key }}" @checked(in_array($item->key, $selectedAmenities, true))>
                                     <span>
-                                        <i>{{ $icon }}</i>
-                                        <b>{{ $label }}</b>
+                                        {!! $amenityIconHtml($item) !!}
+                                        <b>{{ $item->name }}</b>
                                     </span>
                                 </label>
                             @endforeach
@@ -223,10 +218,10 @@
                         <i>⌄</i>
                     </summary>
                     <div class="site-multi-options">
-                        @foreach($furnitureLabels as $value => [$label, $icon])
+                        @foreach($furnitureItems as $item)
                             <label>
-                                <input type="checkbox" name="furniture[]" value="{{ $value }}" @checked(in_array($value, $selectedFurniture, true))>
-                                <span><i>{{ $icon }}</i>{{ $label }}</span>
+                                <input type="checkbox" name="furniture[]" value="{{ $item->key }}" @checked(in_array($item->key, $selectedFurniture, true))>
+                                <span>{!! $amenityIconHtml($item) !!}{{ $item->name }}</span>
                             </label>
                         @endforeach
                     </div>
@@ -235,12 +230,12 @@
             <div class="site-amenity-filter">
                 <h3>Tiện ích phòng trọ</h3>
                 <div class="site-amenity-options">
-                    @foreach($amenityLabels as $value => [$label, $icon])
+                    @foreach($amenities as $item)
                         <label class="site-amenity-card">
-                            <input type="checkbox" name="amenities[]" value="{{ $value }}" @checked(in_array($value, $selectedAmenities, true))>
+                            <input type="checkbox" name="amenities[]" value="{{ $item->key }}" @checked(in_array($item->key, $selectedAmenities, true))>
                             <span>
-                                <i>{{ $icon }}</i>
-                                <b>{{ $label }}</b>
+                                {!! $amenityIconHtml($item) !!}
+                                <b>{{ $item->name }}</b>
                             </span>
                         </label>
                     @endforeach
@@ -357,8 +352,18 @@
                 <h2>Bạn cần hỗ trợ tìm phòng?</h2>
                 <p>Liên hệ trực tiếp để được kiểm tra phòng còn trống và sắp xếp lịch xem phòng tại TP.HCM.</p>
             </div>
+            @php($contactPhone = $siteContact['phone'] ?: config('app.contact_phone', '0900000000'))
+            @php($zaloUrl = ($siteContact['zaloHref'])($contactPhone))
             <div class="site-contact-actions">
-                <a href="tel:{{ config('app.contact_phone', '0900000000') }}"><small>Điện thoại</small><strong>{{ config('app.contact_phone', '0900 000 000') }}</strong></a>
+                <a href="tel:{{ preg_replace('/\D+/', '', $contactPhone) }}"><small>Điện thoại</small><strong>{{ $contactPhone }}</strong></a>
+                @if($zaloUrl)
+                    <a class="site-contact-zalo" href="{{ $zaloUrl }}" target="_blank" rel="noopener">
+                        <span class="site-zalo-mark" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3C6.5 3 2 6.6 2 11.1c0 2.5 1.4 4.8 3.6 6.3-.1.9-.5 2.2-1.3 3.2-.2.3 0 .7.4.6 1.9-.4 3.3-1.1 4.2-1.7 1 .2 2 .4 3.1.4 5.5 0 10-3.6 10-8.1S17.5 3 12 3Z"/></svg>
+                        </span>
+                        <span><small>Zalo</small><strong>Chat Zalo</strong></span>
+                    </a>
+                @endif
                 <a href="mailto:{{ config('app.contact_email', 'hello@nhatrosaigon.vn') }}"><small>Email</small><strong>{{ config('app.contact_email', 'hello@nhatrosaigon.vn') }}</strong></a>
             </div>
         </div>

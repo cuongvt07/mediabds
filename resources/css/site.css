@@ -71,15 +71,18 @@ button, input, select { font: inherit; }
 .site-amenity-card span { height: 82px; display: grid; place-items: center; gap: 7px; padding: 12px; border: 1px solid #eef0f4; border-radius: 12px; color: #b8bec6; background: #fbfbfd; text-align: center; transition: border-color .18s, background .18s, color .18s, box-shadow .18s; }
 .site-amenity-card i { display: block; color: inherit; font-size: 18px; font-style: normal; line-height: 1; }
 .site-amenity-card b { display: block; font-size: 12px; font-weight: 700; }
+.site-amenity-img { width: 26px; height: 26px; object-fit: contain; display: inline-block; vertical-align: middle; }
+.site-multi-options .site-amenity-img { width: 18px; height: 18px; margin-right: 2px; }
+.site-detail-amenities .site-amenity-img { width: 22px; height: 22px; }
 .site-amenity-card input:checked + span { border-color: #2f5f6d; color: #17202a; background: #dbeeff; box-shadow: 0 8px 18px rgba(47,95,109,.12); }
 .site-amenity-card:hover span { border-color: #a9c2d4; }
 .site-mobile-filter { display: none; }
 .site-filter-modal { display: none; }
 .site-section { padding: 64px 0; }
 .site-section-head { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin-bottom: 30px; }
-.site-section-head small { display: block; margin-bottom: 8px; color: var(--site-yellow-dark); font-size: 12px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
-.site-section-head h2 { margin: 0; font-size: clamp(28px, 4vw, 40px); font-weight: 800; letter-spacing: -.035em; }
-.site-section-head p { max-width: 430px; margin: 0; color: var(--site-muted); font-size: 14px; line-height: 1.7; }
+.site-section-head small { display: block; margin-bottom: 8px; color: #3a2c00; font-size: 12px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+.site-section-head h2 { margin: 0; color: var(--site-ink); font-size: clamp(28px, 4vw, 40px); font-weight: 800; letter-spacing: -.035em; }
+.site-section-head p { max-width: 430px; margin: 0; color: #3c4248; font-size: 14px; line-height: 1.7; }
 .site-listing-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
 .site-card { position: relative; overflow: hidden; border: 1px solid var(--site-line); border-radius: 18px; background: #fff; transition: transform .25s, box-shadow .25s; }
 .site-card-link { display: block; }
@@ -133,6 +136,16 @@ button, input, select { font: inherit; }
 .site-contact-actions a { padding: 18px; border: 1px solid rgba(255,255,255,.14); border-radius: 14px; background: rgba(255,255,255,.06); }
 .site-contact-actions small { display: block; margin-bottom: 6px; color: rgba(255,255,255,.55); }
 .site-contact-actions strong { color: var(--site-yellow); }
+.site-contact-zalo { display: flex; align-items: center; gap: 12px; }
+.site-contact-zalo .site-zalo-mark { flex: 0 0 auto; width: 42px; height: 42px; display: grid; place-items: center; border-radius: 12px; background: #0068ff; color: #fff; }
+.site-contact-zalo .site-zalo-mark svg { width: 24px; height: 24px; }
+.site-contact-zalo strong { color: #fff; }
+
+/* Zalo icon cạnh số điện thoại (trang chi tiết) */
+.site-contact-phone-row { display: flex; align-items: center; gap: 10px; }
+.site-zalo-btn { flex: 0 0 auto; width: 38px; height: 38px; display: grid; place-items: center; border-radius: 50%; background: #0068ff; color: #fff; box-shadow: 0 6px 16px rgba(0,104,255,.3); transition: background .18s, transform .18s; }
+.site-zalo-btn svg { width: 20px; height: 20px; }
+.site-zalo-btn:hover { background: #0055d6; transform: translateY(-1px); }
 .site-footer { padding: 25px 0; color: #777; background: #111820; font-size: 12px; }
 .site-footer .site-shell { display: flex; justify-content: space-between; gap: 20px; }
 .site-detail-page { padding: 24px 0 70px; background: #f7f7f6; }

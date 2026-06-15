@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Site;
 
 use App\Http\Controllers\Controller;
 use App\Models\RealEstateListing;
+use App\Models\SiteAmenity;
 use App\Models\SiteBanner;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -90,7 +91,13 @@ class RoomSiteController extends Controller
             $slides = (clone $baseQuery)->latest('created_at')->limit(3)->get();
         }
 
-        return view('site.index', compact('listings', 'slides', 'usingSiteBanners', 'districts', 'wards', 'wardOptions'));
+        $amenities = $this->siteAmenities();
+        $furnitureItems = $amenities->where('is_furniture', true)->values();
+
+        return view('site.index', compact(
+            'listings', 'slides', 'usingSiteBanners', 'districts', 'wards', 'wardOptions',
+            'amenities', 'furnitureItems'
+        ));
     }
 
     public function show(RealEstateListing $listing)
@@ -109,7 +116,9 @@ class RoomSiteController extends Controller
             ->limit(4)
             ->get();
 
-        return view('site.show', compact('listing', 'related'));
+        $amenities = $this->siteAmenities();
+
+        return view('site.show', compact('listing', 'related', 'amenities'));
     }
 
     private function publicRoomQuery(): Builder
@@ -139,9 +148,24 @@ class RoomSiteController extends Controller
             . "else price end)";
     }
 
+    private $amenitiesCache = null;
+
+    private function siteAmenities()
+    {
+        if ($this->amenitiesCache !== null) {
+            return $this->amenitiesCache;
+        }
+
+        if (! Schema::hasTable('site_amenities')) {
+            return $this->amenitiesCache = collect();
+        }
+
+        return $this->amenitiesCache = SiteAmenity::query()->active()->ordered()->get();
+    }
+
     private function selectedAmenities(Request $request): array
     {
-        $allowed = ['bed', 'mattress', 'wardrobe', 'elevator', 'wifi', 'air_conditioner', 'kitchen', 'water_heater', 'fridge', 'loft'];
+        $allowed = $this->siteAmenities()->pluck('key')->all();
 
         return array_values(array_intersect(
             $allowed,
@@ -151,7 +175,7 @@ class RoomSiteController extends Controller
 
     private function selectedFurniture(Request $request): array
     {
-        $allowed = ['bed', 'mattress', 'wardrobe', 'wifi', 'air_conditioner', 'kitchen', 'water_heater', 'fridge'];
+        $allowed = $this->siteAmenities()->where('is_furniture', true)->pluck('key')->all();
 
         return array_values(array_intersect(
             $allowed,
