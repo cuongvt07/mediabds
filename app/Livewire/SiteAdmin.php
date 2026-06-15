@@ -104,9 +104,10 @@ class SiteAdmin extends Component
 
     public $showAmenityModal = false;
     public $amenityEditingId = null;
+    public $amenityType = 'amenity';      // segment đang xem: 'amenity' | 'furniture'
+    public $amenityFormType = 'amenity';  // loại của mục đang thêm/sửa
     public $amenityName = '';
     public $amenityKey = '';
-    public $amenityIsFurniture = false;
     public $amenitySortOrder = 0;
     public $amenityIsActive = true;
     public $amenityIconUrl = '';
@@ -153,9 +154,14 @@ class SiteAdmin extends Component
                 ->paginate(10, ['*'], 'accountPage'),
             'accountCount' => User::query()->count(),
             'siteAmenities' => SiteAmenity::query()
+                ->type($this->amenityType)
                 ->ordered()
                 ->paginate(20, ['*'], 'amenityPage'),
-            'amenityCount' => SiteAmenity::query()->count(),
+            'amenityCounts' => [
+                'amenity' => SiteAmenity::query()->type('amenity')->count(),
+                'furniture' => SiteAmenity::query()->type('furniture')->count(),
+            ],
+            'amenityTypes' => SiteAmenity::TYPES,
             'roomTypes' => self::ROOM_TYPES,
             'furnishTypes' => self::FURNISH_TYPES,
             'amenityOptions' => SiteAmenity::query()->active()->ordered()->pluck('name', 'key')->all(),
@@ -527,10 +533,22 @@ class SiteAdmin extends Component
         $this->resetAccountForm();
     }
 
+    public function setAmenityType(string $type): void
+    {
+        if (! array_key_exists($type, SiteAmenity::TYPES)) {
+            return;
+        }
+
+        $this->amenityType = $type;
+        $this->activeTab = 'amenities';
+        $this->resetPage('amenityPage');
+    }
+
     public function createAmenity(): void
     {
         $this->resetAmenityForm();
-        $this->amenitySortOrder = (int) (SiteAmenity::query()->max('sort_order') ?? 0) + 1;
+        $this->amenityFormType = $this->amenityType;
+        $this->amenitySortOrder = (int) (SiteAmenity::query()->type($this->amenityType)->max('sort_order') ?? 0) + 1;
         $this->activeTab = 'amenities';
         $this->showAmenityModal = true;
     }
@@ -539,9 +557,9 @@ class SiteAdmin extends Component
     {
         $amenity = SiteAmenity::findOrFail($id);
         $this->amenityEditingId = $amenity->id;
+        $this->amenityFormType = $amenity->type ?: 'amenity';
         $this->amenityName = $amenity->name;
         $this->amenityKey = $amenity->key;
-        $this->amenityIsFurniture = (bool) $amenity->is_furniture;
         $this->amenitySortOrder = (int) $amenity->sort_order;
         $this->amenityIsActive = (bool) $amenity->is_active;
         $this->amenityIconUrl = $amenity->icon ?: '';
@@ -566,7 +584,7 @@ class SiteAdmin extends Component
                 'regex:/^[a-z0-9_]+$/',
                 Rule::unique('site_amenities', 'key')->ignore($this->amenityEditingId),
             ],
-            'amenityIsFurniture' => 'boolean',
+            'amenityFormType' => 'required|in:' . implode(',', array_keys(SiteAmenity::TYPES)),
             'amenitySortOrder' => 'required|integer|min:0|max:9999',
             'amenityIsActive' => 'boolean',
             'amenityIconFile' => 'nullable|image|max:2048',
@@ -585,14 +603,17 @@ class SiteAdmin extends Component
             [
                 'key' => $data['amenityKey'],
                 'name' => $data['amenityName'],
+                'type' => $data['amenityFormType'],
                 'icon' => $iconUrl,
-                'is_furniture' => (bool) $data['amenityIsFurniture'],
                 'sort_order' => (int) $data['amenitySortOrder'],
                 'is_active' => (bool) $data['amenityIsActive'],
             ]
         );
 
-        session()->flash('message', 'Đã lưu tiện ích / nội thất.');
+        // Quay về đúng segment của loại vừa lưu.
+        $this->amenityType = $data['amenityFormType'];
+
+        session()->flash('message', 'Đã lưu ' . (SiteAmenity::TYPES[$data['amenityFormType']] ?? 'mục') . '.');
         $this->activeTab = 'amenities';
         $this->closeAmenityModal();
     }
@@ -664,9 +685,9 @@ class SiteAdmin extends Component
     private function resetAmenityForm(): void
     {
         $this->amenityEditingId = null;
+        $this->amenityFormType = $this->amenityType;
         $this->amenityName = '';
         $this->amenityKey = '';
-        $this->amenityIsFurniture = false;
         $this->amenitySortOrder = 0;
         $this->amenityIsActive = true;
         $this->amenityIconUrl = '';

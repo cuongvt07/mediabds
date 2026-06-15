@@ -135,7 +135,7 @@
                     <div class="site-amenity-filter">
                         <h3>Tiện ích phòng trọ</h3>
                         <div class="site-amenity-options">
-                            @foreach($amenities as $item)
+                            @foreach($amenityItems as $item)
                                 <label class="site-amenity-card">
                                     <input type="checkbox" name="amenities[]" value="{{ $item->key }}" @checked(in_array($item->key, $selectedAmenities, true))>
                                     <span>
@@ -230,7 +230,7 @@
             <div class="site-amenity-filter">
                 <h3>Tiện ích phòng trọ</h3>
                 <div class="site-amenity-options">
-                    @foreach($amenities as $item)
+                    @foreach($amenityItems as $item)
                         <label class="site-amenity-card">
                             <input type="checkbox" name="amenities[]" value="{{ $item->key }}" @checked(in_array($item->key, $selectedAmenities, true))>
                             <span>

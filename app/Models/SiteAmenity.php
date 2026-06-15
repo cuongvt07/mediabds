@@ -7,10 +7,14 @@ use Illuminate\Database\Eloquent\Model;
 
 class SiteAmenity extends Model
 {
+    public const TYPES = [
+        'amenity' => 'Tiện ích',
+        'furniture' => 'Nội thất',
+    ];
+
     protected $guarded = [];
 
     protected $casts = [
-        'is_furniture' => 'boolean',
         'is_active' => 'boolean',
         'sort_order' => 'integer',
     ];
@@ -23,5 +27,10 @@ class SiteAmenity extends Model
     public function scopeOrdered(Builder $query): Builder
     {
         return $query->orderBy('sort_order')->orderBy('id');
+    }
+
+    public function scopeType(Builder $query, string $type): Builder
+    {
+        return $query->where('type', $type);
     }
 }

@@ -91,12 +91,12 @@ class RoomSiteController extends Controller
             $slides = (clone $baseQuery)->latest('created_at')->limit(3)->get();
         }
 
-        $amenities = $this->siteAmenities();
-        $furnitureItems = $amenities->where('is_furniture', true)->values();
+        $amenityItems = $this->siteAmenities()->where('type', 'amenity')->values();
+        $furnitureItems = $this->siteAmenities()->where('type', 'furniture')->values();
 
         return view('site.index', compact(
             'listings', 'slides', 'usingSiteBanners', 'districts', 'wards', 'wardOptions',
-            'amenities', 'furnitureItems'
+            'amenityItems', 'furnitureItems'
         ));
     }
 
@@ -165,7 +165,7 @@ class RoomSiteController extends Controller
 
     private function selectedAmenities(Request $request): array
     {
-        $allowed = $this->siteAmenities()->pluck('key')->all();
+        $allowed = $this->siteAmenities()->where('type', 'amenity')->pluck('key')->all();
 
         return array_values(array_intersect(
             $allowed,
@@ -175,7 +175,7 @@ class RoomSiteController extends Controller
 
     private function selectedFurniture(Request $request): array
     {
-        $allowed = $this->siteAmenities()->where('is_furniture', true)->pluck('key')->all();
+        $allowed = $this->siteAmenities()->where('type', 'furniture')->pluck('key')->all();
 
         return array_values(array_intersect(
             $allowed,

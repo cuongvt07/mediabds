@@ -364,13 +364,20 @@
         @elseif($activeTab === 'amenities')
             <section class="cms-panel">
                 <div class="cms-panel-head">
-                    <h2 class="cms-panel-title">Tiện ích &amp; nội thất</h2>
+                    <div class="site-cms-seg">
+                        <button type="button" class="site-cms-seg-btn {{ $amenityType === 'amenity' ? 'is-active' : '' }}" wire:click="setAmenityType('amenity')">
+                            Tiện ích <span>{{ $amenityCounts['amenity'] }}</span>
+                        </button>
+                        <button type="button" class="site-cms-seg-btn {{ $amenityType === 'furniture' ? 'is-active' : '' }}" wire:click="setAmenityType('furniture')">
+                            Nội thất <span>{{ $amenityCounts['furniture'] }}</span>
+                        </button>
+                    </div>
                     <button type="button" class="cms-btn primary" wire:click="createAmenity">
-                        <i class="fa-solid fa-plus"></i> Thêm tiện ích
+                        <i class="fa-solid fa-plus"></i> Thêm {{ $amenityType === 'furniture' ? 'nội thất' : 'tiện ích' }}
                     </button>
                 </div>
                 <div class="site-cms-panel-note">
-                    Tải ảnh làm icon + đặt tên. Mục bật "Nội thất" sẽ hiển thị thêm ở bộ lọc <strong>Nội thất</strong> ngoài trang chủ. Người dùng lấy đúng danh sách này.
+                    Hai danh mục <strong>riêng biệt</strong>: <strong>Tiện ích</strong> và <strong>Nội thất</strong>. Mỗi mục tải ảnh làm icon + đặt tên; người dùng lấy đúng danh sách của từng loại ngoài trang chủ.
                 </div>
                 <div class="cms-table-wrap cms-scrollbar">
                     <table class="cms-table">
@@ -378,8 +385,7 @@
                             <tr>
                                 <th style="width:90px;">Icon</th>
                                 <th>Tên hiển thị</th>
-                                <th style="width:150px;">Mã (key)</th>
-                                <th style="width:110px;">Nội thất</th>
+                                <th style="width:170px;">Mã (key)</th>
                                 <th style="width:90px;" class="right">Thứ tự</th>
                                 <th style="width:96px;">Trạng thái</th>
                                 <th style="width:100px;" class="right">Thao tác</th>
@@ -399,11 +405,6 @@
                                         <div class="cms-truncate" style="color:var(--text-primary);font-weight:900;">{{ $amenity->name }}</div>
                                     </td>
                                     <td class="mono" style="font-size:11px;color:var(--text-muted);">{{ $amenity->key }}</td>
-                                    <td>
-                                        <span class="cms-badge {{ $amenity->is_furniture ? 'success' : 'muted' }}">
-                                            {{ $amenity->is_furniture ? 'Có' : 'Không' }}
-                                        </span>
-                                    </td>
                                     <td class="right mono">{{ $amenity->sort_order }}</td>
                                     <td>
                                         <button type="button" class="cms-badge {{ $amenity->is_active ? 'success' : 'muted' }}" wire:click="toggleAmenity({{ $amenity->id }})" title="Bật/tắt">
@@ -419,7 +420,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="7" style="height:72px;text-align:center;">Chưa có tiện ích / nội thất.</td>
+                                    <td colspan="6" style="height:72px;text-align:center;">Chưa có {{ $amenityType === 'furniture' ? 'nội thất' : 'tiện ích' }}.</td>
                                 </tr>
                             @endforelse
                         </tbody>
@@ -703,7 +704,7 @@
         <div class="cms-modal-backdrop">
             <section class="cms-modal">
                 <div class="cms-panel-head">
-                    <h2 class="cms-panel-title">{{ $amenityEditingId ? 'Sửa tiện ích' : 'Thêm tiện ích' }}</h2>
+                    <h2 class="cms-panel-title">{{ ($amenityEditingId ? 'Sửa ' : 'Thêm ') . ($amenityTypes[$amenityFormType] ?? 'mục') }}</h2>
                     <button type="button" class="cms-icon-btn" wire:click="closeAmenityModal"><i class="fa-solid fa-xmark"></i></button>
                 </div>
                 <div class="cms-form-grid">
@@ -723,11 +724,13 @@
                         @error('amenitySortOrder') <span class="cms-error">{{ $message }}</span> @enderror
                     </label>
                     <label class="cms-field">
-                        <span class="cms-label">Là nội thất?</span>
-                        <select class="cms-select" wire:model="amenityIsFurniture">
-                            <option value="0">Không (chỉ là tiện ích)</option>
-                            <option value="1">Có (hiện ở bộ lọc Nội thất)</option>
+                        <span class="cms-label">Loại</span>
+                        <select class="cms-select" wire:model="amenityFormType">
+                            @foreach($amenityTypes as $value => $label)
+                                <option value="{{ $value }}">{{ $label }}</option>
+                            @endforeach
                         </select>
+                        @error('amenityFormType') <span class="cms-error">{{ $message }}</span> @enderror
                     </label>
                     <label class="cms-field">
                         <span class="cms-label">Trạng thái</span>
