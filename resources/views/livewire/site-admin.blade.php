@@ -1,0 +1,506 @@
+<div class="site-cms">
+    <aside class="site-cms-sidebar">
+        <div class="site-cms-sidebar-head">
+            <span class="site-cms-sidebar-mark"><i class="fa-solid fa-house"></i></span>
+            <div>
+                <strong>Nhà trọ</strong>
+                <span>CMS riêng</span>
+            </div>
+        </div>
+
+        <nav class="site-cms-nav-list" role="tablist" aria-label="CMS nhà trọ">
+            <button type="button" role="tab" class="site-cms-nav {{ $activeTab === 'dashboard' ? 'is-active' : '' }}" wire:click="setTab('dashboard')">
+                <i class="fa-solid fa-chart-simple"></i>
+                <span>Dashboard</span>
+            </button>
+            <button type="button" role="tab" class="site-cms-nav {{ $activeTab === 'listings' ? 'is-active' : '' }}" wire:click="setTab('listings')">
+                <i class="fa-regular fa-rectangle-list"></i>
+                <span>Tin đăng</span>
+            </button>
+            <button type="button" role="tab" class="site-cms-nav {{ $activeTab === 'banners' ? 'is-active' : '' }}" wire:click="setTab('banners')">
+                <i class="fa-regular fa-images"></i>
+                <span>Banner slider</span>
+            </button>
+            <button type="button" role="tab" class="site-cms-nav {{ $activeTab === 'identity' ? 'is-active' : '' }}" wire:click="setTab('identity')">
+                <i class="fa-solid fa-palette"></i>
+                <span>Logo</span>
+            </button>
+        </nav>
+
+        <div class="site-cms-sidebar-note">
+            CMS này chỉ quản lý chức năng của trang nhà trọ: tin đăng, banner và nhận diện.
+        </div>
+    </aside>
+
+    <section class="site-cms-main">
+        <div class="site-cms-toolbar">
+            <div>
+                <p class="site-cms-kicker">CMS nhà trọ</p>
+                <h1>
+                    @if($activeTab === 'listings')
+                        Tin đăng
+                    @elseif($activeTab === 'banners')
+                        Banner slider
+                    @elseif($activeTab === 'identity')
+                        Logo & nhận diện
+                    @else
+                        Dashboard
+                    @endif
+                </h1>
+            </div>
+            <div class="site-cms-toolbar-actions">
+                <a class="cms-btn" href="{{ route('site.home') }}" target="_blank">
+                    <i class="fa-solid fa-arrow-up-right-from-square"></i> Xem trang chủ
+                </a>
+                @if($activeTab === 'listings')
+                    <button type="button" class="cms-btn primary" wire:click="createListing">
+                        <i class="fa-solid fa-plus"></i> Thêm tin
+                    </button>
+                @elseif($activeTab === 'banners')
+                    <button type="button" class="cms-btn primary" wire:click="createBanner">
+                        <i class="fa-solid fa-plus"></i> Thêm banner
+                    </button>
+                @endif
+            </div>
+        </div>
+
+        @if($activeTab === 'dashboard')
+            <section class="site-cms-stat-grid">
+                <article class="site-cms-stat">
+                    <span class="site-cms-stat-icon"><i class="fa-regular fa-rectangle-list"></i></span>
+                    <small>Tổng tin đăng</small>
+                    <strong>{{ number_format($listingCount) }}</strong>
+                    <em>Tin phòng trọ trong CMS này.</em>
+                </article>
+                <article class="site-cms-stat">
+                    <span class="site-cms-stat-icon"><i class="fa-solid fa-door-open"></i></span>
+                    <small>Tin đang hiển thị</small>
+                    <strong>{{ number_format($availableListingCount) }}</strong>
+                    <em>Chưa giao dịch và đang bật.</em>
+                </article>
+                <article class="site-cms-stat">
+                    <span class="site-cms-stat-icon"><i class="fa-regular fa-images"></i></span>
+                    <small>Banner slider</small>
+                    <strong>{{ number_format($activeBannerCount) }}/{{ number_format($bannerCount) }}</strong>
+                    <em>Đang bật / tổng banner.</em>
+                </article>
+                <article class="site-cms-stat">
+                    <span class="site-cms-stat-icon"><i class="fa-solid fa-house"></i></span>
+                    <small>Logo</small>
+                    <strong>{{ $logoUrl ? 'Đã có' : 'Chưa có' }}</strong>
+                    <em>Upload local storage.</em>
+                </article>
+            </section>
+
+            <section class="cms-panel">
+                <div class="cms-panel-head">
+                    <h2 class="cms-panel-title">Chức năng</h2>
+                </div>
+                <div class="site-cms-action-grid">
+                    <button type="button" class="site-cms-action" wire:click="setTab('listings')">
+                        <span><i class="fa-regular fa-rectangle-list"></i></span>
+                        <strong>Tin đăng</strong>
+                        <em>CRUD tin phòng trọ riêng trong CMS này.</em>
+                    </button>
+                    <button type="button" class="site-cms-action" wire:click="setTab('banners')">
+                        <span><i class="fa-regular fa-images"></i></span>
+                        <strong>Banner slider</strong>
+                        <em>Quản lý banner riêng, không bị filter đè.</em>
+                    </button>
+                    <button type="button" class="site-cms-action" wire:click="setTab('identity')">
+                        <span><i class="fa-solid fa-palette"></i></span>
+                        <strong>Logo & nhận diện</strong>
+                        <em>Đổi logo và tên hiển thị ngoài trang chủ.</em>
+                    </button>
+                </div>
+            </section>
+        @elseif($activeTab === 'listings')
+            <section class="cms-panel">
+                <div class="cms-panel-head">
+                    <h2 class="cms-panel-title">Quản lý tin đăng</h2>
+                    <div class="site-cms-inline-actions">
+                        <input class="cms-input site-cms-search" wire:model.live.debounce.350ms="listingSearch" placeholder="Tìm tiêu đề, mã tin, SĐT, quận/phường">
+                        <button type="button" class="cms-btn primary" wire:click="createListing">
+                            <i class="fa-solid fa-plus"></i> Thêm tin
+                        </button>
+                    </div>
+                </div>
+                <div class="cms-table-wrap cms-scrollbar">
+                    <table class="cms-table">
+                        <thead>
+                            <tr>
+                                <th style="width:92px;">Trạng thái</th>
+                                <th style="width:120px;">Ảnh</th>
+                                <th>Tin phòng</th>
+                                <th style="width:130px;">Giá</th>
+                                <th style="width:150px;">Liên hệ</th>
+                                <th style="width:128px;" class="right">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($siteListings as $listing)
+                                <tr style="{{ $listing->is_sold ? 'opacity:.58' : '' }}">
+                                    <td>
+                                        <span class="cms-badge {{ $listing->is_sold ? 'muted' : 'success' }}">
+                                            {{ $listing->is_sold ? 'Ẩn' : 'Hiện' }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        @php($cover = $listing->avatar ?: collect($listing->images ?: [])->first())
+                                        @if($cover)
+                                            <img src="{{ $cover }}" alt="{{ $listing->title }}" class="site-cms-listing-cover">
+                                        @else
+                                            <div class="site-cms-empty-cover"><i class="fa-regular fa-image"></i></div>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        <div class="cms-truncate" style="color:var(--text-primary);font-weight:900;">{{ $listing->title }}</div>
+                                        <div class="cms-truncate">{{ $listing->ward_name ?: '-' }}, {{ $listing->district_name ?: '-' }}</div>
+                                        <div class="cms-truncate mono" style="font-size:11px;color:var(--text-muted);">
+                                            {{ $listing->code ?: '#NT' }} · {{ $roomTypes[$listing->room_type] ?? $listing->room_type }}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <strong>{{ $listing->price ? number_format((float) $listing->price, 0, ',', '.') : '-' }}</strong>
+                                        <span style="color:var(--text-muted);">/tháng</span>
+                                    </td>
+                                    <td class="mono">{{ $listing->contact_phone ?: '-' }}</td>
+                                    <td class="right">
+                                        <div class="cms-row-actions">
+                                            <a class="cms-act" href="{{ route('site.listings.show', $listing) }}" target="_blank" title="Xem tin" aria-label="Xem tin"><i class="fa-regular fa-eye"></i></a>
+                                            <button type="button" class="cms-act" wire:click="editListing({{ $listing->id }})" title="Sửa tin" aria-label="Sửa tin"><i class="fa-solid fa-pen"></i></button>
+                                            <button type="button" class="cms-act danger" wire:click="deleteListing({{ $listing->id }})" wire:confirm="Xóa tin đăng này?" title="Xóa tin" aria-label="Xóa tin"><i class="fa-solid fa-trash-can"></i></button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="6" style="height:72px;text-align:center;">Chưa có tin phòng trọ.</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+                <div class="cms-pagination">{{ $siteListings->links(data: ['scrollTo' => false]) }}</div>
+            </section>
+        @elseif($activeTab === 'identity')
+            <section class="cms-panel">
+                <div class="cms-panel-head">
+                    <h2 class="cms-panel-title">Logo & nhận diện</h2>
+                    <button type="button" class="cms-btn primary" wire:click="saveSiteIdentity">
+                        <i class="fa-solid fa-floppy-disk"></i> Lưu logo
+                    </button>
+                </div>
+                <div class="cms-form-grid">
+                    <label class="cms-field">
+                        <span class="cms-label">Tên site</span>
+                        <input class="cms-input" wire:model="siteName">
+                    </label>
+                    <label class="cms-field">
+                        <span class="cms-label">Upload logo local</span>
+                        <input class="cms-input" type="file" wire:model="logoFile" accept="image/*">
+                        @error('logoFile') <span class="cms-error">{{ $message }}</span> @enderror
+                    </label>
+                    <div class="cms-field full">
+                        <span class="cms-label">Preview</span>
+                        <div class="site-cms-logo-preview">
+                            @if($logoFile)
+                                <img src="{{ $logoFile->temporaryUrl() }}" alt="Logo preview">
+                            @elseif($logoUrl)
+                                <img src="{{ $logoUrl }}" alt="Logo hiện tại">
+                            @else
+                                <span><i class="fa-solid fa-house"></i></span>
+                            @endif
+                            <strong>{{ $siteName }}</strong>
+                            <em>Ảnh được lưu vào local storage.</em>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        @elseif($activeTab === 'banners')
+            <section class="cms-panel">
+                <div class="cms-panel-head">
+                    <h2 class="cms-panel-title">Banner slider</h2>
+                    <button type="button" class="cms-btn primary" wire:click="createBanner">
+                        <i class="fa-solid fa-plus"></i> Thêm banner
+                    </button>
+                </div>
+                <div class="site-cms-panel-note">
+                    Banner này nằm riêng cho trang chủ nhà trọ, không nằm chung bộ lọc và không bị filter đè.
+                </div>
+                <div class="cms-table-wrap cms-scrollbar">
+                    <table class="cms-table">
+                        <thead>
+                            <tr>
+                                <th style="width:86px;">Trạng thái</th>
+                                <th style="width:170px;">Ảnh</th>
+                                <th>Thông tin</th>
+                                <th style="width:90px;" class="right">Thứ tự</th>
+                                <th style="width:100px;" class="right">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($banners as $banner)
+                                <tr style="{{ $banner->is_active ? '' : 'opacity:.58' }}">
+                                    <td>
+                                        <button type="button" class="cms-badge {{ $banner->is_active ? 'success' : 'muted' }}" wire:click="toggleBanner({{ $banner->id }})" title="Bật/tắt banner">
+                                            <i class="fa-solid {{ $banner->is_active ? 'fa-toggle-on' : 'fa-toggle-off' }}"></i> {{ $banner->is_active ? 'Bật' : 'Tắt' }}
+                                        </button>
+                                    </td>
+                                    <td>
+                                        <img src="{{ $banner->image_url }}" alt="{{ $banner->title ?: 'Banner' }}" class="site-cms-banner-thumb">
+                                    </td>
+                                    <td>
+                                        <div class="cms-truncate" style="color:var(--text-primary);font-weight:800;">{{ $banner->title ?: 'Không tiêu đề' }}</div>
+                                        <div class="cms-truncate">{{ $banner->subtitle ?: '-' }}</div>
+                                        <div class="cms-truncate mono" style="font-size:11px;color:var(--text-muted);">{{ $banner->link_url ?: $banner->image_url }}</div>
+                                    </td>
+                                    <td class="right mono">{{ $banner->sort_order }}</td>
+                                    <td class="right">
+                                        <div class="cms-row-actions">
+                                            <button type="button" class="cms-act" wire:click="editBanner({{ $banner->id }})" title="Sửa banner" aria-label="Sửa banner"><i class="fa-solid fa-pen"></i></button>
+                                            <button type="button" class="cms-act danger" wire:click="deleteBanner({{ $banner->id }})" wire:confirm="Xóa banner này?" title="Xóa banner" aria-label="Xóa banner"><i class="fa-solid fa-trash-can"></i></button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="5" style="height:72px;text-align:center;">Chưa có banner.</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+                <div class="cms-pagination">{{ $banners->links(data: ['scrollTo' => false]) }}</div>
+            </section>
+        @endif
+    </section>
+
+    @if($showListingModal)
+        <div class="cms-modal-backdrop">
+            <section class="cms-modal wide">
+                <div class="cms-panel-head">
+                    <h2 class="cms-panel-title">{{ $listingEditingId ? 'Sửa tin đăng' : 'Thêm tin đăng' }}</h2>
+                    <button type="button" class="cms-icon-btn" wire:click="closeListingModal"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <div class="cms-form-grid">
+                    <label class="cms-field full">
+                        <span class="cms-label">Tiêu đề tin đăng</span>
+                        <input class="cms-input" wire:model="listingTitle" placeholder="VD: Studio giá tốt gần công viên Gia Định">
+                        @error('listingTitle') <span class="cms-error">{{ $message }}</span> @enderror
+                    </label>
+                    <label class="cms-field">
+                        <span class="cms-label">Mã tin</span>
+                        <input class="cms-input mono" wire:model="listingCode" placeholder="Tự sinh nếu để trống">
+                    </label>
+                    <label class="cms-field">
+                        <span class="cms-label">Số điện thoại liên hệ</span>
+                        <input class="cms-input" wire:model="listingContactPhone" placeholder="090...">
+                        @error('listingContactPhone') <span class="cms-error">{{ $message }}</span> @enderror
+                    </label>
+                    <label class="cms-field">
+                        <span class="cms-label">Tỉnh / Thành phố</span>
+                        <select class="cms-select" wire:model.live="listingProvinceId">
+                            <option value="">Chọn tỉnh / thành</option>
+                            @foreach($provinces as $id => $name)
+                                <option value="{{ $id }}">{{ $name }}</option>
+                            @endforeach
+                        </select>
+                        @error('listingProvinceId') <span class="cms-error">{{ $message }}</span> @enderror
+                    </label>
+                    <label class="cms-field">
+                        <span class="cms-label">Quận / Huyện</span>
+                        <select class="cms-select" wire:model.live="listingDistrictId">
+                            <option value="">Chọn quận / huyện</option>
+                            @foreach($districts as $id => $name)
+                                <option value="{{ $id }}">{{ $name }}</option>
+                            @endforeach
+                        </select>
+                        @error('listingDistrictId') <span class="cms-error">{{ $message }}</span> @enderror
+                    </label>
+                    <label class="cms-field">
+                        <span class="cms-label">Phường / Xã</span>
+                        <select class="cms-select" wire:model="listingWardId">
+                            <option value="">Chọn phường / xã</option>
+                            @foreach($wards as $id => $name)
+                                <option value="{{ $id }}">{{ is_array($name) ? ($name['name'] ?? $id) : $name }}</option>
+                            @endforeach
+                        </select>
+                        @error('listingWardId') <span class="cms-error">{{ $message }}</span> @enderror
+                    </label>
+                    <label class="cms-field">
+                        <span class="cms-label">Giá phòng</span>
+                        <input class="cms-input" wire:model="listingPrice" placeholder="3200000 hoặc 3.200.000">
+                        @error('listingPrice') <span class="cms-error">{{ $message }}</span> @enderror
+                    </label>
+                    <label class="cms-field">
+                        <span class="cms-label">Dạng phòng</span>
+                        <select class="cms-select" wire:model="listingRoomType">
+                            @foreach($roomTypes as $value => $label)
+                                <option value="{{ $value }}">{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </label>
+                    <label class="cms-field">
+                        <span class="cms-label">Nội thất</span>
+                        <select class="cms-select" wire:model="listingFurnish">
+                            @foreach($furnishTypes as $value => $label)
+                                <option value="{{ $value }}">{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </label>
+                    <label class="cms-field">
+                        <span class="cms-label">Phòng ngủ</span>
+                        <input class="cms-input" type="number" min="0" wire:model="listingBedrooms">
+                    </label>
+                    <label class="cms-field">
+                        <span class="cms-label">Toilet</span>
+                        <input class="cms-input" type="number" min="0" wire:model="listingToilets">
+                    </label>
+                    <label class="cms-field">
+                        <span class="cms-label">Mật khẩu nhà</span>
+                        <input class="cms-input" wire:model="listingHousePassword">
+                    </label>
+                    <label class="cms-field">
+                        <span class="cms-label">Trạng thái</span>
+                        <select class="cms-select" wire:model="listingIsSold">
+                            <option value="0">Hiển thị</option>
+                            <option value="1">Ẩn / đã giao dịch</option>
+                        </select>
+                    </label>
+                    <div class="cms-field full">
+                        <span class="cms-label">Tiện ích / nội thất chọn nhiều</span>
+                        <div class="cms-checkbox-grid">
+                            @foreach($amenityOptions as $value => $label)
+                                <label>
+                                    <input type="checkbox" wire:model="listingAmenities" value="{{ $value }}">
+                                    <span>{{ $label }}</span>
+                                </label>
+                            @endforeach
+                        </div>
+                    </div>
+                    <label class="cms-field full">
+                        <span class="cms-label">Mô tả chi tiết</span>
+                        <textarea class="cms-textarea" wire:model="listingDescription" rows="5"></textarea>
+                    </label>
+                    <label class="cms-field full">
+                        <span class="cms-label">Upload ảnh phòng local</span>
+                        <input class="cms-input" type="file" wire:model="listingImageFiles" accept="image/*" multiple>
+                        @error('listingImageFiles.*') <span class="cms-error">{{ $message }}</span> @enderror
+                    </label>
+                    @if($listingImages || $listingImageFiles)
+                        <div class="cms-field full">
+                            <span class="cms-label">Ảnh hiện có / preview</span>
+                            <div class="site-cms-image-grid">
+                                @foreach($listingImages as $index => $image)
+                                    <div>
+                                        <img src="{{ $image }}" alt="Ảnh phòng">
+                                        <button type="button" wire:click="removeListingImage({{ $index }})">Xóa</button>
+                                    </div>
+                                @endforeach
+                                @foreach($listingImageFiles as $file)
+                                    <div>
+                                        <img src="{{ $file->temporaryUrl() }}" alt="Ảnh preview">
+                                        <span>Ảnh mới</span>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
+                    <label class="cms-field">
+                        <span class="cms-label">Link Youtube dài</span>
+                        <input class="cms-input" wire:model="listingYoutubeLink" placeholder="https://...">
+                    </label>
+                    <label class="cms-field">
+                        <span class="cms-label">Link Youtube Shorts</span>
+                        <input class="cms-input" wire:model="listingYoutubeShort" placeholder="https://...">
+                    </label>
+                    <label class="cms-field">
+                        <span class="cms-label">Link Facebook Post</span>
+                        <input class="cms-input" wire:model="listingFacebookLink" placeholder="https://...">
+                    </label>
+                    <label class="cms-field">
+                        <span class="cms-label">Link Facebook Video</span>
+                        <input class="cms-input" wire:model="listingFacebookVideoLink" placeholder="https://...">
+                    </label>
+                    <label class="cms-field">
+                        <span class="cms-label">Link TikTok</span>
+                        <input class="cms-input" wire:model="listingTiktokLink" placeholder="https://...">
+                    </label>
+                    <label class="cms-field">
+                        <span class="cms-label">Link Google Map</span>
+                        <input class="cms-input" wire:model="listingGoogleMapLink" placeholder="https://...">
+                    </label>
+                    @if($errors->any())
+                        <div class="cms-field full cms-error">
+                            @foreach($errors->all() as $error)
+                                <div>{{ $error }}</div>
+                            @endforeach
+                        </div>
+                    @endif
+                </div>
+                <div class="cms-panel-head" style="justify-content:flex-end;">
+                    <button type="button" class="cms-btn" wire:click="closeListingModal"><i class="fa-solid fa-xmark"></i> Hủy</button>
+                    <button type="button" class="cms-btn primary" wire:click="saveListing"><i class="fa-solid fa-floppy-disk"></i> Lưu tin đăng</button>
+                </div>
+            </section>
+        </div>
+    @endif
+
+    @if($showBannerModal)
+        <div class="cms-modal-backdrop">
+            <section class="cms-modal">
+                <div class="cms-panel-head">
+                    <h2 class="cms-panel-title">{{ $bannerEditingId ? 'Sửa banner' : 'Thêm banner' }}</h2>
+                    <button type="button" class="cms-icon-btn" wire:click="closeBannerModal"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <div class="cms-form-grid">
+                    <label class="cms-field full">
+                        <span class="cms-label">Upload ảnh banner local</span>
+                        <input class="cms-input" type="file" wire:model="bannerImageFile" accept="image/*">
+                        @error('bannerImageFile') <span class="cms-error">{{ $message }}</span> @enderror
+                    </label>
+                    <label class="cms-field full">
+                        <span class="cms-label">Hoặc nhập URL ảnh banner</span>
+                        <input class="cms-input" wire:model="bannerImageUrl" placeholder="https://...">
+                        @error('bannerImageUrl') <span class="cms-error">{{ $message }}</span> @enderror
+                    </label>
+                    <label class="cms-field full">
+                        <span class="cms-label">Link khi bấm banner</span>
+                        <input class="cms-input" wire:model="bannerLinkUrl" placeholder="https://... hoặc để trống">
+                    </label>
+                    <label class="cms-field">
+                        <span class="cms-label">Tiêu đề</span>
+                        <input class="cms-input" wire:model="bannerTitle">
+                    </label>
+                    <label class="cms-field">
+                        <span class="cms-label">Mô tả ngắn</span>
+                        <input class="cms-input" wire:model="bannerSubtitle">
+                    </label>
+                    <label class="cms-field">
+                        <span class="cms-label">Thứ tự</span>
+                        <input class="cms-input mono" type="number" wire:model="bannerSortOrder">
+                    </label>
+                    <label class="cms-field">
+                        <span class="cms-label">Trạng thái</span>
+                        <select class="cms-select" wire:model="bannerIsActive">
+                            <option value="1">Bật</option>
+                            <option value="0">Tắt</option>
+                        </select>
+                    </label>
+                    @if($errors->any())
+                        <div class="cms-field full cms-error">
+                            @foreach($errors->all() as $error)
+                                <div>{{ $error }}</div>
+                            @endforeach
+                        </div>
+                    @endif
+                </div>
+                <div class="cms-panel-head" style="justify-content:flex-end;">
+                    <button type="button" class="cms-btn" wire:click="closeBannerModal"><i class="fa-solid fa-xmark"></i> Hủy</button>
+                    <button type="button" class="cms-btn primary" wire:click="saveBanner"><i class="fa-solid fa-floppy-disk"></i> Lưu banner</button>
+                </div>
+            </section>
+        </div>
+    @endif
+</div>

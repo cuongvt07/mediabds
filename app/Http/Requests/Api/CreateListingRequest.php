@@ -17,6 +17,7 @@ class CreateListingRequest extends FormRequest
             'title' => 'required|string|min:5|max:255',
             'type' => 'required|string|max:50',
             'property_type' => 'required',
+            'room_type' => 'nullable|in:duplex,studio,loft,balcony',
             'category_id' => 'nullable|string|max:80',
             'status' => 'nullable|in:active,pending,expired,sold',
             'vip_tier' => 'nullable|in:normal,vip1,vip2,vip3',

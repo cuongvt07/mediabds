@@ -71,7 +71,8 @@ class Login extends Component
         if ($user) {
             Auth::login($user, $this->remember);
             session()->regenerate();
-            return redirect()->intended(route('listings'));
+            $defaultRoute = $user->isAdmin() ? route('site.admin') : route('site.home');
+            return redirect()->intended($defaultRoute);
         }
 
         $this->addError('phone', 'Có lỗi xảy ra khi đăng nhập.');
@@ -122,7 +123,7 @@ class Login extends Component
         });
 
         session()->regenerate();
-        return redirect()->route('listings');
+        return redirect()->route('site.home');
     }
 
     public function render()

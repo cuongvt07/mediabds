@@ -426,7 +426,7 @@
                     <h2 class="text-xl font-black text-gray-800 uppercase flex items-center gap-2">
                         <span class="bg-blue-100 text-blue-600 p-2 rounded-lg"><i
                                 class="fa-solid fa-pen-to-square"></i></span>
-                        {{ $selectedListingId ? 'Cập Nhật Tin Đăng' : 'Tạo Tin Đăng Bất Động Sản' }}
+                        {{ $selectedListingId ? 'Cập Nhật Phòng Trọ' : 'Tạo Tin Đăng Phòng Trọ' }}
                     </h2>
                     <button wire:click="closeCreatePopup"
                         class="text-gray-400 hover:text-red-500 transition-colors w-8 h-8 flex items-center justify-center rounded-full hover:bg-red-50">
@@ -437,23 +437,12 @@
                 <div class="p-6 overflow-y-auto flex-1 custom-scrollbar">
                     <form class="grid grid-cols-1 md:grid-cols-12 gap-6">
 
-                        <div class="md:col-span-9">
+                        <div class="md:col-span-12">
                             <label class="block text-sm font-bold text-gray-700 mb-1">Tiêu đề tin đăng <span
                                     class="text-red-500">*</span></label>
-                            <input wire:model="title" type="text" placeholder="VD: Bán nhà mặt tiền Quận 1..."
+                            <input wire:model="title" type="text" placeholder="VD: Studio đầy đủ nội thất tại Gò Vấp..."
                                 class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow shadow-sm">
                         </div>
-                        <div class="md:col-span-3">
-                            <label class="block text-sm font-bold text-gray-700 mb-1">Nhu cầu <span
-                                    class="text-red-500">*</span></label>
-                            <select wire:model.live="type"
-                                class="w-full border border-gray-300 rounded-lg px-4 py-2.5 bg-white focus:ring-2 focus:ring-blue-500 outline-none shadow-sm">
-                                <option>Cần bán</option>
-                                <option>Cho thuê</option>
-                                <option>Cần mua</option>
-                            </select>
-                        </div>
-
                         <div class="md:col-span-3">
                             <label class="block text-sm font-bold text-gray-700 mb-1">Liên hệ</label>
                             <select wire:model="contact_type"
@@ -472,6 +461,7 @@
                                 <span class="text-red-500 text-xs">{{ $message }}</span>
                             @enderror
                         </div>
+                        @if(false)
                         <div class="md:col-span-6 border-b pb-4 mb-2">
                             <div class="flex items-center justify-between mb-3" wire:key="customer-toggle-header">
                                 <label class="text-sm font-bold text-gray-700">Thông tin khách hàng</label>
@@ -575,6 +565,7 @@
                                 placeholder="Nhập mật khẩu nhà (số và chữ)"
                                 class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow shadow-sm">
                         </div>
+                        @endif
 
                         <div class="md:col-span-6">
                             <label class="block text-sm font-bold text-gray-700 mb-1">
@@ -600,7 +591,7 @@
                                     <div
                                         class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600">
                                     </div>
-                                    <span class="ml-3 text-sm font-bold text-gray-700">Đã bán/Cho thuê xong</span>
+                                    <span class="ml-3 text-sm font-bold text-gray-700">Đã cho thuê / Tạm hết phòng</span>
                                 </label>
                             </div>
                         </div>
@@ -616,13 +607,7 @@
                             <div class="md:col-span-3">
                                 <label
                                     class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Tỉnh/Thành</label>
-                                <select wire:model.live="province_id"
-                                    class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
-                                    <option value="">Chọn tỉnh/thành</option>
-                                    @foreach (\App\Livewire\RealEstateListing::PROVINCES as $id => $name)
-                                        <option value="{{ $id }}">{{ $name }}</option>
-                                    @endforeach
-                                </select>
+                                <div class="w-full border border-amber-200 rounded-lg px-3 py-2 bg-amber-50 font-bold text-amber-800">TP. Hồ Chí Minh</div>
                             </div>
                             <div class="md:col-span-3">
                                 <label
@@ -649,17 +634,41 @@
 
                             <div class="md:col-span-3">
                                 <label
-                                    class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Loại
-                                    BĐS</label>
-                                <select wire:model="property_type"
+                                    class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Dạng phòng</label>
+                                <select wire:model="room_type"
                                     class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
-                                    <option value="0">Chọn loại nhà đất</option>
-                                    @foreach (\App\Livewire\RealEstateListing::PROPERTY_TYPES as $id => $name)
+                                    @foreach (\App\Livewire\RealEstateListing::ROOM_TYPES as $id => $name)
                                         <option value="{{ $id }}">{{ $name }}</option>
                                     @endforeach
                                 </select>
                             </div>
 
+                            <div class="md:col-span-3">
+                                <label class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Nội thất</label>
+                                <select wire:model="furnish"
+                                    class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                                    <option value="">Chưa xác định</option>
+                                    @foreach (\App\Livewire\RealEstateListing::FURNISH_TYPES as $id => $name)
+                                        <option value="{{ $id }}">{{ $name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            <div class="md:col-span-12">
+                                <label class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Tiện ích phòng trọ</label>
+                                <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+                                    @foreach (\App\Livewire\RealEstateListing::AMENITIES as $id => $name)
+                                        <label class="relative cursor-pointer">
+                                            <input type="checkbox" wire:model="amenities" value="{{ $id }}" class="peer sr-only">
+                                            <span class="h-12 flex items-center justify-center rounded-xl border border-gray-200 bg-gray-50 text-sm font-semibold text-gray-500 peer-checked:border-blue-500 peer-checked:bg-blue-50 peer-checked:text-blue-700 transition">
+                                                {{ $name }}
+                                            </span>
+                                        </label>
+                                    @endforeach
+                                </div>
+                            </div>
+
+                            @if(false)
                             <div class="md:col-span-12">
                                 <label
                                     class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Địa
@@ -671,6 +680,7 @@
                                         class="w-full border border-gray-300 rounded-lg pl-9 pr-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none shadow-sm">
                                 </div>
                             </div>
+                            @endif
 
                             <div class="md:col-span-12 mt-2">
                                 <p
@@ -679,38 +689,31 @@
                                 </p>
                             </div>
 
+                            @if(false)
                             <div class="md:col-span-4" x-data>
                                 <label class="block text-sm font-bold text-gray-700 mb-1">Diện tích (m²)</label>
                                 <input wire:model="area" type="text"
                                     x-on:input="$el.value = $el.value.replace(/[^0-9,.]/g, '')"
                                     class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none font-bold text-gray-800">
                             </div>
+                            @endif
 
-                            <div class="md:col-span-8 flex space-x-2">
+                            <div class="md:col-span-12">
                                 <div class="flex-1" x-data>
                                     <label class="block text-sm font-bold text-gray-700 mb-1">Mức giá</label>
                                     <input wire:model="price" type="text"
                                         x-on:input="$el.value = $el.value.replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.')"
                                         class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none font-bold text-gray-800">
                                 </div>
-                                <div class="w-1/3">
-                                    <label class="block text-sm font-bold text-gray-700 mb-1">Đơn vị</label>
-                                    <select wire:model="price_unit"
-                                        class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
-                                        <option value="0">Chọn đơn giá</option>
-                                        <option value="1">VNĐ</option>
-                                        <option value="2">VNĐ/tháng</option>
-                                        <option value="3">VNĐ/m2</option>
-                                    </select>
-                                </div>
+                                <p class="mt-1 text-xs font-semibold text-amber-700">Đơn vị cố định: VNĐ/tháng</p>
                             </div>
 
                             <div class="grid grid-cols-2 md:grid-cols-6 gap-4 md:col-span-12">
-                                <div>
+                                @if(false)<div>
                                     <label class="text-xs text-gray-500 uppercase font-semibold">Số tầng</label>
                                     <input wire:model="floors" type="number"
                                         class="w-full border border-gray-300 rounded-lg px-2 py-2 text-center focus:ring-2 focus:ring-blue-500 outline-none mt-1">
-                                </div>
+                                </div>@endif
                                 <div>
                                     <label class="text-xs text-gray-500 uppercase font-semibold">P.Ngủ</label>
                                     <input wire:model="bedrooms" type="number"
@@ -721,7 +724,7 @@
                                     <input wire:model="toilets" type="number"
                                         class="w-full border border-gray-300 rounded-lg px-2 py-2 text-center focus:ring-2 focus:ring-blue-500 outline-none mt-1">
                                 </div>
-                                <div>
+                                @if(false)<div>
                                     <label class="text-xs text-gray-500 uppercase font-semibold">Hướng</label>
                                     <select wire:model="direction"
                                         class="w-full border border-gray-300 rounded-lg px-1 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none mt-1">
@@ -735,19 +738,19 @@
                                         <option value="7">Tây bắc</option>
                                         <option value="8">Tây nam</option>
                                     </select>
-                                </div>
-                                <div x-data>
+                                </div>@endif
+                                @if(false)<div x-data>
                                     <label class="text-xs text-gray-500 uppercase font-semibold">Mặt tiền (m)</label>
                                     <input wire:model="front_width" type="text"
                                         x-on:input="$el.value = $el.value.replace(/[^0-9,.]/g, '')"
                                         class="w-full border border-gray-300 rounded-lg px-2 py-2 text-center focus:ring-2 focus:ring-blue-500 outline-none mt-1">
-                                </div>
-                                <div x-data>
+                                </div>@endif
+                                @if(false)<div x-data>
                                     <label class="text-xs text-gray-500 uppercase font-semibold">Lộ giới (m)</label>
                                     <input wire:model="road_width" type="text"
                                         x-on:input="$el.value = $el.value.replace(/[^0-9,.]/g, '')"
                                         class="w-full border border-gray-300 rounded-lg px-2 py-2 text-center focus:ring-2 focus:ring-blue-500 outline-none mt-1">
-                                </div>
+                                </div>@endif
                             </div>
                         @endif
 
@@ -774,9 +777,9 @@
                                 <i class="fa-solid fa-images"></i> Hình ảnh & Video
                             </p>
 
-                            <!-- Representative Image (Avatar) -->
+                            <!-- Listing cover image -->
                             <div class="space-y-2 mb-4">
-                                <label class="block text-sm font-bold text-gray-700">Ảnh đại diện (Avatar)</label>
+                                <label class="block text-sm font-bold text-gray-700">Ảnh bìa tin đăng</label>
                                 <div class="flex gap-4 items-start">
                                     <div
                                         class="w-32 h-32 bg-gray-100 rounded-lg border border-gray-300 flex-shrink-0 relative overflow-hidden group">

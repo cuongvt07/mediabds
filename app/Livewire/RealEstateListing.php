@@ -104,7 +104,7 @@ class RealEstateListing extends Component
 
     // Form Fields
     public $title;
-    public $type = 'Cần bán';
+    public $type = 'Cho thuê';
     public $contact_type; // Chủ or Môi giới
     public $contact_phone;
     public $house_password; // Alphanumeric password
@@ -113,7 +113,10 @@ class RealEstateListing extends Component
     public $province_id;
     public $district_id;
     public $ward_id;
-    public $property_type = 0; // Default to "Chọn loại..."
+    public $property_type = 115;
+    public $room_type = 'studio';
+    public $furnish = '';
+    public $amenities = [];
     public $address;
 
     const PROPERTY_TYPES = [
@@ -150,6 +153,32 @@ class RealEstateListing extends Component
         115 => '#NT',
     ];
 
+    const ROOM_TYPES = [
+        'duplex' => 'Duplex',
+        'studio' => 'Studio',
+        'loft' => 'Phòng có gác',
+        'balcony' => 'Phòng ban công',
+    ];
+
+    const FURNISH_TYPES = [
+        'full' => 'Đầy đủ nội thất',
+        'basic' => 'Nội thất cơ bản',
+        'empty' => 'Phòng trống',
+    ];
+
+    const AMENITIES = [
+        'bed' => 'Giường',
+        'mattress' => 'Nệm',
+        'wardrobe' => 'Tủ quần áo',
+        'elevator' => 'Thang máy',
+        'wifi' => 'Wifi',
+        'air_conditioner' => 'Máy lạnh',
+        'kitchen' => 'Kệ bếp',
+        'water_heater' => 'Nước nóng',
+        'fridge' => 'Tủ lạnh',
+        'loft' => 'Gác',
+    ];
+
     const DIRECTIONS = [
         1 => 'Đông',
         2 => 'Tây',
@@ -162,7 +191,7 @@ class RealEstateListing extends Component
     ];
     public $area;
     public $price;
-    public $price_unit = 'Tỷ';
+    public $price_unit = '2';
     public $floors;
     public $bedrooms;
     public $toilets;
@@ -608,17 +637,21 @@ class RealEstateListing extends Component
 
         $rules = [
             'title' => 'required',
+            'contact_phone' => 'required',
+            'province_id' => 'required',
+            'district_id' => 'required',
+            'ward_id' => 'required',
+            'price' => 'required|numeric',
+            'room_type' => 'required|in:duplex,studio,loft,balcony',
+            'furnish' => 'nullable|in:full,basic,empty',
+            'amenities' => 'array',
+            'amenities.*' => 'in:' . implode(',', array_keys(self::AMENITIES)),
             'facebook_link' => 'nullable|url|max:2000',
             'facebook_video_link' => 'nullable|url|max:2000',
             'google_map_link' => 'nullable|url|max:2000',
             'tiktok_link' => 'nullable|url|max:2000',
             'reporter_id' => 'nullable|exists:users,id',
         ];
-
-        if ($this->type !== 'Cần mua') {
-            $rules['province_id'] = 'required';
-            $rules['price'] = 'required|numeric';
-        }
 
         $this->validate($rules);
 
@@ -632,13 +665,16 @@ class RealEstateListing extends Component
 
         $data = [
             'title' => $this->title,
-            'type' => $this->type,
+            'type' => 'Cho thuê',
             'contact_type' => $this->contact_type,
             'contact_phone' => $this->contact_phone,
             'house_password' => $this->house_password,
             'code' => $this->code,
             'is_sold' => $this->is_sold,
-            'property_type' => $this->property_type,
+            'property_type' => 115,
+            'room_type' => $this->room_type,
+            'furnish' => $this->furnish ?: null,
+            'amenities' => array_values($this->amenities ?? []),
             'province_id' => $this->province_id,
             'district_id' => $this->district_id,
             'ward_id' => $this->ward_id,
@@ -648,16 +684,16 @@ class RealEstateListing extends Component
             'district_name' => $this->districts[$this->district_id] ?? null,
             'ward_name' => $this->wards[$this->ward_id] ?? null,
 
-            'address' => $this->address,
-            'area' => $this->area,
+            'address' => null,
+            'area' => null,
             'price' => $this->normalizeCurrency($this->price),
-            'price_unit' => $this->price_unit,
-            'floors' => $this->floors,
+            'price_unit' => '2',
+            'floors' => null,
             'bedrooms' => $this->bedrooms,
             'toilets' => $this->toilets,
-            'direction' => $this->direction,
-            'front_width' => $this->front_width,
-            'road_width' => $this->road_width,
+            'direction' => null,
+            'front_width' => null,
+            'road_width' => null,
             'youtube_link' => $this->youtube_link,
             'youtube_link_short' => $this->youtube_link_short,
             'facebook_link' => $this->facebook_link,
@@ -739,26 +775,28 @@ class RealEstateListing extends Component
         $this->selectedListingId = $id;
 
         $this->title = $listing->title;
-        $this->type = $listing->type;
+        $this->type = 'Cho thuê';
         $this->contact_type = $listing->contact_type;
         $this->contact_phone = $listing->contact_phone;
         $this->house_password = $listing->house_password;
         $this->code = $listing->code;
         $this->is_sold = $listing->is_sold ?? false;
-        $this->property_type = $listing->property_type;
-        $this->province_id = $listing->province_id;
+        $this->property_type = 115;
+        $this->room_type = $listing->room_type ?: 'studio';
+        $this->furnish = $listing->furnish ?: '';
+        $this->amenities = $listing->amenities ?? [];
+        $this->province_id = '79';
 
         // Fetch Dependent Options
         if ($this->province_id)
             $this->fetchDistricts($this->province_id);
 
-        $this->district_id = $listing->district_id;
+        $this->district_id = $listing->province_id === '79' ? $listing->district_id : null;
 
         if ($this->district_id)
             $this->fetchWards($this->district_id);
 
-        $this->ward_id = $listing->ward_id;
-        $this->ward_id = $listing->ward_id;
+        $this->ward_id = $listing->province_id === '79' ? $listing->ward_id : null;
         $this->address = $listing->address;
 
         // Format numbers for display
@@ -889,6 +927,7 @@ class RealEstateListing extends Component
     public function openCreatePopup()
     {
         $this->resetForm();
+        $this->fetchDistricts('79');
         $this->showCreatePopup = true;
     }
 
@@ -901,7 +940,13 @@ class RealEstateListing extends Component
     public function resetForm()
     {
         $this->selectedListingId = null;
-        $this->reset(['title', 'type', 'contact_type', 'contact_phone', 'house_password', 'code', 'is_sold', 'address', 'area', 'price', 'description', 'floors', 'bedrooms', 'toilets', 'direction', 'front_width', 'road_width', 'youtube_link', 'facebook_link', 'facebook_video_link', 'google_map_link', 'tiktok_link', 'images', 'province_id', 'district_id', 'ward_id', 'tempImages', 'avatar', 'tempAvatar', 'reporter_id']);
+        $this->reset(['title', 'contact_type', 'contact_phone', 'house_password', 'code', 'is_sold', 'address', 'area', 'price', 'description', 'floors', 'bedrooms', 'toilets', 'direction', 'front_width', 'road_width', 'youtube_link', 'facebook_link', 'facebook_video_link', 'google_map_link', 'tiktok_link', 'images', 'district_id', 'ward_id', 'tempImages', 'avatar', 'tempAvatar', 'reporter_id', 'amenities']);
+        $this->type = 'Cho thuê';
+        $this->property_type = 115;
+        $this->room_type = 'studio';
+        $this->furnish = '';
+        $this->price_unit = '2';
+        $this->province_id = '79';
         $this->is_sold = false;
         $this->youtube_link_short = null;
         $this->customer_selection_mode = 'existing';
@@ -1539,4 +1584,3 @@ class RealEstateListing extends Component
     }
 
 }
-

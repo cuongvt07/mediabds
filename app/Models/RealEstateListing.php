@@ -98,7 +98,7 @@ class RealEstateListing extends Model
     {
         // [FIX] try/catch để không crash khi bảng listing_embeddings chưa migrate
         static::updated(function (self $l) {
-            $semanticFields = ['title', 'description', 'address', 'price', 'price_unit', 'area', 'bedrooms', 'toilets', 'floors', 'direction', 'property_type', 'type'];
+            $semanticFields = ['title', 'description', 'address', 'price', 'price_unit', 'area', 'bedrooms', 'toilets', 'floors', 'direction', 'property_type', 'room_type', 'furnish', 'amenities', 'type'];
             if (collect($semanticFields)->some(fn($f) => $l->wasChanged($f))) {
                 try {
                     ListingEmbedding::where('listing_id', $l->id)->delete();

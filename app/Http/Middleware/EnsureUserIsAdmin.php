@@ -8,17 +8,13 @@ use Symfony\Component\HttpFoundation\Response;
 
 class EnsureUserIsAdmin
 {
-    /**
-     * Handle an incoming request.
-     */
     public function handle(Request $request, Closure $next): Response
     {
         $user = auth()->user();
 
-        if (!$user || !$user->isAdmin()) {
-            // Redirect to listings page with error message
+        if (! $user || ! $user->isAdmin()) {
             session()->flash('error', 'Chỉ Admin mới có quyền truy cập trang này!');
-            return redirect()->route('listings');
+            return redirect()->route('site.home');
         }
 
         return $next($request);

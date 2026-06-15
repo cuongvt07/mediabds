@@ -115,17 +115,26 @@
                     <span class="text-[10px] font-bold text-center leading-none">Chat AI</span>
                 </a>
 
+                <a href="{{ route('site.home') }}" target="_blank"
+                    class="flex flex-col items-center justify-center p-3 rounded-2xl transition-all group text-amber-300/90 hover:text-white hover:bg-amber-900/30"
+                    title="Mở website phòng trọ public">
+                    <div class="w-8 h-8 flex items-center justify-center rounded-lg mb-1 bg-amber-900/40 group-hover:bg-amber-800/60">
+                        <i class="fa-solid fa-house-signal text-sm"></i>
+                    </div>
+                    <span class="text-[10px] font-bold text-center leading-none">Trang chủ</span>
+                </a>
+
                 @if (auth()->user() && auth()->user()->isAdmin())
                     <div class="my-1 h-px w-12 self-center bg-slate-700/70"></div>
 
-                    <a href="{{ route('website.admin') }}"
-                        class="flex flex-col items-center justify-center p-3 rounded-2xl transition-all group {{ request()->routeIs('website.admin') ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/20' : 'text-emerald-300/80 hover:text-white hover:bg-emerald-900/40' }}"
-                        title="Website public">
+                    <a href="{{ route('site.admin') }}"
+                        class="flex flex-col items-center justify-center p-3 rounded-2xl transition-all group {{ request()->routeIs('site.admin') ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/20' : 'text-emerald-300/80 hover:text-white hover:bg-emerald-900/40' }}"
+                        title="CMS nhà trọ">
                         <div
-                            class="w-8 h-8 flex items-center justify-center rounded-lg mb-1 {{ request()->routeIs('website.admin') ? 'bg-white/20' : 'bg-emerald-900/50 group-hover:bg-emerald-800/70' }}">
+                            class="w-8 h-8 flex items-center justify-center rounded-lg mb-1 {{ request()->routeIs('site.admin') ? 'bg-white/20' : 'bg-emerald-900/50 group-hover:bg-emerald-800/70' }}">
                             <i class="fa-solid fa-globe text-sm"></i>
                         </div>
-                        <span class="text-[10px] font-bold text-center leading-none">Website</span>
+                        <span class="text-[10px] font-bold text-center leading-none">CMS</span>
                     </a>
                 @endif
 

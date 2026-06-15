@@ -1,0 +1,63 @@
+services:
+  app:
+    container_name: mediabds-app
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8015:8000"
+    environment:
+      APP_NAME: "Nha Tro Sai Gon"
+      APP_ENV: local
+      APP_KEY: "base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+      APP_DEBUG: "true"
+      APP_URL: "http://localhost:8015"
+      DB_CONNECTION: mysql
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_DATABASE: mediabds
+      DB_USERNAME: mediabds
+      DB_PASSWORD: mediabds_local
+      SESSION_DRIVER: database
+      CACHE_STORE: database
+      QUEUE_CONNECTION: database
+      FILESYSTEM_DISK: public
+      DOCKER_SEED: "true"
+    volumes:
+      - mediabds_storage:/var/www/html/storage/app/public
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/site"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 45s
+
+  db:
+    container_name: mediabds-db
+    image: mysql:8.0
+    restart: unless-stopped
+    ports:
+      - "3308:3306"
+    environment:
+      MYSQL_DATABASE: mediabds
+      MYSQL_USER: mediabds
+      MYSQL_PASSWORD: mediabds_local
+      MYSQL_ROOT_PASSWORD: mediabds_root_local
+    volumes:
+      - mediabds_mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+
+volumes:
+  mediabds_mysql_data:
+    name: mediabds_mysql_data
+  mediabds_storage:
+    name: mediabds_storage

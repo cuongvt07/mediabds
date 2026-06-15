@@ -34,6 +34,7 @@ class ListingResource extends JsonResource
             'property_type' => $propertyTypeLabel,
             'property_type_code' => $propertyTypeCode,
             'property_kind' => $this->propertyKind($propertyTypeCode, $propertyTypeLabel),
+            'room_type' => $this->room_type,
             'category_id' => $this->category_id,
             'price' => $this->price,
             'price_unit' => $this->price_unit,
