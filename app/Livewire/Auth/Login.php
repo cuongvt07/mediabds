@@ -71,8 +71,13 @@ class Login extends Component
         if ($user) {
             Auth::login($user, $this->remember);
             session()->regenerate();
-            $defaultRoute = $user->isAdmin() ? route('site.admin') : route('site.home');
-            return redirect()->intended($defaultRoute);
+
+            // Admin luôn vào thẳng CMS, không theo "intended URL" cũ.
+            if ($user->isAdmin()) {
+                return redirect()->route('site.admin');
+            }
+
+            return redirect()->intended(route('site.home'));
         }
 
         $this->addError('phone', 'Có lỗi xảy ra khi đăng nhập.');
