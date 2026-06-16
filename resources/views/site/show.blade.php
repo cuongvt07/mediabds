@@ -82,9 +82,7 @@
                         <div class="site-detail-info-grid">
                             <div>Toilet: <strong>{{ $listing->toilets ?: 'Liên hệ' }}</strong></div>
                             <div>Giờ giấc: <strong>{{ $listing->access_hours ?: 'Tự do' }}</strong></div>
-                            <div>Máy lạnh: <strong>{{ in_array('air_conditioner', $listingAmenities, true) ? 'Có' : 'Không' }}</strong></div>
                             <div>Cửa sổ: <strong>{{ $listing->has_window ?: 'Liên hệ' }}</strong></div>
-                            <div>Ban công: <strong>{{ $listing->room_type === 'balcony' ? 'Có' : 'Không' }}</strong></div>
                             <div>Thú cưng: <strong>{{ $listing->pets_allowed ?: 'Liên hệ' }}</strong></div>
                             <div>Để xe: <strong>{{ $listing->parking_available ?: 'Liên hệ' }}</strong></div>
                             <div>Phòng ngủ: <strong>{{ $listing->bedrooms ?: 'Liên hệ' }}</strong></div>
