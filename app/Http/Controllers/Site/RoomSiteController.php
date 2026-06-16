@@ -8,7 +8,9 @@ use App\Models\SiteAmenity;
 use App\Models\SiteBanner;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 
 class RoomSiteController extends Controller
 {
@@ -16,39 +18,30 @@ class RoomSiteController extends Controller
     {
         $baseQuery = $this->publicRoomQuery();
 
-        $districts = (clone $baseQuery)
-            ->whereNotNull('district_id')
-            ->whereNotNull('district_name')
-            ->select('district_id', 'district_name')
-            ->distinct()
-            ->orderBy('district_name')
-            ->get();
+        // Quận/Phường lấy từ dữ liệu địa chính (province 79 - HCM), cascade như bên admin.
+        $districtData = $this->locationData()['79']['districts'] ?? [];
+
+        $districts = collect($districtData)->map(fn ($d, $id) => (object) [
+            'district_id' => (string) $id,
+            'district_name' => $d['name'],
+        ])->values();
 
         $wards = collect();
         if ($request->filled('district')) {
-            $wards = (clone $baseQuery)
-                ->where('district_id', $request->string('district'))
-                ->whereNotNull('ward_id')
-                ->whereNotNull('ward_name')
-                ->select('ward_id', 'ward_name')
-                ->distinct()
-                ->orderBy('ward_name')
-                ->get();
+            $selectedDistrict = (string) $request->input('district');
+            $wards = collect($districtData[$selectedDistrict]['wards'] ?? [])
+                ->map(fn ($name, $id) => (object) [
+                    'ward_id' => (string) $id,
+                    'ward_name' => $name,
+                ])->values();
         }
 
-        $wardOptions = (clone $baseQuery)
-            ->whereNotNull('district_id')
-            ->whereNotNull('ward_id')
-            ->whereNotNull('ward_name')
-            ->select('district_id', 'ward_id', 'ward_name')
-            ->distinct()
-            ->orderBy('ward_name')
-            ->get()
-            ->groupBy('district_id')
-            ->map(fn ($items) => $items->map(fn ($item) => [
-                'id' => (string) $item->ward_id,
-                'name' => $item->ward_name,
-            ])->values());
+        $wardOptions = collect($districtData)->mapWithKeys(fn ($d, $id) => [
+            (string) $id => collect($d['wards'] ?? [])->map(fn ($name, $wid) => [
+                'id' => (string) $wid,
+                'name' => $name,
+            ])->values(),
+        ]);
 
         $query = clone $baseQuery;
 
@@ -138,6 +131,31 @@ class RoomSiteController extends Controller
                     ->orWhere('property_type', 'like', '%trọ%')
                     ->orWhereNotNull('room_type');
             });
+    }
+
+    private $locationCache = null;
+
+    private function locationData(): array
+    {
+        if ($this->locationCache !== null) {
+            return $this->locationCache;
+        }
+
+        $cached = Cache::get('vietnam_locations_full');
+        if (is_array($cached) && $cached !== []) {
+            return $this->locationCache = $cached;
+        }
+
+        $path = 'locations/all_vietnam.json';
+        $data = Storage::disk('local')->exists($path)
+            ? (json_decode(Storage::disk('local')->get($path), true) ?: [])
+            : [];
+
+        if ($data !== []) {
+            Cache::put('vietnam_locations_full', $data, 86400);
+        }
+
+        return $this->locationCache = $data;
     }
 
     private function priceVndExpression(): string

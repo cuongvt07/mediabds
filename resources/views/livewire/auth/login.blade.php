@@ -4,7 +4,7 @@
         <div class="w-16 h-16 mx-auto mb-4 grid place-items-center rounded-2xl bg-slate-900 text-white text-2xl shadow-lg">
             <i class="fa-solid fa-house"></i>
         </div>
-        <h2 class="text-2xl font-black text-slate-900 tracking-tight">NHÀ TRỌ SÀI GÒN</h2>
+        <h2 class="text-2xl font-black text-slate-900 tracking-tight">nhatrosv</h2>
         <p class="mt-1 text-slate-500 text-sm font-semibold">
             {{ $isRegistering ? 'Tạo tài khoản mới' : 'Đăng nhập trang quản trị' }}
         </p>

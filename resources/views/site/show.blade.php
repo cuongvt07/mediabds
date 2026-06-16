@@ -18,7 +18,7 @@
     $location = implode(', ', array_filter([$listing->address, $listing->ward_name, $listing->district_name, 'TP.HCM']));
 @endphp
 
-@section('title', $listing->title . ' - Nhà Trọ Sài Gòn')
+@section('title', $listing->title . ' - nhatrosv.com')
 
 @section('content')
     <section class="site-detail-page">
@@ -112,7 +112,7 @@
                                 <a href="tel:{{ preg_replace('/\D+/', '', $listing->contact_phone) }}">{{ $listing->contact_phone }}</a>
                                 @if($zaloUrl)
                                     <a class="site-zalo-btn" href="{{ $zaloUrl }}" target="_blank" rel="noopener" title="Chat Zalo" aria-label="Chat Zalo">
-                                        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3C6.5 3 2 6.6 2 11.1c0 2.5 1.4 4.8 3.6 6.3-.1.9-.5 2.2-1.3 3.2-.2.3 0 .7.4.6 1.9-.4 3.3-1.1 4.2-1.7 1 .2 2 .4 3.1.4 5.5 0 10-3.6 10-8.1S17.5 3 12 3Z"/></svg>
+                                        <img src="https://img.icons8.com/?size=100&id=0m71tmRjlxEe&format=png&color=000000" alt="Zalo" loading="lazy">
                                     </a>
                                 @endif
                             </div>

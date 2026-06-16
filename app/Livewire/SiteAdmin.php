@@ -113,7 +113,7 @@ class SiteAdmin extends Component
     public $amenityIconUrl = '';
     public $amenityIconFile;
 
-    public $siteName = 'NHÀ TRỌ SÀI GÒN';
+    public $siteName = 'nhatrosv.com';
     public $logoUrl = '';
     public $logoFile;
     public $contactPhone = '';
@@ -128,7 +128,7 @@ class SiteAdmin extends Component
 
     public function mount(): void
     {
-        $this->siteName = SiteSetting::query()->whereKey('site_name')->value('value') ?: 'NHÀ TRỌ SÀI GÒN';
+        $this->siteName = SiteSetting::query()->whereKey('site_name')->value('value') ?: 'nhatrosv.com';
         $this->logoUrl = SiteSetting::query()->whereKey('logo_url')->value('value') ?: '';
         $this->contactPhone = SiteSetting::query()->whereKey('contact_phone')->value('value') ?: '';
         $this->contactZalo = SiteSetting::query()->whereKey('contact_zalo')->value('value') ?: '';

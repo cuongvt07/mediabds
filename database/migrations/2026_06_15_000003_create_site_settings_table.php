@@ -18,7 +18,7 @@ return new class extends Migration
         DB::table('site_settings')->insert([
             [
                 'key' => 'site_name',
-                'value' => 'NHÀ TRỌ SÀI GÒN',
+                'value' => 'nhatrosv',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],

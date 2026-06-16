@@ -4,12 +4,12 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Tìm phòng trọ, studio, duplex và phòng có gác tại TP.HCM.">
-    <title>@yield('title', 'Nhà Trọ Sài Gòn')</title>
+    <title>@yield('title', 'nhatrosv.com')</title>
     @vite('resources/css/site.css')
 </head>
 <body>
     @php
-        $siteName = 'NHÀ TRỌ SÀI GÒN';
+        $siteName = 'nhatrosv.com';
         $siteLogo = null;
         if (\Illuminate\Support\Facades\Schema::hasTable('site_settings')) {
             $settings = \App\Models\SiteSetting::query()
@@ -46,7 +46,7 @@
 
     <footer class="site-footer">
         <div class="site-shell">
-            <span>© {{ date('Y') }} Nhà Trọ Sài Gòn. Thông tin phòng trọ tại TP.HCM.</span>
+            <span>© {{ date('Y') }} nhatrosv.com. Thông tin phòng trọ tại TP.HCM.</span>
             <span>Minh bạch thông tin · Hỗ trợ nhanh · Không cần đăng nhập</span>
         </div>
     </footer>
