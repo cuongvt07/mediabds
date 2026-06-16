@@ -765,17 +765,27 @@ class SiteAdmin extends Component
 
     private function getLocationData(): array
     {
-        if ($this->locationData === null) {
-            $this->locationData = Cache::remember('vietnam_locations_full', 86400, function () {
-                $path = 'locations/all_vietnam.json';
-                if (Storage::disk('local')->exists($path)) {
-                    return json_decode(Storage::disk('local')->get($path), true);
-                }
-                return [];
-            });
+        if ($this->locationData !== null) {
+            return $this->locationData;
         }
 
-        return $this->locationData ?: [];
+        // Dùng cache nếu đã có dữ liệu thật; KHÔNG cache kết quả rỗng để khi
+        // file all_vietnam.json được thêm vào (hosting) thì cascade chạy ngay.
+        $cached = Cache::get('vietnam_locations_full');
+        if (is_array($cached) && $cached !== []) {
+            return $this->locationData = $cached;
+        }
+
+        $path = 'locations/all_vietnam.json';
+        $data = Storage::disk('local')->exists($path)
+            ? (json_decode(Storage::disk('local')->get($path), true) ?: [])
+            : [];
+
+        if ($data !== []) {
+            Cache::put('vietnam_locations_full', $data, 86400);
+        }
+
+        return $this->locationData = $data;
     }
 
     private function generateListingCode(): string
