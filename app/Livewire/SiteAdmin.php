@@ -372,6 +372,17 @@ class SiteAdmin extends Component
         $this->closeListingModal();
     }
 
+    public function toggleListing(int $id): void
+    {
+        $listing = ListingModel::findOrFail($id);
+        $hidden = ! $listing->is_sold;   // đảo trạng thái: is_sold=true => ẩn
+        $listing->update([
+            'is_sold' => $hidden,
+            'status' => $hidden ? 'inactive' : 'active',
+        ]);
+        $this->activeTab = 'listings';
+    }
+
     public function deleteListing(int $id): void
     {
         ListingModel::whereKey($id)->delete();

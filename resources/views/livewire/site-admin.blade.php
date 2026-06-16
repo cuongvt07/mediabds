@@ -161,9 +161,9 @@
                             @forelse($siteListings as $listing)
                                 <tr style="{{ $listing->is_sold ? 'opacity:.58' : '' }}">
                                     <td>
-                                        <span class="cms-badge {{ $listing->is_sold ? 'muted' : 'success' }}">
-                                            {{ $listing->is_sold ? 'Ẩn' : 'Hiện' }}
-                                        </span>
+                                        <button type="button" class="cms-badge {{ $listing->is_sold ? 'muted' : 'success' }}" wire:click="toggleListing({{ $listing->id }})" title="Hiện/ẩn tin">
+                                            <i class="fa-solid {{ $listing->is_sold ? 'fa-toggle-off' : 'fa-toggle-on' }}"></i> {{ $listing->is_sold ? 'Ẩn' : 'Hiện' }}
+                                        </button>
                                     </td>
                                     <td>
                                         @php($cover = $listing->avatar ?: collect($listing->images ?: [])->first())
