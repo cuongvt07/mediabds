@@ -27,6 +27,12 @@ class SiteAdmin extends Component
         'balcony' => 'Ban công',
     ];
 
+    public const CONDITION_OPTIONS = [
+        '' => 'Liên hệ',
+        'Có' => 'Có',
+        'Không' => 'Không',
+    ];
+
     public const FURNISH_TYPES = [
         'full' => 'Đầy đủ nội thất',
         'basic' => 'Nội thất cơ bản',
@@ -72,6 +78,13 @@ class SiteAdmin extends Component
     public $listingAmenities = [];
     public $listingBedrooms = '';
     public $listingToilets = '';
+    public $listingElectricity = '';
+    public $listingWater = '';
+    public $listingParkingFee = '';
+    public $listingAccessHours = '';
+    public $listingWindow = '';
+    public $listingPets = '';
+    public $listingParking = '';
     public $listingDescription = '';
     public $listingYoutubeLink = '';
     public $listingYoutubeShort = '';
@@ -118,6 +131,7 @@ class SiteAdmin extends Component
     public $logoFile;
     public $contactPhone = '';
     public $contactZalo = '';
+    public $contactEmail = '';
 
     protected $queryString = [
         'activeTab' => ['except' => 'dashboard', 'as' => 'tab'],
@@ -132,6 +146,7 @@ class SiteAdmin extends Component
         $this->logoUrl = SiteSetting::query()->whereKey('logo_url')->value('value') ?: '';
         $this->contactPhone = SiteSetting::query()->whereKey('contact_phone')->value('value') ?: '';
         $this->contactZalo = SiteSetting::query()->whereKey('contact_zalo')->value('value') ?: '';
+        $this->contactEmail = SiteSetting::query()->whereKey('contact_email')->value('value') ?: '';
         $this->loadDistricts($this->listingProvinceId);
     }
 
@@ -164,6 +179,7 @@ class SiteAdmin extends Component
             'amenityTypes' => SiteAmenity::TYPES,
             'roomTypes' => self::ROOM_TYPES,
             'furnishTypes' => self::FURNISH_TYPES,
+            'conditionOptions' => self::CONDITION_OPTIONS,
             'amenityOptions' => SiteAmenity::query()->active()->ordered()->pluck('name', 'key')->all(),
             'provinces' => self::PROVINCES,
             'roleOptions' => self::ROLE_OPTIONS,
@@ -236,6 +252,13 @@ class SiteAdmin extends Component
         $this->listingAmenities = array_values($listing->amenities ?: []);
         $this->listingBedrooms = $listing->bedrooms ?: '';
         $this->listingToilets = $listing->toilets ?: '';
+        $this->listingElectricity = $listing->electricity_price ?: '';
+        $this->listingWater = $listing->water_price ?: '';
+        $this->listingParkingFee = $listing->parking_fee ?: '';
+        $this->listingAccessHours = $listing->access_hours ?: '';
+        $this->listingWindow = $listing->has_window ?: '';
+        $this->listingPets = $listing->pets_allowed ?: '';
+        $this->listingParking = $listing->parking_available ?: '';
         $this->listingDescription = $listing->description ?: '';
         $this->listingYoutubeLink = $listing->youtube_link ?: '';
         $this->listingYoutubeShort = $listing->youtube_link_short ?: '';
@@ -269,6 +292,13 @@ class SiteAdmin extends Component
             'listingAmenities.*' => 'in:' . implode(',', SiteAmenity::query()->pluck('key')->all() ?: ['_none']),
             'listingBedrooms' => 'nullable|integer|min:0|max:20',
             'listingToilets' => 'nullable|integer|min:0|max:20',
+            'listingElectricity' => 'nullable|string|max:80',
+            'listingWater' => 'nullable|string|max:80',
+            'listingParkingFee' => 'nullable|string|max:80',
+            'listingAccessHours' => 'nullable|string|max:80',
+            'listingWindow' => 'nullable|in:,Có,Không',
+            'listingPets' => 'nullable|in:,Có,Không',
+            'listingParking' => 'nullable|in:,Có,Không',
             'listingDescription' => 'nullable|string',
             'listingYoutubeLink' => 'nullable|url|max:2048',
             'listingYoutubeShort' => 'nullable|url|max:2048',
@@ -314,6 +344,13 @@ class SiteAdmin extends Component
                 'floors' => null,
                 'bedrooms' => $data['listingBedrooms'] ?: null,
                 'toilets' => $data['listingToilets'] ?: null,
+                'electricity_price' => $data['listingElectricity'] ?: null,
+                'water_price' => $data['listingWater'] ?: null,
+                'parking_fee' => $data['listingParkingFee'] ?: null,
+                'access_hours' => $data['listingAccessHours'] ?: null,
+                'has_window' => $data['listingWindow'] ?: null,
+                'pets_allowed' => $data['listingPets'] ?: null,
+                'parking_available' => $data['listingParking'] ?: null,
                 'direction' => null,
                 'front_width' => null,
                 'road_width' => null,
@@ -422,6 +459,7 @@ class SiteAdmin extends Component
             'logoFile' => 'nullable|image|max:2048',
             'contactPhone' => 'nullable|string|max:40',
             'contactZalo' => 'nullable|string|max:255',
+            'contactEmail' => 'nullable|string|max:120',
         ]);
 
         if ($this->logoFile) {
@@ -432,6 +470,7 @@ class SiteAdmin extends Component
         SiteSetting::updateOrCreate(['key' => 'logo_url'], ['value' => $this->logoUrl ?: null]);
         SiteSetting::updateOrCreate(['key' => 'contact_phone'], ['value' => $this->contactPhone ?: null]);
         SiteSetting::updateOrCreate(['key' => 'contact_zalo'], ['value' => $this->contactZalo ?: null]);
+        SiteSetting::updateOrCreate(['key' => 'contact_email'], ['value' => $this->contactEmail ?: null]);
 
         $this->logoFile = null;
         $this->activeTab = 'identity';
@@ -711,6 +750,13 @@ class SiteAdmin extends Component
         $this->listingAmenities = [];
         $this->listingBedrooms = '';
         $this->listingToilets = '';
+        $this->listingElectricity = '';
+        $this->listingWater = '';
+        $this->listingParkingFee = '';
+        $this->listingAccessHours = '';
+        $this->listingWindow = '';
+        $this->listingPets = '';
+        $this->listingParking = '';
         $this->listingDescription = '';
         $this->listingYoutubeLink = '';
         $this->listingYoutubeShort = '';

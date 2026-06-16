@@ -364,7 +364,8 @@
                         <span><small>Zalo</small><strong>Chat Zalo</strong></span>
                     </a>
                 @endif
-                <a href="mailto:{{ config('app.contact_email', 'hello@nhatrosaigon.vn') }}"><small>Email</small><strong>{{ config('app.contact_email', 'hello@nhatrosaigon.vn') }}</strong></a>
+                @php($contactEmail = $siteContact['email'] ?: config('app.contact_email', 'hello@nhatrosv.com'))
+                <a href="mailto:{{ $contactEmail }}"><small>Email</small><strong>{{ $contactEmail }}</strong></a>
             </div>
         </div>
     </section>

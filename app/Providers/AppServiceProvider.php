@@ -31,13 +31,15 @@ class AppServiceProvider extends ServiceProvider
         View::composer(['site.*', 'components.layouts.site-admin'], function ($view) {
             $phone = '';
             $zalo = '';
+            $email = '';
 
             if (Schema::hasTable('site_settings')) {
                 $settings = SiteSetting::query()
-                    ->whereIn('key', ['contact_phone', 'contact_zalo'])
+                    ->whereIn('key', ['contact_phone', 'contact_zalo', 'contact_email'])
                     ->pluck('value', 'key');
                 $phone = (string) ($settings['contact_phone'] ?? '');
                 $zalo = (string) ($settings['contact_zalo'] ?? '');
+                $email = (string) ($settings['contact_email'] ?? '');
             }
 
             $zaloHref = function (?string $fallbackPhone = null) use ($zalo) {
@@ -54,6 +56,7 @@ class AppServiceProvider extends ServiceProvider
             $view->with('siteContact', [
                 'phone' => $phone,
                 'zalo' => $zalo,
+                'email' => $email,
                 'zaloHref' => $zaloHref,
             ]);
         });

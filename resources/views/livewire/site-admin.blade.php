@@ -231,6 +231,11 @@
                         <input class="cms-input" wire:model="contactZalo" placeholder="VD: 0981847977 hoặc https://zalo.me/...">
                         @error('contactZalo') <span class="cms-error">{{ $message }}</span> @enderror
                     </label>
+                    <label class="cms-field">
+                        <span class="cms-label">Email liên hệ</span>
+                        <input class="cms-input" wire:model="contactEmail" placeholder="VD: lienhe@nhatrosv.com">
+                        @error('contactEmail') <span class="cms-error">{{ $message }}</span> @enderror
+                    </label>
                     <div class="cms-field full">
                         <span class="cms-label">Preview</span>
                         <div class="site-cms-logo-preview">
@@ -511,6 +516,46 @@
                     <label class="cms-field">
                         <span class="cms-label">Toilet</span>
                         <input class="cms-input" type="number" min="0" wire:model="listingToilets">
+                    </label>
+                    <label class="cms-field">
+                        <span class="cms-label">Tiền điện</span>
+                        <input class="cms-input" wire:model="listingElectricity" placeholder="VD: 3.500đ/kWh hoặc để trống">
+                    </label>
+                    <label class="cms-field">
+                        <span class="cms-label">Tiền nước</span>
+                        <input class="cms-input" wire:model="listingWater" placeholder="VD: 100k/người">
+                    </label>
+                    <label class="cms-field">
+                        <span class="cms-label">Phí giữ xe</span>
+                        <input class="cms-input" wire:model="listingParkingFee" placeholder="VD: 150k/xe/tháng">
+                    </label>
+                    <label class="cms-field">
+                        <span class="cms-label">Giờ giấc</span>
+                        <input class="cms-input" wire:model="listingAccessHours" placeholder="VD: Tự do / Đóng cửa 23h">
+                    </label>
+                    <label class="cms-field">
+                        <span class="cms-label">Cửa sổ</span>
+                        <select class="cms-select" wire:model="listingWindow">
+                            @foreach($conditionOptions as $value => $label)
+                                <option value="{{ $value }}">{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </label>
+                    <label class="cms-field">
+                        <span class="cms-label">Thú cưng</span>
+                        <select class="cms-select" wire:model="listingPets">
+                            @foreach($conditionOptions as $value => $label)
+                                <option value="{{ $value }}">{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </label>
+                    <label class="cms-field">
+                        <span class="cms-label">Để xe / chỗ xe</span>
+                        <select class="cms-select" wire:model="listingParking">
+                            @foreach($conditionOptions as $value => $label)
+                                <option value="{{ $value }}">{{ $label }}</option>
+                            @endforeach
+                        </select>
                     </label>
                     <label class="cms-field">
                         <span class="cms-label">Mật khẩu nhà</span>

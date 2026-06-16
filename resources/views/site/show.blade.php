@@ -29,16 +29,15 @@
                 <div class="site-detail-content">
                     <div class="site-detail-gallery">
                         <div class="site-detail-main">
-                            <img src="{{ $imageUrl($images[0]) }}" alt="Hình ảnh {{ $listing->title }}">
+                            <img id="siteGalleryMain" src="{{ $imageUrl($images[0]) }}" alt="Hình ảnh {{ $listing->title }}">
                         </div>
-                        <div class="site-detail-main">
-                            <img src="{{ $imageUrl($images[1] ?? $images[0]) }}" alt="Hình ảnh {{ $listing->title }}">
-                        </div>
-                        <div class="site-detail-thumbs">
-                            @foreach(array_slice($images, 0, 5) as $path)
-                                <img class="{{ $loop->first ? 'is-active' : '' }}" src="{{ $imageUrl($path) }}" alt="Ảnh nhỏ {{ $loop->iteration }}">
-                            @endforeach
-                        </div>
+                        @if(count($images) > 1)
+                            <div class="site-detail-thumbs">
+                                @foreach($images as $path)
+                                    <img class="site-gallery-thumb {{ $loop->first ? 'is-active' : '' }}" src="{{ $imageUrl($path) }}" alt="Ảnh nhỏ {{ $loop->iteration }}" loading="lazy">
+                                @endforeach
+                            </div>
+                        @endif
                     </div>
 
                     <section class="site-detail-box">
@@ -71,10 +70,10 @@
                     <section class="site-detail-box">
                         <h2>Chi phí & điều kiện</h2>
                         <div class="site-detail-costs">
-                            <div><span>Điện</span><strong>Liên hệ</strong></div>
-                            <div><span>Nước</span><strong>Liên hệ</strong></div>
+                            <div><span>Điện</span><strong>{{ $listing->electricity_price ?: 'Liên hệ' }}</strong></div>
+                            <div><span>Nước</span><strong>{{ $listing->water_price ?: 'Liên hệ' }}</strong></div>
                             <div><span>Internet</span><strong>{{ in_array('wifi', $listingAmenities, true) ? 'Có Wifi' : 'Liên hệ' }}</strong></div>
-                            <div><span>Giữ xe</span><strong>Liên hệ</strong></div>
+                            <div><span>Giữ xe</span><strong>{{ $listing->parking_fee ?: 'Liên hệ' }}</strong></div>
                         </div>
                     </section>
 
@@ -82,12 +81,12 @@
                         <h2>Thông tin chi tiết <span>{{ $roomLabels[$listing->room_type] ?? 'Phòng trọ' }}</span></h2>
                         <div class="site-detail-info-grid">
                             <div>Toilet: <strong>{{ $listing->toilets ?: 'Liên hệ' }}</strong></div>
-                            <div>Giờ giấc: <strong>Tự do</strong></div>
+                            <div>Giờ giấc: <strong>{{ $listing->access_hours ?: 'Tự do' }}</strong></div>
                             <div>Máy lạnh: <strong>{{ in_array('air_conditioner', $listingAmenities, true) ? 'Có' : 'Không' }}</strong></div>
-                            <div>Cửa sổ: <strong>Liên hệ</strong></div>
+                            <div>Cửa sổ: <strong>{{ $listing->has_window ?: 'Liên hệ' }}</strong></div>
                             <div>Ban công: <strong>{{ $listing->room_type === 'balcony' ? 'Có' : 'Không' }}</strong></div>
-                            <div>Thú cưng: <strong>Liên hệ</strong></div>
-                            <div>Để xe: <strong>Liên hệ</strong></div>
+                            <div>Thú cưng: <strong>{{ $listing->pets_allowed ?: 'Liên hệ' }}</strong></div>
+                            <div>Để xe: <strong>{{ $listing->parking_available ?: 'Liên hệ' }}</strong></div>
                             <div>Phòng ngủ: <strong>{{ $listing->bedrooms ?: 'Liên hệ' }}</strong></div>
                             <div>Nội thất: <strong>{{ $furnishLabels[$listing->furnish] ?? 'Liên hệ' }}</strong></div>
                         </div>
@@ -100,6 +99,28 @@
                             <a class="site-call-button site-map-button" href="{{ $listing->google_map_link }}" target="_blank" rel="noopener">Mở Google Maps</a>
                         @endif
                     </section>
+
+                    @php
+                        $mediaLinks = array_filter([
+                            'youtube' => ['YouTube', $listing->youtube_link],
+                            'short' => ['YouTube Shorts', $listing->youtube_link_short],
+                            'facebook' => ['Facebook', $listing->facebook_link],
+                            'fbvideo' => ['Facebook Video', $listing->facebook_video_link],
+                            'tiktok' => ['TikTok', $listing->tiktok_link],
+                        ], fn ($m) => ! empty($m[1]));
+                    @endphp
+                    @if($mediaLinks)
+                        <section class="site-detail-box">
+                            <h2>Video &amp; liên kết</h2>
+                            <div class="site-detail-links">
+                                @foreach($mediaLinks as $key => [$label, $url])
+                                    <a class="site-detail-link-btn site-media-{{ $key }}" href="{{ $url }}" target="_blank" rel="noopener">
+                                        <span>{{ $label }}</span>
+                                    </a>
+                                @endforeach
+                            </div>
+                        </section>
+                    @endif
                 </div>
 
                 <aside class="site-detail-sidebar">
@@ -148,4 +169,18 @@
             </div>
         </section>
     @endif
+
+    <script>
+        (function () {
+            var main = document.getElementById('siteGalleryMain');
+            if (!main) return;
+            document.querySelectorAll('.site-gallery-thumb').forEach(function (thumb) {
+                thumb.addEventListener('click', function () {
+                    main.src = this.src;
+                    document.querySelectorAll('.site-gallery-thumb.is-active').forEach(function (a) { a.classList.remove('is-active'); });
+                    this.classList.add('is-active');
+                });
+            });
+        })();
+    </script>
 @endsection
