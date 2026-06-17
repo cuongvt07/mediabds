@@ -160,8 +160,8 @@ class PostListing extends Component
             'facebookLink' => 'nullable|url|max:2048',
             'tiktokLink' => 'nullable|url|max:2048',
             'googleMapLink' => 'nullable|url|max:2048',
-            'avatarFile' => 'nullable|image|max:4096',
-            'imageFiles.*' => 'nullable|image|max:4096',
+            'avatarFile' => 'nullable|image|max:2048',
+            'imageFiles.*' => 'nullable|image|max:2048',
         ]);
 
         $avatar = $this->avatar ?: null;

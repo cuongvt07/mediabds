@@ -311,8 +311,8 @@ class SiteAdmin extends Component
             'listingFacebookVideoLink' => 'nullable|url|max:2048',
             'listingTiktokLink' => 'nullable|url|max:2048',
             'listingGoogleMapLink' => 'nullable|url|max:2048',
-            'listingAvatarFile' => 'nullable|image|max:4096',
-            'listingImageFiles.*' => 'nullable|image|max:4096',
+            'listingAvatarFile' => 'nullable|image|max:2048',
+            'listingImageFiles.*' => 'nullable|image|max:2048',
             'listingIsSold' => 'boolean',
         ]);
 
