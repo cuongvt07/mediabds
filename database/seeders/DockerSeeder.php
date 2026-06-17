@@ -36,7 +36,7 @@ class DockerSeeder extends Seeder
             ]
         );
 
-        SiteSetting::firstOrCreate(['key' => 'site_name'], ['value' => 'NHÀ TRỌ SÀI GÒN']);
+        SiteSetting::firstOrCreate(['key' => 'site_name'], ['value' => 'nhatrosv']);
         SiteSetting::firstOrCreate(['key' => 'logo_url'], ['value' => null]);
 
         $rooms = [

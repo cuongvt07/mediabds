@@ -92,6 +92,8 @@ class SiteAdmin extends Component
     public $listingFacebookVideoLink = '';
     public $listingTiktokLink = '';
     public $listingGoogleMapLink = '';
+    public $listingAvatar = '';
+    public $listingAvatarFile;
     public $listingImages = [];
     public $listingImageFiles = [];
     public $listingIsSold = false;
@@ -266,10 +268,13 @@ class SiteAdmin extends Component
         $this->listingFacebookVideoLink = $listing->facebook_video_link ?: '';
         $this->listingTiktokLink = $listing->tiktok_link ?: '';
         $this->listingGoogleMapLink = $listing->google_map_link ?: '';
-        $this->listingImages = array_values($listing->images ?: []);
-        if ($listing->avatar && ! in_array($listing->avatar, $this->listingImages, true)) {
-            array_unshift($this->listingImages, $listing->avatar);
-        }
+        $this->listingAvatar = $listing->avatar ?: '';
+        // Slider = images, không gộp avatar (tách 2 ô riêng).
+        $this->listingImages = array_values(array_filter(
+            $listing->images ?: [],
+            fn ($img) => $img !== $listing->avatar
+        ));
+        $this->listingAvatarFile = null;
         $this->listingIsSold = (bool) $listing->is_sold;
         $this->listingImageFiles = [];
         $this->activeTab = 'listings';
@@ -306,15 +311,28 @@ class SiteAdmin extends Component
             'listingFacebookVideoLink' => 'nullable|url|max:2048',
             'listingTiktokLink' => 'nullable|url|max:2048',
             'listingGoogleMapLink' => 'nullable|url|max:2048',
+            'listingAvatarFile' => 'nullable|image|max:4096',
             'listingImageFiles.*' => 'nullable|image|max:4096',
             'listingIsSold' => 'boolean',
         ]);
 
+        // Ảnh chính (avatar)
+        $avatar = $this->listingAvatar ?: null;
+        if ($this->listingAvatarFile) {
+            $avatar = Storage::disk('public')->url($this->listingAvatarFile->store('site/listings', 'public'));
+        }
+
+        // Ảnh slider
         foreach ($this->listingImageFiles as $file) {
             $this->listingImages[] = Storage::disk('public')->url($file->store('site/listings', 'public'));
         }
-
         $this->listingImages = array_values(array_filter($this->listingImages));
+
+        // Chưa có ảnh chính thì lấy ảnh slider đầu tiên làm bìa.
+        if (! $avatar) {
+            $avatar = $this->listingImages[0] ?? null;
+        }
+
         $code = $this->listingCode ?: $this->generateListingCode();
 
         // Đảm bảo mã không trùng (kể cả bản ghi đã xóa mềm — vì unique index vẫn tính).
@@ -376,7 +394,7 @@ class SiteAdmin extends Component
                 'google_map_link' => $data['listingGoogleMapLink'] ?: null,
                 'description' => $data['listingDescription'] ?: null,
                 'images' => $this->listingImages,
-                'avatar' => $this->listingImages[0] ?? null,
+                'avatar' => $avatar,
                 'user_id' => auth()->id(),
             ]
         );
@@ -409,6 +427,11 @@ class SiteAdmin extends Component
         if (isset($this->listingImages[$index])) {
             array_splice($this->listingImages, $index, 1);
         }
+    }
+
+    public function removeAvatar(): void
+    {
+        $this->listingAvatar = '';
     }
 
     public function closeListingModal(): void
@@ -789,6 +812,8 @@ class SiteAdmin extends Component
         $this->listingFacebookVideoLink = '';
         $this->listingTiktokLink = '';
         $this->listingGoogleMapLink = '';
+        $this->listingAvatar = '';
+        $this->listingAvatarFile = null;
         $this->listingImages = [];
         $this->listingImageFiles = [];
         $this->listingIsSold = false;

@@ -55,6 +55,9 @@
                             @if($listing->code)<span>Mã {{ $listing->code }}</span>@endif
                             <span>{{ $roomLabels[$listing->room_type] ?? 'Phòng trọ' }}</span>
                             <span>{{ $furnishLabels[$listing->furnish] ?? 'Nội thất: liên hệ' }}</span>
+                            @if($listing->created_at)
+                                <span class="site-tag-time">🕐 Đăng {{ $listing->created_at->locale('vi')->diffForHumans() }}</span>
+                            @endif
                             <span>Đã xác thực</span>
                         </div>
                         <div class="site-detail-amenities">

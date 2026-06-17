@@ -19,6 +19,7 @@
         'high_low' => 'Từ cao đến thấp',
         'under_3' => 'Dưới 3tr',
         '3_4' => 'Từ 3-4tr',
+        '4_5' => 'Từ 4-5tr',
         '5_6' => '5tr-6tr',
         'over_6' => 'Trên 6tr',
     ];
@@ -101,6 +102,7 @@
                             <option value="high_low" @selected(request('price') === 'high_low')>Từ cao đến thấp</option>
                             <option value="under_3" @selected(request('price') === 'under_3')>Dưới 3 triệu</option>
                             <option value="3_4" @selected(request('price') === '3_4')>Từ 3 - 4 triệu</option>
+                            <option value="4_5" @selected(request('price') === '4_5')>Từ 4 - 5 triệu</option>
                             <option value="5_6" @selected(request('price') === '5_6')>Từ 5 - 6 triệu</option>
                             <option value="over_6" @selected(request('price') === 'over_6')>Trên 6 triệu</option>
                         </select>
@@ -297,6 +299,9 @@
                                         </span>
                                     @endif
                                 </div>
+                                @if($listing->created_at)
+                                    <div class="site-card-time">🕐 {{ $listing->created_at->locale('vi')->diffForHumans() }}</div>
+                                @endif
                                 <div class="site-card-foot">
                                     <strong class="site-price">{{ $formatPrice($listing) }} <span>VNĐ/tháng</span></strong>
                                     <span class="site-detail-link">Xem chi tiết →</span>

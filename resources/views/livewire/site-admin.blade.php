@@ -583,30 +583,16 @@
                         <span class="cms-label">Mô tả chi tiết</span>
                         <textarea class="cms-textarea" wire:model="listingDescription" rows="5"></textarea>
                     </label>
-                    <label class="cms-field full">
-                        <span class="cms-label">Upload ảnh phòng local</span>
-                        <input class="cms-input" type="file" wire:model="listingImageFiles" accept="image/*" multiple>
+                    <div class="cms-field full">
+                        <span class="cms-label">Ảnh chính (bìa)</span>
+                        <x-image-uploader name="listingAvatarFile" :images="$listingAvatar ? [$listingAvatar] : []" :previews="$listingAvatarFile ? [$listingAvatarFile] : []" on-remove="removeAvatar" :multiple="false" label="Tải ảnh chính" hint="1 ảnh đại diện — hiển thị ở thẻ tin & ảnh bìa" />
+                        @error('listingAvatarFile') <span class="cms-error">{{ $message }}</span> @enderror
+                    </div>
+                    <div class="cms-field full">
+                        <span class="cms-label">Ảnh slider (bộ ảnh chi tiết)</span>
+                        <x-image-uploader name="listingImageFiles" :images="$listingImages" :previews="$listingImageFiles" on-remove="removeListingImage" label="Tải ảnh slider" hint="Nhiều ảnh — hiển thị ở slider trang chi tiết" />
                         @error('listingImageFiles.*') <span class="cms-error">{{ $message }}</span> @enderror
-                    </label>
-                    @if($listingImages || $listingImageFiles)
-                        <div class="cms-field full">
-                            <span class="cms-label">Ảnh hiện có / preview</span>
-                            <div class="site-cms-image-grid">
-                                @foreach($listingImages as $index => $image)
-                                    <div>
-                                        <img src="{{ $image }}" alt="Ảnh phòng">
-                                        <button type="button" wire:click="removeListingImage({{ $index }})">Xóa</button>
-                                    </div>
-                                @endforeach
-                                @foreach($listingImageFiles as $file)
-                                    <div>
-                                        <img src="{{ $file->temporaryUrl() }}" alt="Ảnh preview">
-                                        <span>Ảnh mới</span>
-                                    </div>
-                                @endforeach
-                            </div>
-                        </div>
-                    @endif
+                    </div>
                     <label class="cms-field">
                         <span class="cms-label">Link Youtube dài</span>
                         <input class="cms-input" wire:model="listingYoutubeLink" placeholder="https://...">

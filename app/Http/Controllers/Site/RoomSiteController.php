@@ -67,6 +67,7 @@ class RoomSiteController extends Controller
             'high_low' => $query->orderByRaw("{$priceExpression} desc"),
             'under_3' => $query->whereRaw("{$priceExpression} < ?", [3000000]),
             '3_4' => $query->whereRaw("{$priceExpression} >= ? and {$priceExpression} <= ?", [3000000, 4000000]),
+            '4_5' => $query->whereRaw("{$priceExpression} >= ? and {$priceExpression} <= ?", [4000000, 5000000]),
             '5_6' => $query->whereRaw("{$priceExpression} >= ? and {$priceExpression} <= ?", [5000000, 6000000]),
             'over_6' => $query->whereRaw("{$priceExpression} > ?", [6000000]),
             default => $query->latest('created_at'),
