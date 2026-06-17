@@ -317,6 +317,20 @@ class SiteAdmin extends Component
         $this->listingImages = array_values(array_filter($this->listingImages));
         $code = $this->listingCode ?: $this->generateListingCode();
 
+        // Đảm bảo mã không trùng (kể cả bản ghi đã xóa mềm — vì unique index vẫn tính).
+        $codeTaken = ListingModel::withTrashed()
+            ->where('code', $code)
+            ->when($this->listingEditingId, fn ($q) => $q->where('id', '!=', $this->listingEditingId))
+            ->exists();
+
+        if ($codeTaken) {
+            if ($this->listingCode) {
+                $this->addError('listingCode', 'Mã tin "' . $code . '" đã tồn tại, vui lòng nhập mã khác.');
+                return;
+            }
+            $code = $this->generateListingCode();
+        }
+
         ListingModel::updateOrCreate(
             ['id' => $this->listingEditingId],
             [
@@ -847,14 +861,15 @@ class SiteAdmin extends Component
 
     private function generateListingCode(): string
     {
-        for ($i = 0; $i < 5; $i++) {
-            $code = '#NT' . str_pad((string) mt_rand(0, 9999), 4, '0', STR_PAD_LEFT);
-            if (! ListingModel::where('code', $code)->exists()) {
+        for ($i = 0; $i < 8; $i++) {
+            $code = '#NT' . str_pad((string) mt_rand(0, 999999), 6, '0', STR_PAD_LEFT);
+            // withTrashed: unique index trong DB vẫn tính cả bản ghi đã xóa mềm.
+            if (! ListingModel::withTrashed()->where('code', $code)->exists()) {
                 return $code;
             }
         }
 
-        return '#NT' . str_pad((string) mt_rand(0, 999999), 6, '0', STR_PAD_LEFT);
+        return '#NT' . substr((string) (int) (microtime(true) * 1000), -8);
     }
 
     private function normalizeCurrency($value): ?float
