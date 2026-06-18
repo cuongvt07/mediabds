@@ -160,7 +160,6 @@
                                 <th style="width:120px;">Ảnh</th>
                                 <th>Tin phòng</th>
                                 <th style="width:120px;">Giá</th>
-                                <th style="width:130px;">Liên hệ</th>
                                 <th style="width:110px;" class="right">Thao tác</th>
                             </tr>
                         </thead>
@@ -201,7 +200,6 @@
                                         <strong>{{ $listing->price ? number_format((float) $listing->price, 0, ',', '.') : '-' }}</strong>
                                         <span style="color:var(--text-muted);">/tháng</span>
                                     </td>
-                                    <td class="mono">{{ $listing->contact_phone ?: '-' }}</td>
                                     <td class="right">
                                         <div class="cms-row-actions">
                                             <a class="cms-act" href="{{ route('site.listings.show', $listing) }}" target="_blank" title="Xem tin" aria-label="Xem tin"><i class="fa-regular fa-eye"></i></a>
@@ -212,7 +210,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="7" style="height:72px;text-align:center;">Chưa có tin phòng trọ.</td>
+                                    <td colspan="6" style="height:72px;text-align:center;">Chưa có tin phòng trọ.</td>
                                 </tr>
                             @endforelse
                         </tbody>
