@@ -190,7 +190,7 @@
             line-height: 1.45;
         }
 
-        .site-cms-main { display: grid; gap: 14px; }
+        .site-cms-main { display: grid; gap: 14px; min-width: 0; }
 
         .site-cms-toolbar {
             display: flex;
@@ -523,7 +523,7 @@
             text-transform: uppercase;
         }
 
-        .cms-table-wrap { overflow-x: visible; }
+        .cms-table-wrap { overflow-x: hidden; }
         .cms-table {
             width: 100%;
             border-collapse: collapse;
