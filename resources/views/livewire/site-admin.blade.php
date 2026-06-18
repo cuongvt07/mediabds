@@ -145,16 +145,22 @@
                         </button>
                     </div>
                 </div>
+                <div class="site-cms-seg" style="margin-bottom:14px;">
+                    <button type="button" class="site-cms-seg-btn {{ $listingModeration === 'all' ? 'is-active' : '' }}" wire:click="setListingModeration('all')">Tất cả <span>{{ $moderationCounts['all'] }}</span></button>
+                    <button type="button" class="site-cms-seg-btn {{ $listingModeration === 'pending' ? 'is-active' : '' }}" wire:click="setListingModeration('pending')">Chờ duyệt <span>{{ $moderationCounts['pending'] }}</span></button>
+                    <button type="button" class="site-cms-seg-btn {{ $listingModeration === 'approved' ? 'is-active' : '' }}" wire:click="setListingModeration('approved')">Đã duyệt <span>{{ $moderationCounts['approved'] }}</span></button>
+                    <button type="button" class="site-cms-seg-btn {{ $listingModeration === 'rejected' ? 'is-active' : '' }}" wire:click="setListingModeration('rejected')">Từ chối <span>{{ $moderationCounts['rejected'] }}</span></button>
+                </div>
                 <div class="cms-table-wrap cms-scrollbar">
                     <table class="cms-table">
                         <thead>
                             <tr>
-                                <th style="width:92px;">Trạng thái</th>
+                                <th style="width:110px;">Trạng thái</th>
                                 <th style="width:120px;">Ảnh</th>
                                 <th>Tin phòng</th>
-                                <th style="width:130px;">Giá</th>
-                                <th style="width:150px;">Liên hệ</th>
-                                <th style="width:128px;" class="right">Thao tác</th>
+                                <th style="width:120px;">Giá</th>
+                                <th style="width:130px;">Liên hệ</th>
+                                <th style="width:170px;" class="right">Thao tác</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -164,6 +170,12 @@
                                         <button type="button" class="cms-badge {{ $listing->is_sold ? 'muted' : 'success' }}" wire:click="toggleListing({{ $listing->id }})" title="Hiện/ẩn tin">
                                             <i class="fa-solid {{ $listing->is_sold ? 'fa-toggle-off' : 'fa-toggle-on' }}"></i> {{ $listing->is_sold ? 'Ẩn' : 'Hiện' }}
                                         </button>
+                                        @php($mod = $listing->moderation_status ?: 'approved')
+                                        <div style="margin-top:6px;">
+                                            <span class="cms-badge {{ $mod === 'approved' ? 'success' : ($mod === 'pending' ? 'muted' : 'danger') }}" @if($mod==='rejected' && $listing->rejection_reason) title="Lý do: {{ $listing->rejection_reason }}" @endif>
+                                                {{ $moderationOptions[$mod] ?? $mod }}
+                                            </span>
+                                        </div>
                                     </td>
                                     <td>
                                         @php($cover = $listing->avatar ?: collect($listing->images ?: [])->first())
@@ -187,6 +199,12 @@
                                     <td class="mono">{{ $listing->contact_phone ?: '-' }}</td>
                                     <td class="right">
                                         <div class="cms-row-actions">
+                                            @if(($listing->moderation_status ?: 'approved') !== 'approved')
+                                                <button type="button" class="cms-act ok" wire:click="approveListing({{ $listing->id }})" title="Duyệt tin" aria-label="Duyệt tin"><i class="fa-solid fa-check"></i></button>
+                                            @endif
+                                            @if(($listing->moderation_status ?: 'approved') !== 'rejected')
+                                                <button type="button" class="cms-act warn" wire:click="promptReject({{ $listing->id }})" title="Từ chối tin" aria-label="Từ chối tin"><i class="fa-solid fa-ban"></i></button>
+                                            @endif
                                             <a class="cms-act" href="{{ route('site.listings.show', $listing) }}" target="_blank" title="Xem tin" aria-label="Xem tin"><i class="fa-regular fa-eye"></i></a>
                                             <button type="button" class="cms-act" wire:click="editListing({{ $listing->id }})" title="Sửa tin" aria-label="Sửa tin"><i class="fa-solid fa-pen"></i></button>
                                             <button type="button" class="cms-act danger" wire:click="deleteListing({{ $listing->id }})" wire:confirm="Xóa tin đăng này?" title="Xóa tin" aria-label="Xóa tin"><i class="fa-solid fa-trash-can"></i></button>
@@ -235,6 +253,18 @@
                         <span class="cms-label">Email liên hệ</span>
                         <input class="cms-input" wire:model="contactEmail" placeholder="VD: lienhe@nhatrosv.com">
                         @error('contactEmail') <span class="cms-error">{{ $message }}</span> @enderror
+                    </label>
+                    <label class="cms-field">
+                        <span class="cms-label">Link Facebook</span>
+                        <input class="cms-input" wire:model="contactFacebook" placeholder="https://facebook.com/...">
+                        @error('contactFacebook') <span class="cms-error">{{ $message }}</span> @enderror
+                    </label>
+                    <label class="cms-field">
+                        <span class="cms-label">Vị trí nút liên hệ nổi</span>
+                        <select class="cms-select" wire:model="contactPosition">
+                            <option value="right">Góc dưới bên phải</option>
+                            <option value="left">Góc dưới bên trái</option>
+                        </select>
                     </label>
                     <div class="cms-field full">
                         <span class="cms-label">Preview</span>
@@ -793,6 +823,33 @@
                 <div class="cms-panel-head" style="justify-content:flex-end;">
                     <button type="button" class="cms-btn" wire:click="closeAmenityModal"><i class="fa-solid fa-xmark"></i> Hủy</button>
                     <button type="button" class="cms-btn primary" wire:click="saveAmenity"><i class="fa-solid fa-floppy-disk"></i> Lưu tiện ích</button>
+                </div>
+            </section>
+        </div>
+    @endif
+
+    @if($showRejectModal)
+        <div class="cms-modal-backdrop" wire:click.self="closeRejectModal">
+            <section class="cms-modal" style="max-width:480px;">
+                <div class="cms-panel-head">
+                    <h2 class="cms-panel-title"><i class="fa-solid fa-ban"></i> Từ chối tin đăng</h2>
+                    <button type="button" class="cms-icon-btn" wire:click="closeRejectModal"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <div style="padding:20px 24px;">
+                    <label class="cms-label" for="rejectReason">Lý do từ chối <span style="color:var(--danger)">*</span></label>
+                    <textarea
+                        id="rejectReason"
+                        class="cms-input"
+                        wire:model="rejectReason"
+                        rows="4"
+                        placeholder="Nhập lý do từ chối để thông báo cho người đăng..."
+                        style="resize:vertical;"
+                    ></textarea>
+                    @error('rejectReason') <p class="cms-error">{{ $message }}</p> @enderror
+                </div>
+                <div class="cms-panel-head" style="justify-content:flex-end;">
+                    <button type="button" class="cms-btn" wire:click="closeRejectModal"><i class="fa-solid fa-xmark"></i> Hủy</button>
+                    <button type="button" class="cms-btn danger" wire:click="confirmReject"><i class="fa-solid fa-ban"></i> Xác nhận từ chối</button>
                 </div>
             </section>
         </div>

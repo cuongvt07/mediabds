@@ -120,6 +120,9 @@ class RoomSiteController extends Controller
         return RealEstateListing::query()
             ->where('is_sold', false)
             ->where(function (Builder $query) {
+                $query->whereNull('moderation_status')->orWhere('moderation_status', 'approved');
+            })
+            ->where(function (Builder $query) {
                 $query->whereNull('status')->orWhere('status', 'active');
             })
             ->where(function (Builder $query) {

@@ -109,6 +109,17 @@ class SiteAdmin extends Component
         'buyer' => 'Người dùng',
     ];
 
+    public const MODERATION = [
+        'pending' => 'Chờ duyệt',
+        'approved' => 'Đã duyệt',
+        'rejected' => 'Từ chối',
+    ];
+
+    public $listingModeration = 'all'; // all | pending | approved | rejected
+    public $showRejectModal = false;
+    public $rejectingId = null;
+    public $rejectReason = '';
+
     public $showAccountModal = false;
     public $accountEditingId = null;
     public $accountSearch = '';
@@ -134,6 +145,8 @@ class SiteAdmin extends Component
     public $contactPhone = '';
     public $contactZalo = '';
     public $contactEmail = '';
+    public $contactFacebook = '';
+    public $contactPosition = 'right';
 
     protected $queryString = [
         'activeTab' => ['except' => 'dashboard', 'as' => 'tab'],
@@ -149,6 +162,8 @@ class SiteAdmin extends Component
         $this->contactPhone = SiteSetting::query()->whereKey('contact_phone')->value('value') ?: '';
         $this->contactZalo = SiteSetting::query()->whereKey('contact_zalo')->value('value') ?: '';
         $this->contactEmail = SiteSetting::query()->whereKey('contact_email')->value('value') ?: '';
+        $this->contactFacebook = SiteSetting::query()->whereKey('contact_facebook')->value('value') ?: '';
+        $this->contactPosition = SiteSetting::query()->whereKey('contact_position')->value('value') ?: 'right';
         $this->loadDistricts($this->listingProvinceId);
     }
 
@@ -179,6 +194,13 @@ class SiteAdmin extends Component
                 'furniture' => SiteAmenity::query()->type('furniture')->count(),
             ],
             'amenityTypes' => SiteAmenity::TYPES,
+            'moderationCounts' => [
+                'all' => $this->publicRoomQuery()->count(),
+                'pending' => $this->publicRoomQuery()->where('moderation_status', 'pending')->count(),
+                'approved' => $this->publicRoomQuery()->where('moderation_status', 'approved')->count(),
+                'rejected' => $this->publicRoomQuery()->where('moderation_status', 'rejected')->count(),
+            ],
+            'moderationOptions' => self::MODERATION,
             'roomTypes' => self::ROOM_TYPES,
             'furnishTypes' => self::FURNISH_TYPES,
             'conditionOptions' => self::CONDITION_OPTIONS,
@@ -211,6 +233,56 @@ class SiteAdmin extends Component
     public function updatedListingSearch(): void
     {
         $this->resetPage('listingPage');
+    }
+
+    public function setListingModeration(string $m): void
+    {
+        if (in_array($m, ['all', 'pending', 'approved', 'rejected'], true)) {
+            $this->listingModeration = $m;
+            $this->activeTab = 'listings';
+            $this->resetPage('listingPage');
+        }
+    }
+
+    public function approveListing(int $id): void
+    {
+        ListingModel::whereKey($id)->update(['moderation_status' => 'approved', 'rejection_reason' => null]);
+        $this->activeTab = 'listings';
+        session()->flash('message', 'Đã duyệt tin đăng.');
+    }
+
+    public function promptReject(int $id): void
+    {
+        $this->rejectingId = $id;
+        $this->rejectReason = '';
+        $this->showRejectModal = true;
+        $this->activeTab = 'listings';
+    }
+
+    public function confirmReject(): void
+    {
+        $this->validate(
+            ['rejectReason' => 'required|string|max:500'],
+            ['rejectReason.required' => 'Vui lòng nhập lý do từ chối.']
+        );
+
+        if ($this->rejectingId) {
+            ListingModel::whereKey($this->rejectingId)->update([
+                'moderation_status' => 'rejected',
+                'rejection_reason' => $this->rejectReason,
+            ]);
+        }
+
+        $this->closeRejectModal();
+        $this->activeTab = 'listings';
+        session()->flash('message', 'Đã từ chối tin đăng.');
+    }
+
+    public function closeRejectModal(): void
+    {
+        $this->showRejectModal = false;
+        $this->rejectingId = null;
+        $this->rejectReason = '';
     }
 
     public function updatedListingProvinceId($value): void
@@ -359,6 +431,8 @@ class SiteAdmin extends Component
                 'house_password' => $data['listingHousePassword'] ?: null,
                 'is_sold' => (bool) $data['listingIsSold'],
                 'status' => (bool) $data['listingIsSold'] ? 'inactive' : 'active',
+                'moderation_status' => 'approved',
+                'rejection_reason' => null,
                 'property_type' => 115,
                 'room_type' => $data['listingRoomType'],
                 'furnish' => $data['listingFurnish'] ?: null,
@@ -508,6 +582,8 @@ class SiteAdmin extends Component
             'contactPhone' => 'nullable|string|max:40',
             'contactZalo' => 'nullable|string|max:255',
             'contactEmail' => 'nullable|string|max:120',
+            'contactFacebook' => 'nullable|string|max:255',
+            'contactPosition' => 'nullable|in:left,right',
         ]);
 
         if ($this->logoFile) {
@@ -519,6 +595,8 @@ class SiteAdmin extends Component
         SiteSetting::updateOrCreate(['key' => 'contact_phone'], ['value' => $this->contactPhone ?: null]);
         SiteSetting::updateOrCreate(['key' => 'contact_zalo'], ['value' => $this->contactZalo ?: null]);
         SiteSetting::updateOrCreate(['key' => 'contact_email'], ['value' => $this->contactEmail ?: null]);
+        SiteSetting::updateOrCreate(['key' => 'contact_facebook'], ['value' => $this->contactFacebook ?: null]);
+        SiteSetting::updateOrCreate(['key' => 'contact_position'], ['value' => $this->contactPosition ?: 'right']);
 
         $this->logoFile = null;
         $this->activeTab = 'identity';
@@ -728,6 +806,7 @@ class SiteAdmin extends Component
     private function listingQuery()
     {
         return $this->publicRoomQuery()
+            ->when($this->listingModeration !== 'all', fn ($q) => $q->where('moderation_status', $this->listingModeration))
             ->when($this->listingSearch, function ($query) {
                 $term = '%' . trim($this->listingSearch) . '%';
                 $query->where(function ($subQuery) use ($term) {

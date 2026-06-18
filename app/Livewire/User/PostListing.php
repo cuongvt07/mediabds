@@ -191,6 +191,8 @@ class PostListing extends Component
                 'contact_phone' => $data['contactPhone'],
                 'is_sold' => false,
                 'status' => 'active',
+                'moderation_status' => 'pending',
+                'rejection_reason' => null,
                 'property_type' => 115,
                 'room_type' => $data['roomType'],
                 'furnish' => $data['furnish'] ?: null,
@@ -223,7 +225,9 @@ class PostListing extends Component
             ]
         );
 
-        session()->flash('message', $this->editingId ? 'Đã cập nhật tin đăng.' : 'Đã đăng tin thành công.');
+        session()->flash('message', $this->editingId
+            ? 'Đã cập nhật tin — tin sẽ chờ duyệt lại trước khi hiển thị.'
+            : 'Đã gửi tin — tin đang chờ admin duyệt trước khi hiển thị.');
 
         return redirect()->route('user.dashboard');
     }

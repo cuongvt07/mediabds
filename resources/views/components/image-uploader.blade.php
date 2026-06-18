@@ -29,88 +29,74 @@
     .iu-new { position: absolute; left: 4px; bottom: 4px; padding: 2px 7px; border-radius: 999px; background: rgba(244,191,25,.95); color: #1a1300; font-size: 10px; font-weight: 800; }
     .iu-cover { position: absolute; left: 4px; top: 4px; padding: 2px 7px; border-radius: 999px; background: rgba(17,17,17,.78); color: #fff; font-size: 10px; font-weight: 800; }
 </style>
-<script>
-    document.addEventListener('alpine:init', () => {
-        Alpine.data('imageUploader', (opts) => ({
-            maxKB: opts.maxKB, multiple: opts.multiple, model: opts.model,
-            files: [], previews: [], errors: [], uploading: false, progress: 0,
-
-            onChange(e) {
-                this.errors = [];
-                const selected = Array.from(e.target.files || []);
-                e.target.value = '';
-                const accepted = [];
-                for (const f of selected) {
-                    if (f.size > this.maxKB * 1024) {
-                        this.errors.push(`"${f.name}" ${(f.size / 1048576).toFixed(1)}MB vượt quá ${(this.maxKB / 1024).toFixed(0)}MB`);
-                        continue;
-                    }
-                    accepted.push(f);
-                }
-                if (!accepted.length) return;
-                Promise.all(accepted.map(f => this.compress(f))).then(done => {
-                    if (this.multiple) { this.files.push(...done); }
-                    else { this.files = done.slice(0, 1); }
-                    this.rebuildPreviews();
-                    this.sync();
-                });
-            },
-
-            rebuildPreviews() {
-                this.previews.forEach(p => URL.revokeObjectURL(p.url));
-                this.previews = this.files.map(f => ({ url: URL.createObjectURL(f) }));
-            },
-
-            removePreview(i) {
-                this.files.splice(i, 1);
-                this.rebuildPreviews();
-                this.sync();
-            },
-
-            sync() {
-                this.uploading = true; this.progress = 0;
-                const done = () => { this.uploading = false; };
-                const prog = (ev) => { this.progress = (ev.detail && ev.detail.progress) || 0; };
-                if (this.multiple) {
-                    if (this.files.length) this.$wire.uploadMultiple(this.model, this.files, done, done, prog);
-                    else { this.$wire.set(this.model, []); done(); }
-                } else {
-                    if (this.files[0]) this.$wire.upload(this.model, this.files[0], done, done, prog);
-                    else { this.$wire.set(this.model, null); done(); }
-                }
-            },
-
-            compress(file) {
-                return new Promise(resolve => {
-                    if (!file.type || !file.type.startsWith('image/')) return resolve(file);
-                    const url = URL.createObjectURL(file);
-                    const img = new Image();
-                    img.onload = () => {
-                        URL.revokeObjectURL(url);
-                        const max = 1600;
-                        let w = img.width, h = img.height;
-                        if (w > max || h > max) {
-                            if (w >= h) { h = Math.round(h * max / w); w = max; }
-                            else { w = Math.round(w * max / h); h = max; }
-                        }
-                        try {
-                            const c = document.createElement('canvas');
-                            c.width = w; c.height = h;
-                            c.getContext('2d').drawImage(img, 0, 0, w, h);
-                            c.toBlob(blob => {
-                                if (!blob || blob.size >= file.size) return resolve(file);
-                                resolve(new File([blob], file.name.replace(/\.[^.]+$/, '') + '.jpg', { type: 'image/jpeg' }));
-                            }, 'image/jpeg', 0.82);
-                        } catch (err) { resolve(file); }
-                    };
-                    img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
-                    img.src = url;
-                });
-            },
-        }));
-    });
-</script>
 @endonce
+<script>
+    // Fallback: đăng ký imageUploader nếu chưa được đăng ký từ layout (trường hợp dùng ngoài admin layout).
+    (function () {
+        if (window._iuDefined) return;
+        window._iuDefined = true;
+        var def = function (opts) {
+            return {
+                maxKB: opts.maxKB, multiple: opts.multiple, model: opts.model,
+                files: [], previews: [], errors: [], uploading: false, progress: 0,
+                onChange: function (e) {
+                    this.errors = [];
+                    var self = this, selected = Array.from(e.target.files || []), accepted = [];
+                    e.target.value = '';
+                    for (var i = 0; i < selected.length; i++) {
+                        var f = selected[i];
+                        if (f.size > self.maxKB * 1024) { self.errors.push('"' + f.name + '" ' + (f.size / 1048576).toFixed(1) + 'MB vượt quá ' + (self.maxKB / 1024).toFixed(0) + 'MB'); continue; }
+                        accepted.push(f);
+                    }
+                    if (!accepted.length) return;
+                    Promise.all(accepted.map(function (f) { return self.compress(f); })).then(function (done) {
+                        if (self.multiple) { self.files.push.apply(self.files, done); } else { self.files = done.slice(0, 1); }
+                        self.rebuildPreviews(); self.sync();
+                    });
+                },
+                rebuildPreviews: function () {
+                    this.previews.forEach(function (p) { URL.revokeObjectURL(p.url); });
+                    this.previews = this.files.map(function (f) { return { url: URL.createObjectURL(f) }; });
+                },
+                removePreview: function (i) { this.files.splice(i, 1); this.rebuildPreviews(); this.sync(); },
+                sync: function () {
+                    this.uploading = true; this.progress = 0;
+                    var self = this, done = function () { self.uploading = false; }, prog = function (ev) { self.progress = (ev.detail && ev.detail.progress) || 0; };
+                    if (this.multiple) {
+                        if (this.files.length) this.$wire.uploadMultiple(this.model, this.files, done, done, prog);
+                        else { this.$wire.set(this.model, []); done(); }
+                    } else {
+                        if (this.files[0]) this.$wire.upload(this.model, this.files[0], done, done, prog);
+                        else { this.$wire.set(this.model, null); done(); }
+                    }
+                },
+                compress: function (file) {
+                    return new Promise(function (resolve) {
+                        if (!file.type || !file.type.startsWith('image/')) return resolve(file);
+                        var url = URL.createObjectURL(file), img = new Image();
+                        img.onload = function () {
+                            URL.revokeObjectURL(url);
+                            var max = 1600, w = img.width, h = img.height;
+                            if (w > max || h > max) { if (w >= h) { h = Math.round(h * max / w); w = max; } else { w = Math.round(w * max / h); h = max; } }
+                            try {
+                                var c = document.createElement('canvas'); c.width = w; c.height = h;
+                                c.getContext('2d').drawImage(img, 0, 0, w, h);
+                                c.toBlob(function (blob) {
+                                    if (!blob || blob.size >= file.size) return resolve(file);
+                                    resolve(new File([blob], file.name.replace(/\.[^.]+$/, '') + '.jpg', { type: 'image/jpeg' }));
+                                }, 'image/jpeg', 0.82);
+                            } catch (err) { resolve(file); }
+                        };
+                        img.onerror = function () { URL.revokeObjectURL(url); resolve(file); };
+                        img.src = url;
+                    });
+                },
+            };
+        };
+        if (window.Alpine) { window.Alpine.data('imageUploader', def); }
+        else { document.addEventListener('alpine:init', function () { window.Alpine.data('imageUploader', def); }); }
+    })();
+</script>
 
 <div class="iu {{ $multiple ? '' : 'iu-single' }}"
      x-data="imageUploader({ maxKB: {{ (int) $maxKB }}, multiple: {{ $multiple ? 'true' : 'false' }}, model: '{{ $name }}' })">

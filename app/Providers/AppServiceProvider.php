@@ -32,14 +32,18 @@ class AppServiceProvider extends ServiceProvider
             $phone = '';
             $zalo = '';
             $email = '';
+            $facebook = '';
+            $position = 'right';
 
             if (Schema::hasTable('site_settings')) {
                 $settings = SiteSetting::query()
-                    ->whereIn('key', ['contact_phone', 'contact_zalo', 'contact_email'])
+                    ->whereIn('key', ['contact_phone', 'contact_zalo', 'contact_email', 'contact_facebook', 'contact_position'])
                     ->pluck('value', 'key');
                 $phone = (string) ($settings['contact_phone'] ?? '');
                 $zalo = (string) ($settings['contact_zalo'] ?? '');
                 $email = (string) ($settings['contact_email'] ?? '');
+                $facebook = (string) ($settings['contact_facebook'] ?? '');
+                $position = ($settings['contact_position'] ?? 'right') ?: 'right';
             }
 
             $zaloHref = function (?string $fallbackPhone = null) use ($zalo) {
@@ -57,6 +61,8 @@ class AppServiceProvider extends ServiceProvider
                 'phone' => $phone,
                 'zalo' => $zalo,
                 'email' => $email,
+                'facebook' => $facebook,
+                'position' => $position,
                 'zaloHref' => $zaloHref,
             ]);
         });

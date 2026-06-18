@@ -64,7 +64,15 @@
                         <div class="user-listing-body">
                             <div class="user-listing-top">
                                 <h3>{{ $listing->title }}</h3>
-                                <span class="user-badge {{ $listing->is_sold ? 'muted' : 'ok' }}">{{ $listing->is_sold ? 'Đã ẩn' : 'Đang hiện' }}</span>
+                                <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+                                    @php $mod = $listing->moderation_status ?: 'approved'; @endphp
+                                    @if($mod === 'pending')
+                                        <span class="user-badge warning" title="Tin đang chờ admin xét duyệt">⏳ Chờ duyệt</span>
+                                    @elseif($mod === 'rejected')
+                                        <span class="user-badge danger" title="{{ $listing->rejection_reason ? 'Lý do: '.$listing->rejection_reason : 'Tin bị từ chối' }}">✗ Bị từ chối</span>
+                                    @endif
+                                    <span class="user-badge {{ $listing->is_sold ? 'muted' : 'ok' }}">{{ $listing->is_sold ? 'Đã ẩn' : 'Đang hiện' }}</span>
+                                </div>
                             </div>
                             <div class="user-listing-meta">
                                 <span class="user-price">{{ number_format((float) $listing->price, 0, ',', '.') }}đ/tháng</span>

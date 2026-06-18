@@ -650,6 +650,10 @@
         .cms-act:hover { border-color: #111; background: #111; color: #fff; }
         .cms-act.danger { color: var(--danger); }
         .cms-act.danger:hover { border-color: var(--danger); background: var(--danger); color: #fff; }
+        .cms-act.ok { color: #087f3f; }
+        .cms-act.ok:hover { border-color: #087f3f; background: #087f3f; color: #fff; }
+        .cms-act.warn { color: #b45309; }
+        .cms-act.warn:hover { border-color: #b45309; background: #b45309; color: #fff; }
 
         .cms-badge {
             min-height: 28px;
@@ -670,6 +674,8 @@
 
         .cms-badge.success { border-color: rgba(8,127,63,.22); background: #eaf8ef; color: var(--success); }
         .cms-badge.muted { background: #f1f2f4; color: var(--text-muted); }
+        .cms-badge.danger { border-color: rgba(220,38,38,.22); background: #fef2f2; color: var(--danger); }
+        .cms-badge.warning { border-color: rgba(180,83,9,.22); background: #fff7ed; color: #b45309; }
 
         .cms-pagination {
             border-top: 1px solid var(--border);
@@ -811,6 +817,91 @@
     @if (session()->has('message'))
         <div class="cms-flash">{{ session('message') }}</div>
     @endif
+
+    <script>
+        // Đăng ký Alpine imageUploader trước khi Alpine khởi động.
+        // Phải nằm ở đây (layout) vì component x-image-uploader chỉ được render trong modal (có điều kiện)
+        // nên script của nó không chạy khi trang load lần đầu.
+        document.addEventListener('alpine:init', function () {
+            Alpine.data('imageUploader', function (opts) {
+                return {
+                    maxKB: opts.maxKB, multiple: opts.multiple, model: opts.model,
+                    files: [], previews: [], errors: [], uploading: false, progress: 0,
+                    onChange: function (e) {
+                        this.errors = [];
+                        var self = this;
+                        var selected = Array.from(e.target.files || []);
+                        e.target.value = '';
+                        var accepted = [];
+                        for (var i = 0; i < selected.length; i++) {
+                            var f = selected[i];
+                            if (f.size > self.maxKB * 1024) {
+                                self.errors.push('"' + f.name + '" ' + (f.size / 1048576).toFixed(1) + 'MB vượt quá ' + (self.maxKB / 1024).toFixed(0) + 'MB');
+                                continue;
+                            }
+                            accepted.push(f);
+                        }
+                        if (!accepted.length) return;
+                        Promise.all(accepted.map(function (f) { return self.compress(f); })).then(function (done) {
+                            if (self.multiple) { self.files.push.apply(self.files, done); }
+                            else { self.files = done.slice(0, 1); }
+                            self.rebuildPreviews();
+                            self.sync();
+                        });
+                    },
+                    rebuildPreviews: function () {
+                        this.previews.forEach(function (p) { URL.revokeObjectURL(p.url); });
+                        this.previews = this.files.map(function (f) { return { url: URL.createObjectURL(f) }; });
+                    },
+                    removePreview: function (i) {
+                        this.files.splice(i, 1);
+                        this.rebuildPreviews();
+                        this.sync();
+                    },
+                    sync: function () {
+                        this.uploading = true; this.progress = 0;
+                        var self = this;
+                        var done = function () { self.uploading = false; };
+                        var prog = function (ev) { self.progress = (ev.detail && ev.detail.progress) || 0; };
+                        if (this.multiple) {
+                            if (this.files.length) this.$wire.uploadMultiple(this.model, this.files, done, done, prog);
+                            else { this.$wire.set(this.model, []); done(); }
+                        } else {
+                            if (this.files[0]) this.$wire.upload(this.model, this.files[0], done, done, prog);
+                            else { this.$wire.set(this.model, null); done(); }
+                        }
+                    },
+                    compress: function (file) {
+                        return new Promise(function (resolve) {
+                            if (!file.type || !file.type.startsWith('image/')) return resolve(file);
+                            var url = URL.createObjectURL(file);
+                            var img = new Image();
+                            img.onload = function () {
+                                URL.revokeObjectURL(url);
+                                var max = 1600, w = img.width, h = img.height;
+                                if (w > max || h > max) {
+                                    if (w >= h) { h = Math.round(h * max / w); w = max; }
+                                    else { w = Math.round(w * max / h); h = max; }
+                                }
+                                try {
+                                    var c = document.createElement('canvas');
+                                    c.width = w; c.height = h;
+                                    c.getContext('2d').drawImage(img, 0, 0, w, h);
+                                    c.toBlob(function (blob) {
+                                        if (!blob || blob.size >= file.size) return resolve(file);
+                                        resolve(new File([blob], file.name.replace(/\.[^.]+$/, '') + '.jpg', { type: 'image/jpeg' }));
+                                    }, 'image/jpeg', 0.82);
+                                } catch (err) { resolve(file); }
+                            };
+                            img.onerror = function () { URL.revokeObjectURL(url); resolve(file); };
+                            img.src = url;
+                        });
+                    },
+                };
+            });
+            window._iuDefined = true;
+        });
+    </script>
 
     @livewireScripts
 </body>

@@ -21,6 +21,13 @@
         }
         $authUser = auth()->user();
         $isSiteAdmin = $authUser && method_exists($authUser, 'isAdmin') && $authUser->isAdmin();
+        $authStats = null;
+        if ($authUser && \Illuminate\Support\Facades\Schema::hasTable('real_estate_listings')) {
+            $authStats = [
+                'active' => \App\Models\RealEstateListing::where('user_id', $authUser->id)->where('is_sold', false)->count(),
+                'hidden' => \App\Models\RealEstateListing::where('user_id', $authUser->id)->where('is_sold', true)->count(),
+            ];
+        }
         $postUrl = $isSiteAdmin ? route('site.admin', ['tab' => 'listings']) : ($authUser ? route('user.listing.create') : route('login'));
         $manageUrl = $isSiteAdmin ? route('site.admin', ['tab' => 'listings']) : ($authUser ? route('user.dashboard') : route('login'));
         $accountUrl = $authUser ? ($isSiteAdmin ? route('site.admin') : route('user.dashboard')) : route('login');
@@ -59,8 +66,14 @@
                 @endauth
 
                 <div class="site-account" data-account>
-                    <button type="button" class="site-account-btn" data-account-toggle aria-label="Tài khoản">
-                        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10Zm0 2c-5 0-9 2.5-9 6v1h18v-1c0-3.5-4-6-9-6Z"/></svg>
+                    <button type="button" class="site-account-btn {{ $authUser ? 'is-auth' : '' }}" data-account-toggle aria-label="Tài khoản">
+                        @auth
+                            <span class="site-account-ava">{{ mb_strtoupper(mb_substr($authUser->name ?: 'U', 0, 1)) }}</span>
+                            <span class="site-account-uname">{{ $authUser->name ?: 'Tài khoản' }}</span>
+                            @if(($authStats['hidden'] ?? 0) > 0)<span class="site-account-dot"></span>@endif
+                        @else
+                            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10Zm0 2c-5 0-9 2.5-9 6v1h18v-1c0-3.5-4-6-9-6Z"/></svg>
+                        @endauth
                         <svg class="site-account-caret" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 10l5 5 5-5z"/></svg>
                     </button>
                     <div class="site-account-pop" data-account-pop>
@@ -69,6 +82,14 @@
                                 <strong>{{ $authUser->name ?: 'Tài khoản' }}</strong>
                                 <span>{{ $authUser->phone }}</span>
                             </div>
+                            @unless($isSiteAdmin)
+                                <div class="site-account-noti">
+                                    <div class="site-account-noti-title">🔔 Thông báo</div>
+                                    <a href="{{ route('user.dashboard') }}">
+                                        <span>{{ $authStats['active'] ?? 0 }}</span> tin đang hiển thị · <span>{{ $authStats['hidden'] ?? 0 }}</span> tin đang ẩn
+                                    </a>
+                                </div>
+                            @endunless
                             <div class="site-account-menu">
                                 @if($isSiteAdmin)
                                     <a href="{{ route('site.admin') }}"><i></i> Trang quản trị</a>
@@ -213,6 +234,48 @@
             if (modal && modal.dataset.open) { openModal(modal.dataset.open); }
         })();
     </script>
+
+    @php
+        $cfPhone = $siteContact['phone'] ?? '';
+        $cfFb = $siteContact['facebook'] ?? '';
+        $cfZaloHref = ($siteContact['zaloHref'])();
+        $cfHas = $cfPhone || $cfFb || $cfZaloHref;
+    @endphp
+    @if($cfHas)
+        <div class="site-cfab {{ ($siteContact['position'] ?? 'right') === 'left' ? 'pos-left' : 'pos-right' }}" data-cfab>
+            <div class="site-cfab-list">
+                @if($cfPhone)
+                    <a class="site-cfab-item phone" href="tel:{{ preg_replace('/\D+/', '', $cfPhone) }}" title="Gọi {{ $cfPhone }}">
+                        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6.6 10.8a15 15 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11 11 0 0 0 3.5.56 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.3a1 1 0 0 1 1 1 11 11 0 0 0 .56 3.5 1 1 0 0 1-.25 1z"/></svg>
+                    </a>
+                @endif
+                @if($cfZaloHref)
+                    <a class="site-cfab-item zalo" href="{{ $cfZaloHref }}" target="_blank" rel="noopener" title="Chat Zalo">
+                        <img src="https://cdn.haitrieu.com/wp-content/uploads/2022/01/Icon-Zalo.png" alt="Zalo">
+                    </a>
+                @endif
+                @if($cfFb)
+                    <a class="site-cfab-item fb" href="{{ $cfFb }}" target="_blank" rel="noopener" title="Facebook">
+                        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M22 12a10 10 0 1 0-11.6 9.9v-7H7.9V12h2.5V9.8c0-2.5 1.5-3.9 3.8-3.9 1.1 0 2.2.2 2.2.2v2.5h-1.2c-1.2 0-1.6.8-1.6 1.6V12h2.7l-.4 2.9h-2.3v7A10 10 0 0 0 22 12Z"/></svg>
+                    </a>
+                @endif
+            </div>
+            <button type="button" class="site-cfab-main" data-cfab-toggle aria-label="Liên hệ">
+                <svg class="ic-open" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3C6.5 3 2 6.6 2 11.1c0 2.5 1.4 4.8 3.6 6.3-.1.9-.5 2.2-1.3 3.2-.2.3 0 .7.4.6 1.9-.4 3.3-1.1 4.2-1.7 1 .2 2 .4 3.1.4 5.5 0 10-3.6 10-8.1S17.5 3 12 3Z"/></svg>
+                <svg class="ic-close" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.3 5.7 12 12l6.3 6.3-1.4 1.4L10.6 13.4 4.3 19.7 2.9 18.3 9.2 12 2.9 5.7 4.3 4.3l6.3 6.3 6.3-6.3z"/></svg>
+            </button>
+        </div>
+        <script>
+            (function () {
+                var fab = document.querySelector('[data-cfab]');
+                if (!fab) return;
+                document.addEventListener('click', function (e) {
+                    if (e.target.closest('[data-cfab-toggle]')) { fab.classList.toggle('is-open'); return; }
+                    if (!e.target.closest('[data-cfab]')) fab.classList.remove('is-open');
+                });
+            })();
+        </script>
+    @endif
 
     @stack('scripts')
     @livewireScripts
