@@ -655,6 +655,29 @@
         .cms-act.warn { color: #b45309; }
         .cms-act.warn:hover { border-color: #b45309; background: #b45309; color: #fff; }
 
+        .cms-mod-select {
+            appearance: none;
+            -webkit-appearance: none;
+            display: inline-block;
+            padding: 4px 24px 4px 10px;
+            border-radius: 999px;
+            border: 1px solid var(--border);
+            font-size: 11px;
+            font-weight: 800;
+            cursor: pointer;
+            background-color: #f1f2f4;
+            color: var(--text-muted);
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%238a929e' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 8px center;
+            transition: border-color .15s;
+            max-width: 130px;
+        }
+        .cms-mod-select:focus { outline: 2px solid #f4bf19; outline-offset: 1px; }
+        .cms-mod-select.ok { background-color: #eaf8ef; color: #087f3f; border-color: rgba(8,127,63,.22); }
+        .cms-mod-select.warn { background-color: #fff7ed; color: #b45309; border-color: rgba(180,83,9,.22); }
+        .cms-mod-select.err { background-color: #fef2f2; color: #dc2626; border-color: rgba(220,38,38,.22); }
+
         .cms-badge {
             min-height: 28px;
             display: inline-flex;

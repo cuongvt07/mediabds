@@ -244,6 +244,19 @@ class SiteAdmin extends Component
         }
     }
 
+    public function setListingMod(int $id, string $status): void
+    {
+        if ($status === 'rejected') {
+            $this->promptReject($id);
+            return;
+        }
+        if (! in_array($status, ['pending', 'approved'], true)) {
+            return;
+        }
+        ListingModel::whereKey($id)->update(['moderation_status' => $status, 'rejection_reason' => null]);
+        session()->flash('message', $status === 'approved' ? 'Đã duyệt tin đăng.' : 'Đã chuyển tin về chờ duyệt.');
+    }
+
     public function approveListing(int $id): void
     {
         ListingModel::whereKey($id)->update(['moderation_status' => 'approved', 'rejection_reason' => null]);

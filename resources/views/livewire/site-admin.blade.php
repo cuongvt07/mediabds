@@ -155,27 +155,32 @@
                     <table class="cms-table">
                         <thead>
                             <tr>
-                                <th style="width:110px;">Trạng thái</th>
+                                <th style="width:90px;">Hiển thị</th>
+                                <th style="width:130px;">Duyệt</th>
                                 <th style="width:120px;">Ảnh</th>
                                 <th>Tin phòng</th>
                                 <th style="width:120px;">Giá</th>
                                 <th style="width:130px;">Liên hệ</th>
-                                <th style="width:170px;" class="right">Thao tác</th>
+                                <th style="width:110px;" class="right">Thao tác</th>
                             </tr>
                         </thead>
                         <tbody>
                             @forelse($siteListings as $listing)
+                                @php($mod = $listing->moderation_status ?: 'approved')
                                 <tr style="{{ $listing->is_sold ? 'opacity:.58' : '' }}">
                                     <td>
                                         <button type="button" class="cms-badge {{ $listing->is_sold ? 'muted' : 'success' }}" wire:click="toggleListing({{ $listing->id }})" title="Hiện/ẩn tin">
                                             <i class="fa-solid {{ $listing->is_sold ? 'fa-toggle-off' : 'fa-toggle-on' }}"></i> {{ $listing->is_sold ? 'Ẩn' : 'Hiện' }}
                                         </button>
-                                        @php($mod = $listing->moderation_status ?: 'approved')
-                                        <div style="margin-top:6px;">
-                                            <span class="cms-badge {{ $mod === 'approved' ? 'success' : ($mod === 'pending' ? 'muted' : 'danger') }}" @if($mod==='rejected' && $listing->rejection_reason) title="Lý do: {{ $listing->rejection_reason }}" @endif>
-                                                {{ $moderationOptions[$mod] ?? $mod }}
-                                            </span>
-                                        </div>
+                                    </td>
+                                    <td>
+                                        <select class="cms-mod-select {{ $mod === 'approved' ? 'ok' : ($mod === 'pending' ? 'warn' : 'err') }}"
+                                            wire:change="setListingMod({{ $listing->id }}, $event.target.value)"
+                                            @if($mod === 'rejected' && $listing->rejection_reason) title="Lý do: {{ $listing->rejection_reason }}" @endif>
+                                            <option value="pending"  {{ $mod === 'pending'  ? 'selected' : '' }}>⏳ Chờ duyệt</option>
+                                            <option value="approved" {{ $mod === 'approved' ? 'selected' : '' }}>✓ Đã duyệt</option>
+                                            <option value="rejected" {{ $mod === 'rejected' ? 'selected' : '' }}>✗ Từ chối</option>
+                                        </select>
                                     </td>
                                     <td>
                                         @php($cover = $listing->avatar ?: collect($listing->images ?: [])->first())
@@ -199,12 +204,6 @@
                                     <td class="mono">{{ $listing->contact_phone ?: '-' }}</td>
                                     <td class="right">
                                         <div class="cms-row-actions">
-                                            @if(($listing->moderation_status ?: 'approved') !== 'approved')
-                                                <button type="button" class="cms-act ok" wire:click="approveListing({{ $listing->id }})" title="Duyệt tin" aria-label="Duyệt tin"><i class="fa-solid fa-check"></i></button>
-                                            @endif
-                                            @if(($listing->moderation_status ?: 'approved') !== 'rejected')
-                                                <button type="button" class="cms-act warn" wire:click="promptReject({{ $listing->id }})" title="Từ chối tin" aria-label="Từ chối tin"><i class="fa-solid fa-ban"></i></button>
-                                            @endif
                                             <a class="cms-act" href="{{ route('site.listings.show', $listing) }}" target="_blank" title="Xem tin" aria-label="Xem tin"><i class="fa-regular fa-eye"></i></a>
                                             <button type="button" class="cms-act" wire:click="editListing({{ $listing->id }})" title="Sửa tin" aria-label="Sửa tin"><i class="fa-solid fa-pen"></i></button>
                                             <button type="button" class="cms-act danger" wire:click="deleteListing({{ $listing->id }})" wire:confirm="Xóa tin đăng này?" title="Xóa tin" aria-label="Xóa tin"><i class="fa-solid fa-trash-can"></i></button>
@@ -213,7 +212,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="6" style="height:72px;text-align:center;">Chưa có tin phòng trọ.</td>
+                                    <td colspan="7" style="height:72px;text-align:center;">Chưa có tin phòng trọ.</td>
                                 </tr>
                             @endforelse
                         </tbody>
