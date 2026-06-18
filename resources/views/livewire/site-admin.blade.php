@@ -155,12 +155,12 @@
                     <table class="cms-table">
                         <thead>
                             <tr>
-                                <th style="width:90px;">Hiển thị</th>
-                                <th style="width:130px;">Duyệt</th>
-                                <th style="width:120px;">Ảnh</th>
+                                <th style="width:80px;">Hiển thị</th>
+                                <th style="width:120px;">Duyệt</th>
+                                <th style="width:100px;">Ảnh</th>
                                 <th>Tin phòng</th>
-                                <th style="width:120px;">Giá</th>
-                                <th style="width:110px;" class="right">Thao tác</th>
+                                <th style="width:110px;">Giá</th>
+                                <th style="width:96px;" class="right">Thao tác</th>
                             </tr>
                         </thead>
                         <tbody>

@@ -523,10 +523,9 @@
             text-transform: uppercase;
         }
 
-        .cms-table-wrap { overflow-x: auto; }
+        .cms-table-wrap { overflow-x: visible; }
         .cms-table {
             width: 100%;
-            min-width: 880px;
             border-collapse: collapse;
             table-layout: fixed;
         }
