@@ -158,9 +158,9 @@
                                 <th style="width:8%;">Hiển thị</th>
                                 <th style="width:13%;">Duyệt</th>
                                 <th style="width:10%;">Ảnh</th>
-                                <th>Tin phòng</th>
-                                <th style="width:12%;">Giá</th>
-                                <th style="width:10%;" class="right">Thao tác</th>
+                                <th style="width:38%;">Tin phòng</th>
+                                <th style="width:13%;">Giá</th>
+                                <th style="width:18%;" class="right">Thao tác</th>
                             </tr>
                         </thead>
                         <tbody>
