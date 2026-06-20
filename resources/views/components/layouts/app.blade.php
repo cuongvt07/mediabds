@@ -136,6 +136,13 @@
                         </div>
                         <span class="text-[10px] font-bold text-center leading-none">Extension</span>
                     </a>
+
+                    <a href="{{ route('extension.licenses') }}" wire:navigate
+                        class="flex flex-col items-center justify-center p-3 rounded-2xl transition-all group {{ request()->routeIs('extension.licenses') ? 'bg-fuchsia-600 text-white shadow-lg' : 'text-fuchsia-300/80 hover:text-white hover:bg-fuchsia-900/40' }}"
+                        title="License Extension">
+                        <div class="w-8 h-8 flex items-center justify-center rounded-lg mb-1 {{ request()->routeIs('extension.licenses') ? 'bg-white/20' : 'bg-fuchsia-900/50' }}"><i class="fa-solid fa-key text-sm"></i></div>
+                        <span class="text-[10px] font-bold text-center leading-none">License</span>
+                    </a>
                 @endif
 
             </div>

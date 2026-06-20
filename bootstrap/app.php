@@ -16,6 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->redirectTo(guests: '/landing/ctv');
         $middleware->alias([
             'admin' => \App\Http\Middleware\EnsureUserIsAdmin::class,
+            'extension.device' => \App\Http\Middleware\AuthenticateExtensionDevice::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

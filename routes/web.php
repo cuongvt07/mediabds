@@ -39,6 +39,7 @@ Route::get('/business/statistics', \App\Livewire\CtvStatistics::class)->middlewa
 Route::get('/chatbot', \App\Livewire\Chatbot::class)->middleware('auth')->name('chatbot');
 Route::get('/website-admin', \App\Livewire\WebsiteAdmin::class)->middleware(['auth', 'admin'])->name('website.admin');
 Route::get('/extension-settings', \App\Livewire\ExtensionSettings::class)->middleware(['auth', 'admin'])->name('extension.settings');
+Route::get('/extension-licenses', \App\Livewire\ExtensionLicenseManager::class)->middleware(['auth', 'admin'])->name('extension.licenses');
 
 // ----- API documentation (Scalar) -----
 // Trang doc đọc tại /docs/api. Spec OpenAPI lấy từ resources/docs/openapi.yaml.

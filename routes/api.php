@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\ListingImageUploadController;
 use App\Http\Controllers\Api\MeApiController;
 use App\Http\Controllers\Api\SavedSearchApiController;
 use App\Http\Controllers\Api\ExtensionConfigController;
+use App\Http\Controllers\Api\ExtensionActivationController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -21,8 +22,10 @@ Route::get('/user', function (Request $request) {
 
 Route::prefix('v1')->group(function () {
     // Public
+    Route::post('/extension/activate', [ExtensionActivationController::class, 'store'])
+        ->middleware('throttle:10,1');
     Route::get('/extension/config', [ExtensionConfigController::class, 'show'])
-        ->middleware('throttle:60,1');
+        ->middleware(['extension.device', 'throttle:60,1']);
     Route::get('/categories', [CategoryApiController::class, 'index']);
     Route::get('/locations', [LocationApiController::class, 'index']);
     Route::get('/blogs', [BlogApiController::class, 'index']);
