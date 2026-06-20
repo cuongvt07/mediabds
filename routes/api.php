@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\LeadApiController;
 use App\Http\Controllers\Api\ListingImageUploadController;
 use App\Http\Controllers\Api\MeApiController;
 use App\Http\Controllers\Api\SavedSearchApiController;
+use App\Http\Controllers\Api\ExtensionConfigController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -20,6 +21,8 @@ Route::get('/user', function (Request $request) {
 
 Route::prefix('v1')->group(function () {
     // Public
+    Route::get('/extension/config', [ExtensionConfigController::class, 'show'])
+        ->middleware('throttle:60,1');
     Route::get('/categories', [CategoryApiController::class, 'index']);
     Route::get('/locations', [LocationApiController::class, 'index']);
     Route::get('/blogs', [BlogApiController::class, 'index']);
@@ -54,5 +57,8 @@ Route::prefix('v1')->group(function () {
         Route::get('/me/saved-searches', [SavedSearchApiController::class, 'index']);
         Route::post('/me/saved-searches', [SavedSearchApiController::class, 'store']);
         Route::delete('/me/saved-searches/{id}', [SavedSearchApiController::class, 'destroy']);
+
+        Route::put('/admin/extension/config', [ExtensionConfigController::class, 'update'])
+            ->middleware('throttle:20,1');
     });
 });

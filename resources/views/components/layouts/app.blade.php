@@ -127,6 +127,15 @@
                         </div>
                         <span class="text-[10px] font-bold text-center leading-none">Website</span>
                     </a>
+
+                    <a href="{{ route('extension.settings') }}" wire:navigate
+                        class="flex flex-col items-center justify-center p-3 rounded-2xl transition-all group {{ request()->routeIs('extension.settings') ? 'bg-violet-600 text-white shadow-lg shadow-violet-500/20' : 'text-violet-300/80 hover:text-white hover:bg-violet-900/40' }}"
+                        title="Cấu hình Extension">
+                        <div class="w-8 h-8 flex items-center justify-center rounded-lg mb-1 {{ request()->routeIs('extension.settings') ? 'bg-white/20' : 'bg-violet-900/50 group-hover:bg-violet-800/70' }}">
+                            <i class="fa-solid fa-puzzle-piece text-sm"></i>
+                        </div>
+                        <span class="text-[10px] font-bold text-center leading-none">Extension</span>
+                    </a>
                 @endif
 
             </div>
