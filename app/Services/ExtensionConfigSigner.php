@@ -13,7 +13,7 @@ class ExtensionConfigSigner
         $public = $setting->signing_public_key;
 
         if ($secret === null || $public === null) {
-            return ['algorithm' => null, 'signature' => null, 'publicKey' => null];
+            throw new RuntimeException('Server chưa có đủ private key và public key RSA. Hãy tạo lại cặp khóa trong /extension-settings.');
         }
 
         if (!function_exists('openssl_sign')) {
