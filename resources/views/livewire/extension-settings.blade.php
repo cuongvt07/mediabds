@@ -198,6 +198,21 @@
 
             {{-- Sticky side panel --}}
             <aside class="space-y-6 xl:sticky xl:top-8">
+                <section class="overflow-hidden rounded-2xl border border-violet-200 bg-gradient-to-br from-violet-600 to-indigo-700 text-white shadow-lg shadow-violet-100">
+                    <div class="p-5">
+                        <div class="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-white/15 ring-1 ring-white/20">
+                            <i class="fa-solid fa-key"></i>
+                        </div>
+                        <h2 class="font-semibold">License khách hàng</h2>
+                        <p class="mt-1 text-xs leading-5 text-violet-100">Tạo mã license, giới hạn thiết bị và quản lý quyền truy cập Extension.</p>
+                        <a href="{{ route('extension.licenses') }}" wire:navigate
+                            class="mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-white text-sm font-semibold text-violet-700 shadow-sm transition hover:bg-violet-50">
+                            <i class="fa-solid fa-plus"></i>
+                            Tạo license cho khách hàng
+                        </a>
+                    </div>
+                </section>
+
                 <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
                     <div class="border-b border-slate-100 px-5 py-4">
                         <h2 class="text-sm font-semibold text-slate-900">Tổng quan cấu hình</h2>
