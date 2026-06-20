@@ -235,7 +235,7 @@
                     <div class="flex items-center gap-3 border-b border-slate-100 px-5 py-4">
                         <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-600"><i class="fa-solid fa-shield-halved"></i></span>
                         <div>
-                            <h2 class="text-sm font-semibold text-slate-900">Khóa ký Ed25519</h2>
+                            <h2 class="text-sm font-semibold text-slate-900">Khóa ký RSA-SHA256</h2>
                             <p class="text-[11px] text-slate-500">Xác thực dữ liệu cấu hình</p>
                         </div>
                     </div>

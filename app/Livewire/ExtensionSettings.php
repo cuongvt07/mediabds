@@ -73,16 +73,36 @@ class ExtensionSettings extends Component
 
     public function generateSigningKeys(): void
     {
-        $pair = sodium_crypto_sign_keypair();
+        if (!function_exists('openssl_pkey_new')) {
+            $this->addError('signingPublicKey', 'PHP server chưa bật extension OpenSSL.');
+            return;
+        }
+
+        $key = openssl_pkey_new([
+            'private_key_type' => OPENSSL_KEYTYPE_RSA,
+            'private_key_bits' => 2048,
+        ]);
+        if ($key === false || !openssl_pkey_export($key, $privatePem)) {
+            $this->addError('signingPublicKey', 'Không thể tạo khóa RSA trên server.');
+            return;
+        }
+
+        $details = openssl_pkey_get_details($key);
+        if (!$details || empty($details['key'])) {
+            $this->addError('signingPublicKey', 'Không thể đọc public key RSA.');
+            return;
+        }
+
+        $publicDer = preg_replace('/-----BEGIN PUBLIC KEY-----|-----END PUBLIC KEY-----|\s+/', '', $details['key']);
         $setting = ExtensionSetting::current();
         $setting->forceFill([
-            'signing_public_key' => base64_encode(sodium_crypto_sign_publickey($pair)),
-            'signing_secret_key' => base64_encode(sodium_crypto_sign_secretkey($pair)),
+            'signing_public_key' => $publicDer,
+            'signing_secret_key' => $privatePem,
             'updated_by' => auth()->id(),
         ])->save();
 
         $this->signingPublicKey = $setting->signing_public_key;
-        session()->flash('message', 'Đã tạo cặp khóa ký mới. Public key trên client cần được cập nhật tương ứng.');
+        session()->flash('message', 'Đã tạo cặp khóa RSA-SHA256 mới. Public key trên client cần được cập nhật tương ứng.');
     }
 
     private function loadSetting(): void

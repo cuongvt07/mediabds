@@ -9,27 +9,27 @@ class ExtensionConfigSigner
 {
     public function sign(array $payload, ExtensionSetting $setting): array
     {
-        $secret = $this->decodeKey($setting->signing_secret_key);
-        $public = $this->decodeKey($setting->signing_public_key);
+        $secret = $setting->signing_secret_key;
+        $public = $setting->signing_public_key;
 
         if ($secret === null || $public === null) {
             return ['algorithm' => null, 'signature' => null, 'publicKey' => null];
         }
 
-        if (strlen($secret) !== SODIUM_CRYPTO_SIGN_SECRETKEYBYTES) {
-            throw new RuntimeException('Stored extension signing secret key is invalid.');
+        if (!function_exists('openssl_sign')) {
+            throw new RuntimeException('PHP OpenSSL extension is required for extension config signing.');
         }
 
-        if (strlen($public) !== SODIUM_CRYPTO_SIGN_PUBLICKEYBYTES) {
-            throw new RuntimeException('Stored extension signing public key is invalid.');
+        $privateKey = openssl_pkey_get_private($secret);
+        if ($privateKey === false) throw new RuntimeException('Stored extension signing private key is invalid.');
+        if (!openssl_sign($this->canonicalJson($payload), $signature, $privateKey, OPENSSL_ALGO_SHA256)) {
+            throw new RuntimeException('Unable to sign extension config.');
         }
-
-        $signature = sodium_crypto_sign_detached($this->canonicalJson($payload), $secret);
 
         return [
-            'algorithm' => 'Ed25519',
+            'algorithm' => 'RS256',
             'signature' => base64_encode($signature),
-            'publicKey' => base64_encode($public),
+            'publicKey' => $public,
         ];
     }
 
@@ -47,11 +47,4 @@ class ExtensionConfigSigner
         return json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
     }
 
-    private function decodeKey(?string $key): ?string
-    {
-        if (!$key) return null;
-        $decoded = base64_decode($key, true);
-        if ($decoded === false) throw new RuntimeException('Extension signing keys must use valid base64.');
-        return $decoded;
-    }
 }
