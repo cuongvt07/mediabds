@@ -15,7 +15,7 @@ class ExtensionSettings extends Component
     public ?string $supportPhone = '0943206425';
     public ?string $supportUrl = null;
     public bool $uiEnabled = true;
-    public bool $autoNavigation = false;
+    public bool $autoNavigation = true;
     public array $courses = [];
     public ?string $signingPublicKey = null;
 

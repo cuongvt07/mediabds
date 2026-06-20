@@ -15,7 +15,7 @@ return [
         ],
         'features' => [
             'uiEnabled' => true,
-            'autoNavigation' => false,
+            'autoNavigation' => true,
         ],
         'courses' => [
             ['path' => '/slides/mon-hoc-phap-luat-giao-thong-uong-bo-2025-347', 'label' => 'Pháp luật giao thông đường bộ', 'enabled' => true, 'priority' => 1],
