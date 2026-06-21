@@ -76,6 +76,7 @@
 
             <div class="site-filter-wrap" id="tim-phong">
                 <form class="site-filter" method="GET" action="{{ route('site.home') }}#danh-sach">
+                    <input type="hidden" name="tab" value="{{ request('tab') }}">
                     <div class="site-field">
                         <label for="district">Quận</label>
                         <select id="district" name="district" onchange="this.form.ward.value=''; this.form.submit()">
@@ -171,6 +172,7 @@
     <div class="site-filter-modal" data-filter-modal aria-hidden="true">
         <button class="site-filter-backdrop" type="button" data-filter-close aria-label="Đóng bộ lọc"></button>
         <form class="site-filter-sheet" method="GET" action="{{ route('site.home') }}#danh-sach" role="dialog" aria-modal="true" aria-labelledby="mobile-filter-title">
+            <input type="hidden" name="tab" value="{{ request('tab') }}">
             <span class="site-filter-handle" aria-hidden="true"></span>
             <div class="site-filter-sheet-head">
                 <h2 id="mobile-filter-title">Bộ lọc tìm kiếm</h2>
@@ -268,6 +270,11 @@
                 <p>Có {{ number_format($listings->total()) }} phòng phù hợp. Thông tin vị trí chỉ hiển thị đến phường để bảo vệ địa chỉ căn phòng.</p>
             </div>
 
+            <div class="site-listing-tabs">
+                <a class="{{ request('tab') === 'hot' ? 'is-active' : '' }}" href="{{ route('site.home', array_merge(request()->except('page'), ['tab' => 'hot'])) }}#danh-sach">Tin hot 🔥</a>
+                <a class="{{ request('tab') !== 'hot' ? 'is-active' : '' }}" href="{{ route('site.home', request()->except(['page', 'tab'])) }}#danh-sach">Tất cả</a>
+            </div>
+
             <div class="site-listing-grid">
                 @forelse($listings as $listing)
                     <article class="site-card">
@@ -275,6 +282,9 @@
                             <div class="site-card-media">
                                 <img src="{{ $imageUrl($listing) }}" alt="{{ $listing->title }}" loading="lazy">
                                 <span class="site-badge">{{ $roomLabels[$listing->room_type] ?? 'Phòng trọ' }}</span>
+                                @if($listing->isBoosted())
+                                    <span class="site-hot-badge">🔥 Tin hot</span>
+                                @endif
                                 <span class="site-photo-count">
                                     <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M9 4.5 10.4 3h3.2L15 4.5h3A3 3 0 0 1 21 7.5v9a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3v-9a3 3 0 0 1 3-3h3Zm3 12a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9Zm0-2a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5Z"/></svg>
                                     {{ count($listing->images ?? []) }}

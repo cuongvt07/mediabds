@@ -28,7 +28,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(RealEstateListing::class, ListingPolicy::class);
 
         // Chia sẻ thông tin liên hệ (config bên admin) cho mọi view của site nhà trọ.
-        View::composer(['site.*', 'components.layouts.site-admin'], function ($view) {
+        View::composer(['site.*', 'livewire.user.*', 'components.layouts.site-admin'], function ($view) {
             $phone = '';
             $zalo = '';
             $email = '';

@@ -18,8 +18,14 @@
                         @error('contactPhone') <em class="ff-err">{{ $message }}</em> @enderror
                     </label>
                     <label class="ff"><span>Giá thuê (đồng/tháng) <i>*</i></span>
-                        <input type="text" wire:model="price" placeholder="VD: 3500000">
+                        <input type="number" min="0" step="1" wire:model="price" placeholder="VD: 3500000">
                         @error('price') <em class="ff-err">{{ $message }}</em> @enderror
+                    </label>
+                    <label class="ff"><span>Loại tin <i>*</i></span>
+                        <select wire:model.live="propertyType">
+                            @foreach($propertyTypes as $v => $l)<option value="{{ $v }}">{{ $l }}</option>@endforeach
+                        </select>
+                        @error('propertyType') <em class="ff-err">{{ $message }}</em> @enderror
                     </label>
                     <label class="ff"><span>Dạng phòng <i>*</i></span>
                         <select wire:model="roomType">
@@ -64,12 +70,24 @@
             <section class="user-form-card">
                 <h2>Chi tiết phòng</h2>
                 <div class="user-form-grid">
+                    <div class="ff full"><span style="color:#8a6a00;">Tất cả những chi tiết phòng không bắt buộc điền. Nếu bỏ trống, hệ thống mặc định hiển thị là "Liên hệ".</span></div>
+                    @if((int) $propertyType === 103)
+                        <label class="ff"><span>Tên chung cư</span><input type="text" wire:model="apartmentName" placeholder="VD: Vinhomes Grand Park"></label>
+                        <label class="ff"><span>Tên block</span><input type="text" wire:model="apartmentBlock" placeholder="VD: S1.02"></label>
+                    @endif
+                    @if((int) $propertyType === 108)
+                        <label class="ff"><span>Số tầng</span><input type="number" min="0" step="1" wire:model="floors"></label>
+                    @endif
+                    @if(in_array((int) $propertyType, [103, 108], true))
+                        <label class="ff"><span>Diện tích (m2)</span><input type="number" min="0" step="0.1" wire:model="area"></label>
+                        <label class="ff"><span>Số tháng cọc</span><input type="number" min="0" step="1" wire:model="depositMonths"></label>
+                    @endif
                     <label class="ff"><span>Phòng ngủ</span><input type="number" min="0" wire:model="bedrooms"></label>
                     <label class="ff"><span>Toilet</span><input type="number" min="0" wire:model="toilets"></label>
-                    <label class="ff"><span>Tiền điện</span><input type="text" wire:model="electricity" placeholder="VD: 3.500đ/kWh"></label>
-                    <label class="ff"><span>Tiền nước</span><input type="text" wire:model="water" placeholder="VD: 100k/người"></label>
-                    <label class="ff"><span>Phí giữ xe</span><input type="text" wire:model="parkingFee" placeholder="VD: 150k/tháng"></label>
-                    <label class="ff"><span>Giờ giấc</span><input type="text" wire:model="accessHours" placeholder="VD: Tự do"></label>
+                    <label class="ff"><span>Tiền điện</span><input type="number" min="0" step="1" wire:model="electricity" placeholder="VD: 3500"></label>
+                    <label class="ff"><span>Tiền nước</span><input type="number" min="0" step="1" wire:model="water" placeholder="VD: 100000"></label>
+                    <label class="ff"><span>Phí giữ xe</span><input type="number" min="0" step="1" wire:model="parkingFee" placeholder="VD: 150000"></label>
+                    <label class="ff"><span>Giờ giấc</span><select wire:model="accessHours">@foreach($accessHourOptions as $v => $l)<option value="{{ $v }}">{{ $l }}</option>@endforeach</select></label>
                     <label class="ff"><span>Cửa sổ</span><select wire:model="window">@foreach($conditionOptions as $v => $l)<option value="{{ $v }}">{{ $l }}</option>@endforeach</select></label>
                     <label class="ff"><span>Thú cưng</span><select wire:model="pets">@foreach($conditionOptions as $v => $l)<option value="{{ $v }}">{{ $l }}</option>@endforeach</select></label>
                     <label class="ff"><span>Để xe</span><select wire:model="parking">@foreach($conditionOptions as $v => $l)<option value="{{ $v }}">{{ $l }}</option>@endforeach</select></label>

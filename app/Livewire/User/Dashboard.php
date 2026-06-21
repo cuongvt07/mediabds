@@ -18,13 +18,18 @@ class Dashboard extends Component
         'balcony' => 'Phòng ban công',
     ];
 
-    public $tab = 'all';       // all | active | hidden
+    public const POSTING_PLANS = [
+        'free' => ['name' => 'Free', 'limit' => 10, 'price' => 0],
+        'daily_20' => ['name' => 'Gói 20 tin/ngày', 'limit' => 20, 'price' => 399000],
+        'daily_40' => ['name' => 'Gói 40 tin/ngày', 'limit' => 40, 'price' => 599000],
+    ];
+
+    public $tab = 'all';       // all | pending | active | rejected | hidden | boosting
     public $search = '';
     public $priceFilter = '';
-
     public function setTab(string $tab): void
     {
-        if (! in_array($tab, ['all', 'active', 'hidden'], true)) {
+        if (! in_array($tab, ['all', 'pending', 'active', 'rejected', 'hidden', 'boosting'], true)) {
             return;
         }
         $this->tab = $tab;
@@ -63,13 +68,19 @@ class Dashboard extends Component
 
         $counts = [
             'all' => (clone $base)->count(),
-            'active' => (clone $base)->where('is_sold', false)->count(),
-            'hidden' => (clone $base)->where('is_sold', true)->count(),
+            'pending' => (clone $base)->where('moderation_status', 'pending')->count(),
+            'active' => (clone $base)->where('is_sold', false)->where('moderation_status', 'approved')->where(function ($q) { $q->whereNull('status')->orWhere('status', 'active'); })->count(),
+            'rejected' => (clone $base)->where('moderation_status', 'rejected')->count(),
+            'hidden' => (clone $base)->where(function ($q) { $q->where('is_sold', true)->orWhere('status', 'inactive'); })->count(),
+            'boosting' => (clone $base)->where('boost_tier', '<>', 'normal')->where('boost_expires_at', '>', now())->count(),
         ];
 
         $query = $this->ownQuery()
-            ->when($this->tab === 'active', fn ($q) => $q->where('is_sold', false))
-            ->when($this->tab === 'hidden', fn ($q) => $q->where('is_sold', true))
+            ->when($this->tab === 'pending', fn ($q) => $q->where('moderation_status', 'pending'))
+            ->when($this->tab === 'active', fn ($q) => $q->where('is_sold', false)->where('moderation_status', 'approved')->where(function ($sub) { $sub->whereNull('status')->orWhere('status', 'active'); }))
+            ->when($this->tab === 'rejected', fn ($q) => $q->where('moderation_status', 'rejected'))
+            ->when($this->tab === 'hidden', fn ($q) => $q->where(function ($sub) { $sub->where('is_sold', true)->orWhere('status', 'inactive'); }))
+            ->when($this->tab === 'boosting', fn ($q) => $q->where('boost_tier', '<>', 'normal')->where('boost_expires_at', '>', now()))
             ->when($this->search, function ($q) {
                 $term = '%' . trim($this->search) . '%';
                 $q->where(fn ($s) => $s->where('title', 'like', $term)
@@ -95,6 +106,7 @@ class Dashboard extends Component
             'counts' => $counts,
             'roomTypes' => self::ROOM_TYPES,
             'user' => auth()->user(),
+            'postingPlans' => self::POSTING_PLANS,
         ])->layout('site.layout');
     }
 

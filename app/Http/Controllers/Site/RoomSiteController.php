@@ -61,6 +61,13 @@ class RoomSiteController extends Controller
             $query->whereJsonContains('amenities', $amenity);
         }
 
+        if ($request->input('tab') === 'hot') {
+            $query->where('boost_tier', '<>', 'normal')
+                ->where('boost_expires_at', '>', now());
+        } else {
+            $query->orderByRaw("case when boost_tier <> 'normal' and boost_expires_at > ? then 0 else 1 end", [now()]);
+        }
+
         $priceExpression = $this->priceVndExpression();
         match ((string) $request->input('price')) {
             'low_high' => $query->orderByRaw("{$priceExpression} asc"),
@@ -131,7 +138,7 @@ class RoomSiteController extends Controller
                     ->orWhere('province_name', 'like', '%HCM%');
             })
             ->where(function (Builder $query) {
-                $query->where('property_type', 115)
+                $query->whereIn('property_type', [115, 108, 103])
                     ->orWhere('property_type', 'like', '%trọ%')
                     ->orWhereNotNull('room_type');
             });

@@ -23,9 +23,18 @@ class RegisterRequest extends FormRequest
     {
         return [
             'name' => 'required|string|max:120',
-            'phone' => 'required|string|min:9|max:15|unique:users,phone',
+            'phone' => ['required', 'string', 'regex:/^0\d{9}$/', 'unique:users,phone'],
             'password' => 'required|string|min:6|confirmed',
             'invite_code' => 'nullable|string|exists:users,invite_code',
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'phone.required' => 'Vui lòng nhập số điện thoại.',
+            'phone.regex' => 'Số điện thoại phải gồm 10 số và bắt đầu bằng 0.',
+            'phone.unique' => 'Số điện thoại này đã có tài khoản.',
         ];
     }
 

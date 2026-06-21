@@ -147,9 +147,11 @@
                 </div>
                 <div class="site-cms-seg" style="margin-bottom:14px;">
                     <button type="button" class="site-cms-seg-btn {{ $listingModeration === 'all' ? 'is-active' : '' }}" wire:click="setListingModeration('all')">Tất cả <span>{{ $moderationCounts['all'] }}</span></button>
-                    <button type="button" class="site-cms-seg-btn {{ $listingModeration === 'pending' ? 'is-active' : '' }}" wire:click="setListingModeration('pending')">Chờ duyệt <span>{{ $moderationCounts['pending'] }}</span></button>
-                    <button type="button" class="site-cms-seg-btn {{ $listingModeration === 'approved' ? 'is-active' : '' }}" wire:click="setListingModeration('approved')">Đã duyệt <span>{{ $moderationCounts['approved'] }}</span></button>
-                    <button type="button" class="site-cms-seg-btn {{ $listingModeration === 'rejected' ? 'is-active' : '' }}" wire:click="setListingModeration('rejected')">Từ chối <span>{{ $moderationCounts['rejected'] }}</span></button>
+                    <button type="button" class="site-cms-seg-btn {{ $listingModeration === 'pending' ? 'is-active' : '' }}" wire:click="setListingModeration('pending')">Đang chờ <span>{{ $moderationCounts['pending'] }}</span></button>
+                    <button type="button" class="site-cms-seg-btn {{ $listingModeration === 'active' ? 'is-active' : '' }}" wire:click="setListingModeration('active')">Đang hiện <span>{{ $moderationCounts['active'] }}</span></button>
+                    <button type="button" class="site-cms-seg-btn {{ $listingModeration === 'rejected' ? 'is-active' : '' }}" wire:click="setListingModeration('rejected')">Bị từ chối <span>{{ $moderationCounts['rejected'] }}</span></button>
+                    <button type="button" class="site-cms-seg-btn {{ $listingModeration === 'hidden' ? 'is-active' : '' }}" wire:click="setListingModeration('hidden')">Đã ẩn <span>{{ $moderationCounts['hidden'] }}</span></button>
+                    <button type="button" class="site-cms-seg-btn {{ $listingModeration === 'boosting' ? 'is-active' : '' }}" wire:click="setListingModeration('boosting')">Đang đẩy tin <span>{{ $moderationCounts['boosting'] }}</span></button>
                 </div>
                 <div class="cms-table-wrap cms-scrollbar">
                     <table class="cms-table">
@@ -160,6 +162,8 @@
                                 <th style="width:10%;">Ảnh</th>
                                 <th style="width:38%;">Tin phòng</th>
                                 <th style="width:13%;">Giá</th>
+                                <th style="width:14%;">Đẩy tin</th>
+                                <th style="width:16%;">Thời gian đăng</th>
                                 <th style="width:18%;" class="right">Thao tác</th>
                             </tr>
                         </thead>
@@ -200,6 +204,20 @@
                                         <strong>{{ $listing->price ? number_format((float) $listing->price, 0, ',', '.') : '-' }}</strong>
                                         <span style="color:var(--text-muted);">/tháng</span>
                                     </td>
+                                    <td>
+                                        <select class="cms-select" wire:change="updateListingBoost({{ $listing->id }}, $event.target.value)">
+                                            @foreach($boostPackages as $value => $package)
+                                                <option value="{{ $value }}" @selected(($listing->boost_tier ?: 'normal') === $value)>{{ $package['label'] }}</option>
+                                            @endforeach
+                                        </select>
+                                        @if($listing->boost_expires_at && $listing->boost_expires_at->isFuture())
+                                            <div class="mono" style="font-size:10px;color:var(--text-muted);">Đến {{ $listing->boost_expires_at->format('d/m H:i') }}</div>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        <input class="cms-input mono" type="datetime-local" value="{{ optional($listing->created_at)->format('Y-m-d\TH:i') }}" wire:change="updateListingPublishedAt({{ $listing->id }}, $event.target.value)">
+                                        <div class="mono" style="font-size:10px;color:var(--text-muted);">{{ optional($listing->created_at)->diffForHumans() }}</div>
+                                    </td>
                                     <td class="right">
                                         <div class="cms-row-actions">
                                             <a class="cms-act" href="{{ route('site.listings.show', $listing) }}" target="_blank" title="Xem tin" aria-label="Xem tin"><i class="fa-regular fa-eye"></i></a>
@@ -210,7 +228,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="6" style="height:72px;text-align:center;">Chưa có tin phòng trọ.</td>
+                                    <td colspan="8" style="height:72px;text-align:center;">Chưa có tin phòng trọ.</td>
                                 </tr>
                             @endforelse
                         </tbody>
@@ -236,6 +254,25 @@
                         <input class="cms-input" type="file" wire:model="logoFile" accept="image/*">
                         @error('logoFile') <span class="cms-error">{{ $message }}</span> @enderror
                     </label>
+                    <label class="cms-field">
+                        <span class="cms-label">Ảnh watermark nền trong suốt</span>
+                        <input class="cms-input" type="file" wire:model="watermarkImageFile" accept="image/*">
+                        @error('watermarkImageFile') <span class="cms-error">{{ $message }}</span> @enderror
+                    </label>
+                    <div class="cms-field">
+                        <span class="cms-label">Watermark hiện tại</span>
+                        <div class="site-cms-logo-preview">
+                            @if($watermarkImageFile)
+                                <img src="{{ $watermarkImageFile->temporaryUrl() }}" alt="Watermark preview">
+                            @elseif($watermarkImageUrl)
+                                <img src="{{ $watermarkImageUrl }}" alt="Watermark hiện tại">
+                            @else
+                                <span><i class="fa-regular fa-image"></i></span>
+                            @endif
+                            <strong>Watermark</strong>
+                            <em>Tự chèn vào ảnh tin đăng được upload mới.</em>
+                        </div>
+                    </div>
                     <label class="cms-field">
                         <span class="cms-label">Số điện thoại liên hệ</span>
                         <input class="cms-input mono" wire:model="contactPhone" placeholder="VD: 0981847977">
@@ -356,6 +393,7 @@
                                 <th>Tài khoản</th>
                                 <th style="width:160px;">Số điện thoại</th>
                                 <th style="width:150px;">Vai trò</th>
+                                <th style="width:180px;">Gói đăng tin</th>
                                 <th style="width:130px;">Ngày tạo</th>
                                 <th style="width:100px;" class="right">Thao tác</th>
                             </tr>
@@ -373,6 +411,12 @@
                                             {{ $roleOptions[$account->role] ?? ($account->role ?: '-') }}
                                         </span>
                                     </td>
+                                    <td>
+                                        <div style="font-weight:800;color:var(--text-primary);">{{ $postingPlans[$account->posting_plan ?: 'free'] ?? $postingPlans['free'] }}</div>
+                                        @if($account->posting_plan_expires_at)
+                                            <div class="mono" style="font-size:11px;color:var(--text-muted);">Hết hạn {{ $account->posting_plan_expires_at->format('d/m/Y') }}</div>
+                                        @endif
+                                    </td>
                                     <td class="mono" style="font-size:11px;">{{ optional($account->created_at)->format('d/m/Y') ?: '-' }}</td>
                                     <td class="right">
                                         <div class="cms-row-actions">
@@ -385,7 +429,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="5" style="height:72px;text-align:center;">Chưa có tài khoản.</td>
+                                    <td colspan="6" style="height:72px;text-align:center;">Chưa có tài khoản.</td>
                                 </tr>
                             @endforelse
                         </tbody>
@@ -517,8 +561,54 @@
                     </label>
                     <label class="cms-field">
                         <span class="cms-label">Giá phòng</span>
-                        <input class="cms-input" wire:model="listingPrice" placeholder="3200000 hoặc 3.200.000">
+                        <input class="cms-input" type="number" min="0" step="1" wire:model="listingPrice" placeholder="3200000">
                         @error('listingPrice') <span class="cms-error">{{ $message }}</span> @enderror
+                    </label>
+                    <label class="cms-field">
+                        <span class="cms-label">Loại tin</span>
+                        <select class="cms-select" wire:model.live="listingPropertyType">
+                            @foreach($listingPropertyTypes as $value => $label)
+                                <option value="{{ $value }}">{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </label>
+                    @if((int) $listingPropertyType === 103)
+                        <label class="cms-field">
+                            <span class="cms-label">Tên chung cư</span>
+                            <input class="cms-input" wire:model="listingApartmentName">
+                        </label>
+                        <label class="cms-field">
+                            <span class="cms-label">Tên block</span>
+                            <input class="cms-input" wire:model="listingApartmentBlock">
+                        </label>
+                    @endif
+                    @if((int) $listingPropertyType === 108)
+                        <label class="cms-field">
+                            <span class="cms-label">Số tầng</span>
+                            <input class="cms-input" type="number" min="0" step="1" wire:model="listingFloors">
+                        </label>
+                    @endif
+                    @if(in_array((int) $listingPropertyType, [103, 108], true))
+                        <label class="cms-field">
+                            <span class="cms-label">Diện tích (m2)</span>
+                            <input class="cms-input" type="number" min="0" step="0.1" wire:model="listingArea">
+                        </label>
+                        <label class="cms-field">
+                            <span class="cms-label">Số tháng cọc</span>
+                            <input class="cms-input" type="number" min="0" step="1" wire:model="listingDepositMonths">
+                        </label>
+                    @endif
+                    <label class="cms-field">
+                        <span class="cms-label">Đẩy tin</span>
+                        <select class="cms-select" wire:model="listingBoostTier">
+                            @foreach($boostPackages as $value => $package)
+                                <option value="{{ $value }}">{{ $package['label'] }}</option>
+                            @endforeach
+                        </select>
+                    </label>
+                    <label class="cms-field">
+                        <span class="cms-label">Thời gian đăng</span>
+                        <input class="cms-input mono" type="datetime-local" wire:model="listingPublishedAt">
                     </label>
                     <label class="cms-field">
                         <span class="cms-label">Dạng phòng</span>
@@ -546,19 +636,23 @@
                     </label>
                     <label class="cms-field">
                         <span class="cms-label">Tiền điện</span>
-                        <input class="cms-input" wire:model="listingElectricity" placeholder="VD: 3.500đ/kWh hoặc để trống">
+                        <input class="cms-input" type="number" min="0" step="1" wire:model="listingElectricity" placeholder="VD: 3500">
                     </label>
                     <label class="cms-field">
                         <span class="cms-label">Tiền nước</span>
-                        <input class="cms-input" wire:model="listingWater" placeholder="VD: 100k/người">
+                        <input class="cms-input" type="number" min="0" step="1" wire:model="listingWater" placeholder="VD: 100000">
                     </label>
                     <label class="cms-field">
                         <span class="cms-label">Phí giữ xe</span>
-                        <input class="cms-input" wire:model="listingParkingFee" placeholder="VD: 150k/xe/tháng">
+                        <input class="cms-input" type="number" min="0" step="1" wire:model="listingParkingFee" placeholder="VD: 150000">
                     </label>
                     <label class="cms-field">
                         <span class="cms-label">Giờ giấc</span>
-                        <input class="cms-input" wire:model="listingAccessHours" placeholder="VD: Tự do / Đóng cửa 23h">
+                        <select class="cms-select" wire:model="listingAccessHours">
+                            @foreach($accessHourOptions as $value => $label)
+                                <option value="{{ $value }}">{{ $label }}</option>
+                            @endforeach
+                        </select>
                     </label>
                     <label class="cms-field">
                         <span class="cms-label">Cửa sổ</span>
@@ -743,6 +837,20 @@
                             @endforeach
                         </select>
                         @error('accountRole') <span class="cms-error">{{ $message }}</span> @enderror
+                    </label>
+                    <label class="cms-field">
+                        <span class="cms-label">Gói đăng tin</span>
+                        <select class="cms-select" wire:model="accountPostingPlan">
+                            @foreach($postingPlans as $value => $label)
+                                <option value="{{ $value }}">{{ $label }}</option>
+                            @endforeach
+                        </select>
+                        @error('accountPostingPlan') <span class="cms-error">{{ $message }}</span> @enderror
+                    </label>
+                    <label class="cms-field">
+                        <span class="cms-label">Hết hạn gói</span>
+                        <input class="cms-input mono" type="date" wire:model="accountPostingPlanExpiresAt">
+                        @error('accountPostingPlanExpiresAt') <span class="cms-error">{{ $message }}</span> @enderror
                     </label>
                     <label class="cms-field full">
                         <span class="cms-label">Mật khẩu {{ $accountEditingId ? '(để trống nếu không đổi)' : '' }}</span>

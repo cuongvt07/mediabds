@@ -157,6 +157,8 @@ class User extends Authenticatable
         'invite_code',
         'invited_by_user_id',
         'view_phone_pin',
+        'posting_plan',
+        'posting_plan_expires_at',
     ];
 
     /**
@@ -219,6 +221,33 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'property_types' => 'array',
+            'posting_plan_expires_at' => 'datetime',
         ];
+    }
+
+    public function postingLimitPerDay(): int
+    {
+        if ($this->posting_plan_expires_at && $this->posting_plan_expires_at->isPast()) {
+            return 10;
+        }
+
+        return match ($this->posting_plan ?: 'free') {
+            'daily_20' => 20,
+            'daily_40' => 40,
+            default => 10,
+        };
+    }
+
+    public function postingPlanLabel(): string
+    {
+        if ($this->posting_plan_expires_at && $this->posting_plan_expires_at->isPast()) {
+            return 'Free - 10 tin/ngày';
+        }
+
+        return match ($this->posting_plan ?: 'free') {
+            'daily_20' => 'Gói 20 tin/ngày - 399k/tháng',
+            'daily_40' => 'Gói 40 tin/ngày - 599k/tháng',
+            default => 'Free - 10 tin/ngày',
+        };
     }
 }

@@ -191,7 +191,7 @@
                     <input type="text" name="name" value="{{ old('name') }}" placeholder="VD: Nguyễn Văn A">
                 </label>
                 <label class="site-auth-field"><span>Số điện thoại</span>
-                    <input type="text" name="phone" value="{{ old('phone') }}" placeholder="098...">
+                    <input type="text" inputmode="tel" name="phone" value="{{ old('phone') }}" placeholder="098...">
                 </label>
                 <label class="site-auth-field"><span>Mật khẩu</span>
                     <input type="password" name="password" placeholder="Tối thiểu 6 ký tự">

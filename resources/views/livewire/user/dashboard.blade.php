@@ -2,6 +2,10 @@
     @php
         $imageUrl = fn ($path) => $path ? (str_starts_with((string) $path, 'http') ? $path : asset('storage/' . ltrim((string) $path, '/'))) : 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=600&q=70';
         $initial = mb_strtoupper(mb_substr($user->name ?: 'U', 0, 1));
+        $effectivePlan = $user->posting_plan_expires_at && $user->posting_plan_expires_at->isPast() ? 'free' : ($user->posting_plan ?: 'free');
+        $salesPhone = $siteContact['phone'] ?? '';
+        $salesHref = ($siteContact['zaloHref'])($salesPhone) ?: ($salesPhone ? 'tel:' . preg_replace('/\D+/', '', $salesPhone) : route('site.home') . '#lien-he');
+        $salesTarget = str_starts_with($salesHref, 'http') ? '_blank' : null;
     @endphp
 
     <div class="site-shell user-grid">
@@ -23,6 +27,8 @@
             <div class="user-profile-meta">
                 <div><span>Ngày tham gia</span><strong>{{ optional($user->created_at)->format('d/m/Y') ?: '-' }}</strong></div>
                 <div><span>Email</span><strong>{{ $user->email ?: 'Chưa có' }}</strong></div>
+                <div><span>Gói đăng tin</span><strong>{{ $user->postingPlanLabel() }}</strong></div>
+                <div><span>Giới hạn/ngày</span><strong>{{ $user->postingLimitPerDay() }} tin</strong></div>
             </div>
         </aside>
 
@@ -37,10 +43,39 @@
                 <div class="user-flash">{{ session('message') }}</div>
             @endif
 
+            <section class="user-plan-box">
+                <div class="user-plan-head">
+                    <div><small>Gói đăng tin</small><h2>Chọn số lượng tin phù hợp</h2></div>
+                    @if($user->posting_plan_expires_at && $user->posting_plan_expires_at->isFuture())
+                        <span>Hết hạn {{ $user->posting_plan_expires_at->format('d/m/Y') }}</span>
+                    @endif
+                </div>
+                <div class="user-plan-grid">
+                    @foreach($postingPlans as $planKey => $package)
+                        @php $isCurrent = $effectivePlan === $planKey; @endphp
+                        <article class="user-plan-card {{ $isCurrent ? 'is-current' : '' }}">
+                            <strong>{{ $package['name'] }}</strong>
+                            <div><b>{{ $package['limit'] }}</b> tin/ngày</div>
+                            <p>{{ $package['price'] ? number_format($package['price'], 0, ',', '.') . 'đ / tháng' : 'Miễn phí' }}</p>
+                            @if($planKey === 'free')
+                                <span class="user-plan-state">{{ $isCurrent ? 'Gói hiện tại' : 'Gói mặc định' }}</span>
+                            @else
+                                @if($isCurrent)<span class="user-plan-state">Đang sử dụng</span>@endif
+                                <a class="user-plan-buy" href="{{ $salesHref }}" @if($salesTarget) target="{{ $salesTarget }}" rel="noopener" @endif>{{ $isCurrent ? 'Liên hệ gia hạn' : 'Liên hệ mua gói' }}</a>
+                            @endif
+                        </article>
+                    @endforeach
+                </div>
+                <p class="user-plan-contact">Chưa hỗ trợ thanh toán trực tuyến. Bấm liên hệ để được admin kích hoạt gói@if($salesPhone) · SĐT {{ $salesPhone }}@endif.</p>
+            </section>
+
             <div class="user-tabs">
                 <button type="button" class="{{ $tab === 'all' ? 'is-active' : '' }}" wire:click="setTab('all')">Tất cả <span>{{ $counts['all'] }}</span></button>
+                <button type="button" class="{{ $tab === 'pending' ? 'is-active' : '' }}" wire:click="setTab('pending')">Đang chờ <span>{{ $counts['pending'] }}</span></button>
                 <button type="button" class="{{ $tab === 'active' ? 'is-active' : '' }}" wire:click="setTab('active')">Đang hiện <span>{{ $counts['active'] }}</span></button>
+                <button type="button" class="{{ $tab === 'rejected' ? 'is-active' : '' }}" wire:click="setTab('rejected')">Bị từ chối <span>{{ $counts['rejected'] }}</span></button>
                 <button type="button" class="{{ $tab === 'hidden' ? 'is-active' : '' }}" wire:click="setTab('hidden')">Đã ẩn <span>{{ $counts['hidden'] }}</span></button>
+                <button type="button" class="{{ $tab === 'boosting' ? 'is-active' : '' }}" wire:click="setTab('boosting')">Đang đẩy tin <span>{{ $counts['boosting'] }}</span></button>
             </div>
 
             <div class="user-filters">
@@ -83,6 +118,9 @@
                             </div>
                             <div class="user-listing-actions">
                                 <a href="{{ route('user.listing.edit', $listing) }}">Sửa</a>
+                                @if(!$listing->is_sold && ($listing->moderation_status ?: 'approved') === 'approved' && (!$listing->status || $listing->status === 'active'))
+                                    <a class="boost" href="{{ $salesHref }}" @if($salesTarget) target="{{ $salesTarget }}" rel="noopener" @endif title="Mức 1: 10k/1 ngày · Mức 2: 20k/3 ngày · Mức 3: 50k/7 ngày">🔥 Liên hệ đẩy tin</a>
+                                @endif
                                 <button type="button" wire:click="toggleListing({{ $listing->id }})">{{ $listing->is_sold ? 'Hiện lại' : 'Ẩn tin' }}</button>
                                 <button type="button" class="danger" wire:click="deleteListing({{ $listing->id }})" wire:confirm="Xóa tin đăng này?">Xóa</button>
                             </div>
@@ -99,4 +137,5 @@
             <div class="user-pagination">{{ $listings->links() }}</div>
         </section>
     </div>
+
 </div>

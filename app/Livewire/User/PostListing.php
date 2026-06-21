@@ -5,6 +5,7 @@ namespace App\Livewire\User;
 use App\Livewire\RealEstateListing as RealEstateLivewire;
 use App\Models\RealEstateListing as ListingModel;
 use App\Models\SiteAmenity;
+use App\Services\ListingImageService;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Component;
@@ -29,6 +30,18 @@ class PostListing extends Component
 
     public const CONDITION_OPTIONS = ['' => 'Liên hệ', 'Có' => 'Có', 'Không' => 'Không'];
 
+    public const ACCESS_HOUR_OPTIONS = [
+        '' => 'Liên hệ',
+        'Tự do' => 'Tự do',
+        'Giới hạn' => 'Giới hạn',
+    ];
+
+    public const PROPERTY_TYPES = [
+        115 => 'Phòng trọ',
+        108 => 'Nhà nguyên căn',
+        103 => 'Chung cư',
+    ];
+
     public const PROVINCES = RealEstateLivewire::PROVINCES;
 
     public $editingId = null;
@@ -38,8 +51,14 @@ class PostListing extends Component
     public $districtId = '';
     public $wardId = '';
     public $price = '';
+    public $propertyType = 115;
     public $roomType = 'studio';
     public $furnish = 'basic';
+    public $area = '';
+    public $floors = '';
+    public $depositMonths = '';
+    public $apartmentName = '';
+    public $apartmentBlock = '';
     public $bedrooms = '';
     public $toilets = '';
     public $electricity = '';
@@ -80,8 +99,14 @@ class PostListing extends Component
             $this->loadWards($this->districtId);
             $this->wardId = (string) ($model->ward_id ?: '');
             $this->price = $model->price ? rtrim(rtrim((string) $model->price, '0'), '.') : '';
+            $this->propertyType = (int) ($model->property_type ?: 115);
             $this->roomType = $model->room_type ?: 'studio';
             $this->furnish = $model->furnish ?: 'basic';
+            $this->area = $model->area ? rtrim(rtrim((string) $model->area, '0'), '.') : '';
+            $this->floors = $model->floors ?: '';
+            $this->depositMonths = $model->deposit_months ?: '';
+            $this->apartmentName = $model->apartment_name ?: '';
+            $this->apartmentBlock = $model->apartment_block ?: '';
             $this->bedrooms = $model->bedrooms ?: '';
             $this->toilets = $model->toilets ?: '';
             $this->electricity = $model->electricity_price ?: '';
@@ -135,21 +160,32 @@ class PostListing extends Component
 
     public function save()
     {
+        if (! $this->editingId && ! $this->canPostToday()) {
+            $this->addError('title', 'Tài khoản của bạn đã hết lượt đăng tin hôm nay. Vui lòng mua gói cao hơn hoặc quay lại ngày mai.');
+            return;
+        }
+
         $data = $this->validate([
             'title' => 'required|string|max:180',
             'contactPhone' => 'required|string|max:60',
             'provinceId' => 'required|string',
             'districtId' => 'required|string',
             'wardId' => 'required|string',
-            'price' => 'required',
+            'price' => 'required|regex:/^[0-9]+([,.][0-9]+)?$/',
+            'propertyType' => 'required|in:115,108,103',
             'roomType' => 'required|in:duplex,studio,loft,balcony',
             'furnish' => 'nullable|in:full,basic,empty',
+            'area' => 'nullable|numeric|min:0|max:100000',
+            'floors' => 'nullable|integer|min:0|max:100',
+            'depositMonths' => 'nullable|integer|min:0|max:36',
+            'apartmentName' => 'nullable|string|max:160',
+            'apartmentBlock' => 'nullable|string|max:80',
             'bedrooms' => 'nullable|integer|min:0|max:20',
             'toilets' => 'nullable|integer|min:0|max:20',
-            'electricity' => 'nullable|string|max:80',
-            'water' => 'nullable|string|max:80',
-            'parkingFee' => 'nullable|string|max:80',
-            'accessHours' => 'nullable|string|max:80',
+            'electricity' => 'nullable|numeric|min:0|max:10000000',
+            'water' => 'nullable|numeric|min:0|max:10000000',
+            'parkingFee' => 'nullable|numeric|min:0|max:10000000',
+            'accessHours' => 'nullable|in:,Tự do,Giới hạn',
             'window' => 'nullable|in:,Có,Không',
             'pets' => 'nullable|in:,Có,Không',
             'parking' => 'nullable|in:,Có,Không',
@@ -166,11 +202,11 @@ class PostListing extends Component
 
         $avatar = $this->avatar ?: null;
         if ($this->avatarFile) {
-            $avatar = Storage::disk('public')->url($this->avatarFile->store('site/listings', 'public'));
+            $avatar = app(ListingImageService::class)->storeWithWatermark($this->avatarFile);
         }
 
         foreach ($this->imageFiles as $file) {
-            $this->images[] = Storage::disk('public')->url($file->store('site/listings', 'public'));
+            $this->images[] = app(ListingImageService::class)->storeWithWatermark($file);
         }
         $this->images = array_values(array_filter($this->images));
 
@@ -182,48 +218,56 @@ class PostListing extends Component
             ? ListingModel::withTrashed()->whereKey($this->editingId)->value('code')
             : $this->generateCode();
 
-        ListingModel::updateOrCreate(
-            ['id' => $this->editingId],
-            [
-                'title' => $data['title'],
-                'type' => 'Cho thuê',
-                'code' => $code ?: $this->generateCode(),
-                'contact_phone' => $data['contactPhone'],
-                'is_sold' => false,
-                'status' => 'active',
-                'moderation_status' => 'pending',
-                'rejection_reason' => null,
-                'property_type' => 115,
-                'room_type' => $data['roomType'],
-                'furnish' => $data['furnish'] ?: null,
-                'amenities' => array_values($data['amenities'] ?? []),
-                'province_id' => $data['provinceId'],
-                'province_name' => self::PROVINCES[$data['provinceId']] ?? null,
-                'district_id' => $data['districtId'],
-                'district_name' => $this->districts[$data['districtId']] ?? null,
-                'ward_id' => $data['wardId'],
-                'ward_name' => $this->wards[$data['wardId']] ?? null,
-                'price' => $this->normalizeCurrency($data['price']),
-                'price_unit' => '2',
-                'bedrooms' => $data['bedrooms'] ?: null,
-                'toilets' => $data['toilets'] ?: null,
-                'electricity_price' => $data['electricity'] ?: null,
-                'water_price' => $data['water'] ?: null,
-                'parking_fee' => $data['parkingFee'] ?: null,
-                'access_hours' => $data['accessHours'] ?: null,
-                'has_window' => $data['window'] ?: null,
-                'pets_allowed' => $data['pets'] ?: null,
-                'parking_available' => $data['parking'] ?: null,
-                'youtube_link' => $data['youtubeLink'] ?: null,
-                'facebook_link' => $data['facebookLink'] ?: null,
-                'tiktok_link' => $data['tiktokLink'] ?: null,
-                'google_map_link' => $data['googleMapLink'] ?: null,
-                'description' => $data['description'] ?: null,
-                'images' => $this->images,
-                'avatar' => $avatar,
-                'user_id' => auth()->id(),
-            ]
-        );
+        $listingData = [
+            'title' => $data['title'],
+            'type' => 'Cho thuê',
+            'code' => $code ?: $this->generateCode(),
+            'contact_phone' => $data['contactPhone'],
+            'is_sold' => false,
+            'status' => 'active',
+            'moderation_status' => 'pending',
+            'rejection_reason' => null,
+            'property_type' => (int) $data['propertyType'],
+            'apartment_name' => $data['apartmentName'] ?: null,
+            'apartment_block' => $data['apartmentBlock'] ?: null,
+            'room_type' => $data['roomType'],
+            'furnish' => $data['furnish'] ?: null,
+            'amenities' => array_values($data['amenities'] ?? []),
+            'province_id' => $data['provinceId'],
+            'province_name' => self::PROVINCES[$data['provinceId']] ?? null,
+            'district_id' => $data['districtId'],
+            'district_name' => $this->districts[$data['districtId']] ?? null,
+            'ward_id' => $data['wardId'],
+            'ward_name' => $this->wards[$data['wardId']] ?? null,
+            'price' => $this->normalizeCurrency($data['price']),
+            'price_unit' => '2',
+            'area' => $data['area'] ?: null,
+            'floors' => $data['floors'] ?: null,
+            'deposit_months' => $data['depositMonths'] ?: null,
+            'bedrooms' => $data['bedrooms'] ?: null,
+            'toilets' => $data['toilets'] ?: null,
+            'electricity_price' => $data['electricity'] ?: null,
+            'water_price' => $data['water'] ?: null,
+            'parking_fee' => $data['parkingFee'] ?: null,
+            'access_hours' => $data['accessHours'] ?: null,
+            'has_window' => $data['window'] ?: null,
+            'pets_allowed' => $data['pets'] ?: null,
+            'parking_available' => $data['parking'] ?: null,
+            'youtube_link' => $data['youtubeLink'] ?: null,
+            'facebook_link' => $data['facebookLink'] ?: null,
+            'tiktok_link' => $data['tiktokLink'] ?: null,
+            'google_map_link' => $data['googleMapLink'] ?: null,
+            'description' => $data['description'] ?: null,
+            'images' => $this->images,
+            'avatar' => $avatar,
+            'user_id' => auth()->id(),
+        ];
+
+        if (! $this->editingId) {
+            $listingData['published_at'] = now();
+        }
+
+        ListingModel::updateOrCreate(['id' => $this->editingId], $listingData);
 
         session()->flash('message', $this->editingId
             ? 'Đã cập nhật tin — tin sẽ chờ duyệt lại trước khi hiển thị.'
@@ -238,6 +282,8 @@ class PostListing extends Component
             'roomTypes' => self::ROOM_TYPES,
             'furnishTypes' => self::FURNISH_TYPES,
             'conditionOptions' => self::CONDITION_OPTIONS,
+            'accessHourOptions' => self::ACCESS_HOUR_OPTIONS,
+            'propertyTypes' => self::PROPERTY_TYPES,
             'provinces' => self::PROVINCES,
             'amenityItems' => SiteAmenity::query()->active()->ordered()->get(),
         ])->layout('site.layout');
@@ -301,5 +347,20 @@ class PostListing extends Component
         $clean = str_replace(['.', ' '], '', (string) $value);
         $clean = str_replace(',', '.', $clean);
         return (float) $clean;
+    }
+
+    private function canPostToday(): bool
+    {
+        $user = auth()->user();
+        if (! $user) {
+            return false;
+        }
+
+        $postedToday = ListingModel::withTrashed()
+            ->where('user_id', $user->id)
+            ->whereDate('created_at', now()->toDateString())
+            ->count();
+
+        return $postedToday < $user->postingLimitPerDay();
     }
 }

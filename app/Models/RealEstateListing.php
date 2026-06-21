@@ -24,7 +24,17 @@ class RealEstateListing extends Model
         'view_count' => 'integer',
         'published_at' => 'datetime',
         'expires_at' => 'datetime',
+        'deposit_months' => 'integer',
+        'boost_started_at' => 'datetime',
+        'boost_expires_at' => 'datetime',
     ];
+
+    public function isBoosted(): bool
+    {
+        return $this->boost_tier !== 'normal'
+            && $this->boost_expires_at
+            && $this->boost_expires_at->isFuture();
+    }
 
     public function sale(): HasOne
     {

@@ -83,8 +83,19 @@
                     <section class="site-detail-box">
                         <h2>Thông tin chi tiết <span>{{ $roomLabels[$listing->room_type] ?? 'Phòng trọ' }}</span></h2>
                         <div class="site-detail-info-grid">
+                            @if((int) $listing->property_type === 103)
+                                <div>Tên chung cư: <strong>{{ $listing->apartment_name ?: 'Liên hệ' }}</strong></div>
+                                <div>Block: <strong>{{ $listing->apartment_block ?: 'Liên hệ' }}</strong></div>
+                            @endif
+                            @if(in_array((int) $listing->property_type, [103, 108], true))
+                                <div>Diện tích: <strong>{{ $listing->area ? rtrim(rtrim((string) $listing->area, '0'), '.') . ' m2' : 'Liên hệ' }}</strong></div>
+                                <div>Số tháng cọc: <strong>{{ $listing->deposit_months ?: 'Liên hệ' }}</strong></div>
+                            @endif
+                            @if((int) $listing->property_type === 108)
+                                <div>Số tầng: <strong>{{ $listing->floors ?: 'Liên hệ' }}</strong></div>
+                            @endif
                             <div>Toilet: <strong>{{ $listing->toilets ?: 'Liên hệ' }}</strong></div>
-                            <div>Giờ giấc: <strong>{{ $listing->access_hours ?: 'Tự do' }}</strong></div>
+                            <div>Giờ giấc: <strong>{{ $listing->access_hours ?: 'Liên hệ' }}</strong></div>
                             <div>Cửa sổ: <strong>{{ $listing->has_window ?: 'Liên hệ' }}</strong></div>
                             <div>Thú cưng: <strong>{{ $listing->pets_allowed ?: 'Liên hệ' }}</strong></div>
                             <div>Để xe: <strong>{{ $listing->parking_available ?: 'Liên hệ' }}</strong></div>

@@ -29,7 +29,7 @@ class Login extends Component
         if ($this->isRegistering) {
             return [
                 'registerName' => 'required|string|min:2|max:255',
-                'registerPhone' => ['required', 'regex:/^(0[3|5|7|8|9])+([0-9]{8})$/', 'unique:users,phone'],
+                'registerPhone' => ['required', 'regex:/^0\d{9}$/', 'unique:users,phone'],
                 'registerInviteCode' => 'required|exists:users,invite_code',
             ];
         }

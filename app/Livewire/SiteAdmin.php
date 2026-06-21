@@ -7,6 +7,7 @@ use App\Models\SiteBanner;
 use App\Models\SiteAmenity;
 use App\Models\SiteSetting;
 use App\Models\User;
+use App\Services\ListingImageService;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
@@ -50,6 +51,31 @@ class SiteAdmin extends Component
         'fridge' => 'Tủ lạnh',
     ];
 
+    public const ACCESS_HOUR_OPTIONS = [
+        '' => 'Liên hệ',
+        'Tự do' => 'Tự do',
+        'Giới hạn' => 'Giới hạn',
+    ];
+
+    public const LISTING_PROPERTY_TYPES = [
+        115 => 'Phòng trọ',
+        108 => 'Nhà nguyên căn',
+        103 => 'Chung cư',
+    ];
+
+    public const BOOST_PACKAGES = [
+        'normal' => ['label' => 'Không đẩy tin', 'days' => 0],
+        'boost_1' => ['label' => 'Mức 1 - 10k / 1 ngày', 'days' => 1],
+        'boost_2' => ['label' => 'Mức 2 - 20k / 3 ngày', 'days' => 3],
+        'boost_3' => ['label' => 'Mức 3 - 50k / 1 tuần', 'days' => 7],
+    ];
+
+    public const POSTING_PLANS = [
+        'free' => 'Free - 10 tin/ngày',
+        'daily_20' => 'Gói 20 tin/ngày - 399k/tháng',
+        'daily_40' => 'Gói 40 tin/ngày - 599k/tháng',
+    ];
+
     public $activeTab = 'dashboard';
 
     public $showBannerModal = false;
@@ -73,9 +99,17 @@ class SiteAdmin extends Component
     public $listingDistrictId = '';
     public $listingWardId = '';
     public $listingPrice = '';
+    public $listingPropertyType = 115;
     public $listingRoomType = 'studio';
     public $listingFurnish = 'basic';
     public $listingAmenities = [];
+    public $listingArea = '';
+    public $listingFloors = '';
+    public $listingDepositMonths = '';
+    public $listingApartmentName = '';
+    public $listingApartmentBlock = '';
+    public $listingBoostTier = 'normal';
+    public $listingPublishedAt = '';
     public $listingBedrooms = '';
     public $listingToilets = '';
     public $listingElectricity = '';
@@ -127,6 +161,8 @@ class SiteAdmin extends Component
     public $accountPhone = '';
     public $accountRole = 'ctv';
     public $accountPassword = '';
+    public $accountPostingPlan = 'free';
+    public $accountPostingPlanExpiresAt = '';
 
     public $showAmenityModal = false;
     public $amenityEditingId = null;
@@ -147,6 +183,8 @@ class SiteAdmin extends Component
     public $contactEmail = '';
     public $contactFacebook = '';
     public $contactPosition = 'right';
+    public $watermarkImageUrl = '';
+    public $watermarkImageFile;
 
     protected $queryString = [
         'activeTab' => ['except' => 'dashboard', 'as' => 'tab'],
@@ -164,6 +202,7 @@ class SiteAdmin extends Component
         $this->contactEmail = SiteSetting::query()->whereKey('contact_email')->value('value') ?: '';
         $this->contactFacebook = SiteSetting::query()->whereKey('contact_facebook')->value('value') ?: '';
         $this->contactPosition = SiteSetting::query()->whereKey('contact_position')->value('value') ?: 'right';
+        $this->watermarkImageUrl = SiteSetting::query()->whereKey('watermark_image_url')->value('value') ?: '';
         $this->loadDistricts($this->listingProvinceId);
     }
 
@@ -197,13 +236,19 @@ class SiteAdmin extends Component
             'moderationCounts' => [
                 'all' => $this->publicRoomQuery()->count(),
                 'pending' => $this->publicRoomQuery()->where('moderation_status', 'pending')->count(),
-                'approved' => $this->publicRoomQuery()->where('moderation_status', 'approved')->count(),
+                'active' => $this->publicRoomQuery()->where('is_sold', false)->where(function ($q) { $q->whereNull('status')->orWhere('status', 'active'); })->where('moderation_status', 'approved')->count(),
                 'rejected' => $this->publicRoomQuery()->where('moderation_status', 'rejected')->count(),
+                'hidden' => $this->publicRoomQuery()->where(function ($q) { $q->where('is_sold', true)->orWhere('status', 'inactive'); })->count(),
+                'boosting' => $this->publicRoomQuery()->where('boost_tier', '<>', 'normal')->where('boost_expires_at', '>', now())->count(),
             ],
             'moderationOptions' => self::MODERATION,
             'roomTypes' => self::ROOM_TYPES,
             'furnishTypes' => self::FURNISH_TYPES,
             'conditionOptions' => self::CONDITION_OPTIONS,
+            'accessHourOptions' => self::ACCESS_HOUR_OPTIONS,
+            'listingPropertyTypes' => self::LISTING_PROPERTY_TYPES,
+            'boostPackages' => self::BOOST_PACKAGES,
+            'postingPlans' => self::POSTING_PLANS,
             'amenityOptions' => SiteAmenity::query()->active()->ordered()->pluck('name', 'key')->all(),
             'provinces' => self::PROVINCES,
             'roleOptions' => self::ROLE_OPTIONS,
@@ -237,7 +282,7 @@ class SiteAdmin extends Component
 
     public function setListingModeration(string $m): void
     {
-        if (in_array($m, ['all', 'pending', 'approved', 'rejected'], true)) {
+        if (in_array($m, ['all', 'pending', 'active', 'rejected', 'hidden', 'boosting'], true)) {
             $this->listingModeration = $m;
             $this->activeTab = 'listings';
             $this->resetPage('listingPage');
@@ -334,9 +379,17 @@ class SiteAdmin extends Component
         $this->loadWards($this->listingDistrictId);
         $this->listingWardId = (string) ($listing->ward_id ?: '');
         $this->listingPrice = $listing->price ? rtrim(rtrim((string) $listing->price, '0'), '.') : '';
+        $this->listingPropertyType = (int) ($listing->property_type ?: 115);
         $this->listingRoomType = $listing->room_type ?: 'studio';
         $this->listingFurnish = $listing->furnish ?: 'basic';
         $this->listingAmenities = array_values($listing->amenities ?: []);
+        $this->listingArea = $listing->area ? rtrim(rtrim((string) $listing->area, '0'), '.') : '';
+        $this->listingFloors = $listing->floors ?: '';
+        $this->listingDepositMonths = $listing->deposit_months ?: '';
+        $this->listingApartmentName = $listing->apartment_name ?: '';
+        $this->listingApartmentBlock = $listing->apartment_block ?: '';
+        $this->listingBoostTier = $listing->boost_tier ?: 'normal';
+        $this->listingPublishedAt = optional($listing->created_at)->format('Y-m-d\TH:i') ?: '';
         $this->listingBedrooms = $listing->bedrooms ?: '';
         $this->listingToilets = $listing->toilets ?: '';
         $this->listingElectricity = $listing->electricity_price ?: '';
@@ -375,17 +428,25 @@ class SiteAdmin extends Component
             'listingProvinceId' => 'required|string',
             'listingDistrictId' => 'required|string',
             'listingWardId' => 'required|string',
-            'listingPrice' => 'required',
+            'listingPrice' => 'required|regex:/^[0-9]+([,.][0-9]+)?$/',
+            'listingPropertyType' => 'required|in:115,108,103',
             'listingRoomType' => 'required|in:duplex,studio,loft,balcony',
             'listingFurnish' => 'nullable|in:full,basic,empty',
             'listingAmenities' => 'array',
             'listingAmenities.*' => 'in:' . implode(',', SiteAmenity::query()->pluck('key')->all() ?: ['_none']),
+            'listingArea' => 'nullable|numeric|min:0|max:100000',
+            'listingFloors' => 'nullable|integer|min:0|max:100',
+            'listingDepositMonths' => 'nullable|integer|min:0|max:36',
+            'listingApartmentName' => 'nullable|string|max:160',
+            'listingApartmentBlock' => 'nullable|string|max:80',
+            'listingBoostTier' => 'required|in:' . implode(',', array_keys(self::BOOST_PACKAGES)),
+            'listingPublishedAt' => 'nullable|date',
             'listingBedrooms' => 'nullable|integer|min:0|max:20',
             'listingToilets' => 'nullable|integer|min:0|max:20',
-            'listingElectricity' => 'nullable|string|max:80',
-            'listingWater' => 'nullable|string|max:80',
-            'listingParkingFee' => 'nullable|string|max:80',
-            'listingAccessHours' => 'nullable|string|max:80',
+            'listingElectricity' => 'nullable|numeric|min:0|max:10000000',
+            'listingWater' => 'nullable|numeric|min:0|max:10000000',
+            'listingParkingFee' => 'nullable|numeric|min:0|max:10000000',
+            'listingAccessHours' => 'nullable|in:,Tự do,Giới hạn',
             'listingWindow' => 'nullable|in:,Có,Không',
             'listingPets' => 'nullable|in:,Có,Không',
             'listingParking' => 'nullable|in:,Có,Không',
@@ -404,12 +465,12 @@ class SiteAdmin extends Component
         // Ảnh chính (avatar)
         $avatar = $this->listingAvatar ?: null;
         if ($this->listingAvatarFile) {
-            $avatar = Storage::disk('public')->url($this->listingAvatarFile->store('site/listings', 'public'));
+            $avatar = app(ListingImageService::class)->storeWithWatermark($this->listingAvatarFile);
         }
 
         // Ảnh slider
         foreach ($this->listingImageFiles as $file) {
-            $this->listingImages[] = Storage::disk('public')->url($file->store('site/listings', 'public'));
+            $this->listingImages[] = app(ListingImageService::class)->storeWithWatermark($file);
         }
         $this->listingImages = array_values(array_filter($this->listingImages));
 
@@ -434,6 +495,8 @@ class SiteAdmin extends Component
             $code = $this->generateListingCode();
         }
 
+        $boost = $this->boostPayload($data['listingBoostTier'], $this->listingEditingId);
+
         ListingModel::updateOrCreate(
             ['id' => $this->listingEditingId],
             [
@@ -446,7 +509,9 @@ class SiteAdmin extends Component
                 'status' => (bool) $data['listingIsSold'] ? 'inactive' : 'active',
                 'moderation_status' => 'approved',
                 'rejection_reason' => null,
-                'property_type' => 115,
+                'property_type' => (int) $data['listingPropertyType'],
+                'apartment_name' => $data['listingApartmentName'] ?: null,
+                'apartment_block' => $data['listingApartmentBlock'] ?: null,
                 'room_type' => $data['listingRoomType'],
                 'furnish' => $data['listingFurnish'] ?: null,
                 'amenities' => array_values($data['listingAmenities'] ?? []),
@@ -457,10 +522,16 @@ class SiteAdmin extends Component
                 'ward_id' => $data['listingWardId'],
                 'ward_name' => $this->wards[$data['listingWardId']] ?? null,
                 'address' => null,
-                'area' => null,
+                'area' => $data['listingArea'] ?: null,
                 'price' => $this->normalizeCurrency($data['listingPrice']),
                 'price_unit' => '2',
-                'floors' => null,
+                'floors' => $data['listingFloors'] ?: null,
+                'deposit_months' => $data['listingDepositMonths'] ?: null,
+                'boost_tier' => $boost['boost_tier'],
+                'boost_started_at' => $boost['boost_started_at'],
+                'boost_expires_at' => $boost['boost_expires_at'],
+                'published_at' => $data['listingPublishedAt'] ?: now(),
+                'created_at' => $data['listingPublishedAt'] ?: now(),
                 'bedrooms' => $data['listingBedrooms'] ?: null,
                 'toilets' => $data['listingToilets'] ?: null,
                 'electricity_price' => $data['listingElectricity'] ?: null,
@@ -498,6 +569,29 @@ class SiteAdmin extends Component
         $listing->update([
             'is_sold' => $hidden,
             'status' => $hidden ? 'inactive' : 'active',
+        ]);
+        $this->activeTab = 'listings';
+    }
+
+    public function updateListingBoost(int $id, string $tier): void
+    {
+        if (! array_key_exists($tier, self::BOOST_PACKAGES)) {
+            return;
+        }
+
+        ListingModel::whereKey($id)->update($this->boostPayload($tier, $id));
+        $this->activeTab = 'listings';
+    }
+
+    public function updateListingPublishedAt(int $id, string $value): void
+    {
+        if (! $value) {
+            return;
+        }
+
+        ListingModel::whereKey($id)->update([
+            'created_at' => $value,
+            'published_at' => $value,
         ]);
         $this->activeTab = 'listings';
     }
@@ -597,10 +691,15 @@ class SiteAdmin extends Component
             'contactEmail' => 'nullable|string|max:120',
             'contactFacebook' => 'nullable|string|max:255',
             'contactPosition' => 'nullable|in:left,right',
+            'watermarkImageFile' => 'nullable|image|max:2048',
         ]);
 
         if ($this->logoFile) {
             $this->logoUrl = Storage::disk('public')->url($this->logoFile->store('site/logo', 'public'));
+        }
+
+        if ($this->watermarkImageFile) {
+            $this->watermarkImageUrl = Storage::disk('public')->url($this->watermarkImageFile->store('site/watermark', 'public'));
         }
 
         SiteSetting::updateOrCreate(['key' => 'site_name'], ['value' => $data['siteName']]);
@@ -610,8 +709,10 @@ class SiteAdmin extends Component
         SiteSetting::updateOrCreate(['key' => 'contact_email'], ['value' => $this->contactEmail ?: null]);
         SiteSetting::updateOrCreate(['key' => 'contact_facebook'], ['value' => $this->contactFacebook ?: null]);
         SiteSetting::updateOrCreate(['key' => 'contact_position'], ['value' => $this->contactPosition ?: 'right']);
+        SiteSetting::updateOrCreate(['key' => 'watermark_image_url'], ['value' => $this->watermarkImageUrl ?: null]);
 
         $this->logoFile = null;
+        $this->watermarkImageFile = null;
         $this->activeTab = 'identity';
         session()->flash('message', 'Đã cập nhật nhận diện & liên hệ.');
     }
@@ -651,6 +752,8 @@ class SiteAdmin extends Component
         $this->accountPhone = $user->phone ?: '';
         $this->accountRole = $user->role ?: 'ctv';
         $this->accountPassword = '';
+        $this->accountPostingPlan = $user->posting_plan ?: 'free';
+        $this->accountPostingPlanExpiresAt = optional($user->posting_plan_expires_at)->format('Y-m-d') ?: '';
         $this->activeTab = 'accounts';
         $this->showAccountModal = true;
     }
@@ -665,6 +768,8 @@ class SiteAdmin extends Component
                 Rule::unique('users', 'phone')->ignore($this->accountEditingId),
             ],
             'accountRole' => 'required|in:' . implode(',', array_keys(self::ROLE_OPTIONS)),
+            'accountPostingPlan' => 'required|in:' . implode(',', array_keys(self::POSTING_PLANS)),
+            'accountPostingPlanExpiresAt' => 'nullable|date',
             // Tạo mới: bắt buộc đặt mật khẩu. Sửa: để trống = giữ mật khẩu cũ.
             'accountPassword' => [$this->accountEditingId ? 'nullable' : 'required', 'string', 'min:6', 'max:255'],
         ], [
@@ -678,6 +783,8 @@ class SiteAdmin extends Component
             'name' => $data['accountName'],
             'phone' => $data['accountPhone'],
             'role' => $data['accountRole'],
+            'posting_plan' => $data['accountPostingPlan'],
+            'posting_plan_expires_at' => $data['accountPostingPlanExpiresAt'] ?: null,
         ];
 
         // password là NOT NULL. Đặt khi tạo mới, hoặc khi sửa mà có nhập mật khẩu mới.
@@ -819,7 +926,11 @@ class SiteAdmin extends Component
     private function listingQuery()
     {
         return $this->publicRoomQuery()
-            ->when($this->listingModeration !== 'all', fn ($q) => $q->where('moderation_status', $this->listingModeration))
+            ->when($this->listingModeration === 'pending', fn ($q) => $q->where('moderation_status', 'pending'))
+            ->when($this->listingModeration === 'active', fn ($q) => $q->where('is_sold', false)->where(function ($sub) { $sub->whereNull('status')->orWhere('status', 'active'); })->where('moderation_status', 'approved'))
+            ->when($this->listingModeration === 'rejected', fn ($q) => $q->where('moderation_status', 'rejected'))
+            ->when($this->listingModeration === 'hidden', fn ($q) => $q->where(function ($sub) { $sub->where('is_sold', true)->orWhere('status', 'inactive'); }))
+            ->when($this->listingModeration === 'boosting', fn ($q) => $q->where('boost_tier', '<>', 'normal')->where('boost_expires_at', '>', now()))
             ->when($this->listingSearch, function ($query) {
                 $term = '%' . trim($this->listingSearch) . '%';
                 $query->where(function ($subQuery) use ($term) {
@@ -835,7 +946,32 @@ class SiteAdmin extends Component
     private function publicRoomQuery()
     {
         return ListingModel::query()
-            ->where('property_type', 115);
+            ->whereIn('property_type', [115, 108, 103]);
+    }
+
+    private function boostPayload(string $tier, ?int $listingId = null): array
+    {
+        $package = self::BOOST_PACKAGES[$tier] ?? self::BOOST_PACKAGES['normal'];
+        if ($tier === 'normal' || (int) $package['days'] <= 0) {
+            return [
+                'boost_tier' => 'normal',
+                'boost_started_at' => null,
+                'boost_expires_at' => null,
+            ];
+        }
+
+        $existing = $listingId ? ListingModel::find($listingId) : null;
+        $keepCurrentStart = $existing?->boost_started_at
+            && $existing->boost_tier === $tier
+            && $existing->boost_expires_at
+            && $existing->boost_expires_at->isFuture();
+        $start = $keepCurrentStart ? $existing->boost_started_at : now();
+
+        return [
+            'boost_tier' => $tier,
+            'boost_started_at' => $start,
+            'boost_expires_at' => $start->copy()->addDays((int) $package['days']),
+        ];
     }
 
     private function accountQuery()
@@ -858,6 +994,8 @@ class SiteAdmin extends Component
         $this->accountPhone = '';
         $this->accountRole = 'ctv';
         $this->accountPassword = '';
+        $this->accountPostingPlan = 'free';
+        $this->accountPostingPlanExpiresAt = '';
         $this->resetValidation();
     }
 
@@ -885,9 +1023,17 @@ class SiteAdmin extends Component
         $this->listingDistrictId = '';
         $this->listingWardId = '';
         $this->listingPrice = '';
+        $this->listingPropertyType = 115;
         $this->listingRoomType = 'studio';
         $this->listingFurnish = 'basic';
         $this->listingAmenities = [];
+        $this->listingArea = '';
+        $this->listingFloors = '';
+        $this->listingDepositMonths = '';
+        $this->listingApartmentName = '';
+        $this->listingApartmentBlock = '';
+        $this->listingBoostTier = 'normal';
+        $this->listingPublishedAt = '';
         $this->listingBedrooms = '';
         $this->listingToilets = '';
         $this->listingElectricity = '';
