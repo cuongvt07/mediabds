@@ -157,14 +157,14 @@
                     <table class="cms-table">
                         <thead>
                             <tr>
-                                <th style="width:8%;">Hiển thị</th>
-                                <th style="width:13%;">Duyệt</th>
-                                <th style="width:10%;">Ảnh</th>
-                                <th style="width:38%;">Tin phòng</th>
-                                <th style="width:13%;">Giá</th>
-                                <th style="width:14%;">Đẩy tin</th>
-                                <th style="width:16%;">Thời gian đăng</th>
-                                <th style="width:18%;" class="right">Thao tác</th>
+                                <th>Hiển thị</th>
+                                <th>Duyệt</th>
+                                <th>Ảnh</th>
+                                <th>Tin phòng</th>
+                                <th>Giá</th>
+                                <th>Đẩy tin</th>
+                                <th>Thời gian đăng</th>
+                                <th class="right">Thao tác</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -193,10 +193,10 @@
                                             <div class="site-cms-empty-cover"><i class="fa-regular fa-image"></i></div>
                                         @endif
                                     </td>
-                                    <td>
+                                    <td style="overflow:hidden;max-width:200px;">
                                         <div class="cms-truncate" style="color:var(--text-primary);font-weight:900;">{{ $listing->title }}</div>
-                                        <div class="cms-truncate">{{ $listing->ward_name ?: '-' }}, {{ $listing->district_name ?: '-' }}</div>
-                                        <div class="cms-truncate mono" style="font-size:11px;color:var(--text-muted);">
+                                        <div class="cms-truncate" style="color:var(--text-muted);font-size:12px;">{{ $listing->ward_name ?: '-' }}, {{ $listing->district_name ?: '-' }}</div>
+                                        <div class="mono cms-truncate" style="font-size:11px;color:var(--text-muted);">
                                             {{ $listing->code ?: '#NT' }} · {{ $roomTypes[$listing->room_type] ?? $listing->room_type }}
                                         </div>
                                     </td>
@@ -205,18 +205,18 @@
                                         <span style="color:var(--text-muted);">/tháng</span>
                                     </td>
                                     <td>
-                                        <select class="cms-select" wire:change="updateListingBoost({{ $listing->id }}, $event.target.value)">
+                                        <select class="cms-select" style="font-size:12px;" wire:change="updateListingBoost({{ $listing->id }}, $event.target.value)">
                                             @foreach($boostPackages as $value => $package)
                                                 <option value="{{ $value }}" @selected(($listing->boost_tier ?: 'normal') === $value)>{{ $package['label'] }}</option>
                                             @endforeach
                                         </select>
                                         @if($listing->boost_expires_at && $listing->boost_expires_at->isFuture())
-                                            <div class="mono" style="font-size:10px;color:var(--text-muted);">Đến {{ $listing->boost_expires_at->format('d/m H:i') }}</div>
+                                            <div class="mono" style="font-size:10px;color:var(--text-muted);margin-top:3px;">Đến {{ $listing->boost_expires_at->format('d/m H:i') }}</div>
                                         @endif
                                     </td>
                                     <td>
-                                        <input class="cms-input mono" type="datetime-local" value="{{ optional($listing->created_at)->format('Y-m-d\TH:i') }}" wire:change="updateListingPublishedAt({{ $listing->id }}, $event.target.value)">
-                                        <div class="mono" style="font-size:10px;color:var(--text-muted);">{{ optional($listing->created_at)->diffForHumans() }}</div>
+                                        <input class="cms-input mono" style="font-size:11px;" type="datetime-local" value="{{ optional($listing->created_at)->format('Y-m-d\TH:i') }}" wire:change="updateListingPublishedAt({{ $listing->id }}, $event.target.value)">
+                                        <div class="mono" style="font-size:10px;color:var(--text-muted);margin-top:3px;">{{ optional($listing->created_at)->diffForHumans() }}</div>
                                     </td>
                                     <td class="right">
                                         <div class="cms-row-actions">

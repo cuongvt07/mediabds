@@ -423,10 +423,11 @@
 
         .site-cms-listing-cover,
         .site-cms-empty-cover {
-            width: 96px;
-            height: 64px;
-            border-radius: 12px;
+            width: 72px;
+            height: 52px;
+            border-radius: 10px;
             border: 1px solid var(--border);
+            display: block;
         }
 
         .site-cms-listing-cover { object-fit: cover; }
@@ -523,36 +524,73 @@
             text-transform: uppercase;
         }
 
-        .cms-table-wrap { overflow-x: hidden; }
+        .cms-table-wrap { overflow-x: auto; }
         .cms-table {
             width: 100%;
             border-collapse: collapse;
-            table-layout: fixed;
+            table-layout: auto;
+            min-width: 860px;
         }
 
         .cms-table th {
-            height: 42px;
+            height: 38px;
             border-bottom: 1px solid var(--border);
             background: #fafafa;
             color: var(--text-muted);
-            font-size: 11px;
+            font-size: 10px;
             font-weight: 900;
             letter-spacing: .08em;
             text-align: left;
             text-transform: uppercase;
+            white-space: nowrap;
         }
 
         .cms-table td {
-            height: 74px;
             border-bottom: 1px solid #edf0f3;
             color: var(--text-secondary);
             vertical-align: middle;
+            padding-top: 10px;
+            padding-bottom: 10px;
         }
 
         .cms-table tr:last-child td { border-bottom: 0; }
-        .cms-table th, .cms-table td { padding: 0 12px; }
+        .cms-table th { padding: 0 10px; }
+        .cms-table td { padding: 8px 10px; }
         .cms-table .right { text-align: right; }
+
+        /* Column width hints — auto layout will respect these as min widths */
+        .cms-table th:nth-child(1),
+        .cms-table td:nth-child(1) { width: 80px; }   /* Hiển thị */
+        .cms-table th:nth-child(2),
+        .cms-table td:nth-child(2) { width: 120px; }  /* Duyệt */
+        .cms-table th:nth-child(3),
+        .cms-table td:nth-child(3) { width: 88px; }   /* Ảnh */
+        .cms-table th:nth-child(4),
+        .cms-table td:nth-child(4) { min-width: 200px; } /* Tin phòng */
+        .cms-table th:nth-child(5),
+        .cms-table td:nth-child(5) { width: 110px; white-space: nowrap; } /* Giá */
+        .cms-table th:nth-child(6),
+        .cms-table td:nth-child(6) { width: 130px; }  /* Đẩy tin */
+        .cms-table th:nth-child(7),
+        .cms-table td:nth-child(7) { width: 150px; }  /* Thời gian đăng */
+        .cms-table th:nth-child(8),
+        .cms-table td:nth-child(8) { width: 110px; text-align: right; } /* Thao tác */
+
         .cms-truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+        /* Compact controls inside table cells */
+        .cms-table .cms-select,
+        .cms-table .cms-input {
+            height: 34px;
+            font-size: 12px;
+            border-radius: 10px;
+            padding: 0 10px;
+        }
+
+        /* Scrollbar for table wrapper */
+        .cms-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .cms-scrollbar::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 999px; }
+        .cms-scrollbar::-webkit-scrollbar-track { background: transparent; }
 
         .cms-input, .cms-select, .cms-textarea {
             width: 100%;
