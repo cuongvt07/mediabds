@@ -11,7 +11,13 @@
     <div class="site-shell user-grid">
         {{-- 3 phần: hồ sơ cá nhân --}}
         <aside class="user-profile">
-            <div class="user-avatar">{{ $initial }}</div>
+            @php $avatarUrl = $user->avatar ? (str_starts_with($user->avatar,'http') ? $user->avatar : asset('storage/'.ltrim($user->avatar,'/'))) : null; @endphp
+            @if($avatarUrl)
+                <img src="{{ $avatarUrl }}" class="user-avatar-img" alt="{{ $user->name }}">
+            @else
+                <div class="user-avatar">{{ $initial }}</div>
+            @endif
+
             <h2 class="user-name">{{ $user->name ?: 'Người dùng' }}</h2>
             <div class="user-phone">{{ $user->phone }}</div>
             <span class="user-role">{{ $user->isAdmin() ? 'Quản trị' : 'Thành viên' }}</span>
@@ -27,8 +33,14 @@
             <div class="user-profile-meta">
                 <div><span>Ngày tham gia</span><strong>{{ optional($user->created_at)->format('d/m/Y') ?: '-' }}</strong></div>
                 <div><span>Email</span><strong>{{ $user->email ?: 'Chưa có' }}</strong></div>
+                @if($user->birth_year)<div><span>Năm sinh</span><strong>{{ $user->birth_year }}</strong></div>@endif
                 <div><span>Gói đăng tin</span><strong>{{ $user->postingPlanLabel() }}</strong></div>
                 <div><span>Giới hạn/ngày</span><strong>{{ $user->postingLimitPerDay() }} tin</strong></div>
+            </div>
+
+            <div class="user-sidebar-actions">
+                <a href="#cai-dat" class="user-sidebar-link">⚙️ Cài đặt tài khoản</a>
+                <button type="button" onclick="window.__openLogoutConfirm()" class="user-sidebar-link danger">🚪 Đăng xuất</button>
             </div>
         </aside>
 
@@ -135,6 +147,142 @@
             </div>
 
             <div class="user-pagination">{{ $listings->links() }}</div>
+        </section>
+
+        {{-- ===== CÀI ĐẶT TÀI KHOẢN ===== --}}
+        <section class="user-main user-settings-section" id="cai-dat">
+            <div class="user-settings-head">
+                <h2>⚙️ Cài đặt tài khoản</h2>
+            </div>
+
+            {{-- Tab điều hướng --}}
+            <div class="user-tabs" style="margin-bottom:16px;">
+                <button type="button" class="{{ $settingsTab === 'profile' ? 'is-active' : '' }}" wire:click="setSettingsTab('profile')">👤 Thông tin cá nhân</button>
+                <button type="button" class="{{ $settingsTab === 'password' ? 'is-active' : '' }}" wire:click="setSettingsTab('password')">🔑 Đổi mật khẩu</button>
+                <button type="button" class="{{ $settingsTab === 'delete' ? 'is-active' : '' }}" wire:click="setSettingsTab('delete')">🗑️ Xóa tài khoản</button>
+            </div>
+
+            {{-- Flash message --}}
+            @if(session('message'))
+                <div class="user-flash">{{ session('message') }}</div>
+            @endif
+
+            {{-- TAB: Thông tin cá nhân --}}
+            @if($settingsTab === 'profile')
+            <form wire:submit="saveProfile" class="user-settings-form" enctype="multipart/form-data">
+                {{-- Avatar --}}
+                <div class="user-settings-avatar-row">
+                    <div class="user-settings-ava-wrap">
+                        @if($profileAvatarFile)
+                            <img src="{{ $profileAvatarFile->temporaryUrl() }}" class="user-settings-ava" alt="Preview">
+                        @elseif($profileAvatar)
+                            <img src="{{ str_starts_with($profileAvatar,'http') ? $profileAvatar : asset('storage/'.ltrim($profileAvatar,'/')) }}" class="user-settings-ava" alt="Avatar">
+                        @else
+                            <div class="user-settings-ava-ph">{{ mb_strtoupper(mb_substr($profileName ?: 'U', 0, 1)) }}</div>
+                        @endif
+                    </div>
+                    <div class="user-settings-ava-actions">
+                        <label class="user-btn-outline" style="cursor:pointer;">
+                            📷 Chọn ảnh đại diện
+                            <input type="file" wire:model="profileAvatarFile" accept="image/*" style="display:none;">
+                        </label>
+                        @if($profileAvatar || $profileAvatarFile)
+                            <button type="button" wire:click="removeAvatar" class="user-btn-ghost danger">Xóa ảnh</button>
+                        @endif
+                    </div>
+                    @error('profileAvatarFile') <em class="ff-err">{{ $message }}</em> @enderror
+                </div>
+
+                <div class="user-settings-grid">
+                    <label class="user-settings-field">
+                        <span>Họ và tên <i>*</i></span>
+                        <input type="text" wire:model="profileName" placeholder="Nguyễn Văn A">
+                        @error('profileName') <em class="ff-err">{{ $message }}</em> @enderror
+                    </label>
+                    <label class="user-settings-field">
+                        <span>Số điện thoại <i>*</i></span>
+                        <input type="text" inputmode="tel" wire:model="profilePhone" placeholder="098...">
+                        @error('profilePhone') <em class="ff-err">{{ $message }}</em> @enderror
+                    </label>
+                    <label class="user-settings-field">
+                        <span>Email</span>
+                        <input type="email" wire:model="profileEmail" placeholder="example@gmail.com">
+                        @error('profileEmail') <em class="ff-err">{{ $message }}</em> @enderror
+                    </label>
+                    <label class="user-settings-field">
+                        <span>Năm sinh</span>
+                        <input type="number" inputmode="numeric" wire:model="profileBirthYear" placeholder="VD: 1995" min="1900" max="{{ date('Y') - 5 }}">
+                        @error('profileBirthYear') <em class="ff-err">{{ $message }}</em> @enderror
+                    </label>
+                </div>
+
+                <button type="submit" class="user-settings-save">
+                    <span wire:loading.remove wire:target="saveProfile">💾 Lưu thông tin</span>
+                    <span wire:loading wire:target="saveProfile">Đang lưu...</span>
+                </button>
+            </form>
+            @endif
+
+            {{-- TAB: Đổi mật khẩu --}}
+            @if($settingsTab === 'password')
+            <form wire:submit="savePassword" class="user-settings-form">
+                <div class="user-settings-grid" style="max-width:480px;">
+                    <label class="user-settings-field full">
+                        <span>Mật khẩu hiện tại <i>*</i></span>
+                        <input type="password" wire:model="currentPassword" placeholder="Nhập mật khẩu hiện tại" autocomplete="current-password">
+                        @error('currentPassword') <em class="ff-err">{{ $message }}</em> @enderror
+                    </label>
+                    <label class="user-settings-field full">
+                        <span>Mật khẩu mới <i>*</i></span>
+                        <input type="password" wire:model="newPassword" placeholder="Tối thiểu 6 ký tự" autocomplete="new-password">
+                        @error('newPassword') <em class="ff-err">{{ $message }}</em> @enderror
+                    </label>
+                    <label class="user-settings-field full">
+                        <span>Xác nhận mật khẩu mới <i>*</i></span>
+                        <input type="password" wire:model="newPasswordConfirm" placeholder="Nhập lại mật khẩu mới" autocomplete="new-password">
+                        @error('newPasswordConfirm') <em class="ff-err">{{ $message }}</em> @enderror
+                    </label>
+                </div>
+                <button type="submit" class="user-settings-save">
+                    <span wire:loading.remove wire:target="savePassword">🔑 Đổi mật khẩu</span>
+                    <span wire:loading wire:target="savePassword">Đang lưu...</span>
+                </button>
+            </form>
+            @endif
+
+            {{-- TAB: Xóa tài khoản --}}
+            @if($settingsTab === 'delete')
+            <div class="user-settings-form">
+                @if(!$showDeleteConfirm)
+                <div class="user-danger-zone">
+                    <div class="user-danger-icon">⚠️</div>
+                    <h3>Xóa tài khoản vĩnh viễn</h3>
+                    <p>Sau khi xóa, toàn bộ dữ liệu bao gồm tin đăng, thông tin tài khoản sẽ bị xóa và <strong>không thể khôi phục</strong>.</p>
+                    <button type="button" wire:click="confirmDeleteAccount" class="user-settings-save danger">
+                        🗑️ Tôi muốn xóa tài khoản
+                    </button>
+                </div>
+                @else
+                <form wire:submit="deleteAccount" class="user-danger-confirm">
+                    <div class="user-danger-icon">😟</div>
+                    <h3>Xác nhận xóa tài khoản</h3>
+                    <p>Nhập mật khẩu để xác nhận. Thao tác này <strong>không thể hoàn tác</strong>.</p>
+                    <label class="user-settings-field" style="max-width:360px; margin: 0 auto 16px;">
+                        <span>Mật khẩu xác nhận</span>
+                        <input type="password" wire:model="deleteConfirmPassword" placeholder="Nhập mật khẩu của bạn" autocomplete="current-password">
+                        @error('deleteConfirmPassword') <em class="ff-err">{{ $message }}</em> @enderror
+                    </label>
+                    <div class="user-danger-btns">
+                        <button type="button" wire:click="cancelDelete" class="user-btn-outline">Hủy bỏ</button>
+                        <button type="submit" class="user-settings-save danger">
+                            <span wire:loading.remove wire:target="deleteAccount">🗑️ Xác nhận xóa</span>
+                            <span wire:loading wire:target="deleteAccount">Đang xóa...</span>
+                        </button>
+                    </div>
+                </form>
+                @endif
+            </div>
+            @endif
         </section>
     </div>
 

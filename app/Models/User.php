@@ -159,6 +159,8 @@ class User extends Authenticatable
         'view_phone_pin',
         'posting_plan',
         'posting_plan_expires_at',
+        'avatar',
+        'birth_year',
     ];
 
     /**

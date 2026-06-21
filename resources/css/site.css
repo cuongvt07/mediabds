@@ -159,6 +159,7 @@ body.site-noscroll { overflow: hidden; }
 /* ===== Trang cá nhân user + form đăng tin ===== */
 .user-page { padding: 22px 0 64px; background: #f5f6f6; }
 .user-grid { display: grid; grid-template-columns: 3fr 7fr; gap: 18px; align-items: start; }
+.user-settings-section { grid-column: 1 / -1; max-width: 900px; margin: 0 auto; width: 100%; }
 
 .user-profile { position: sticky; top: 90px; display: grid; justify-items: center; text-align: center; padding: 22px 18px; border: 1px solid var(--site-line); border-radius: 18px; background: #fff; box-shadow: 0 12px 30px rgba(23,32,42,.06); }
 .user-avatar { width: 76px; height: 76px; display: grid; place-items: center; border-radius: 50%; background: var(--site-ink); color: #fff; font-size: 30px; font-weight: 900; }
@@ -229,6 +230,57 @@ body.site-noscroll { overflow: hidden; }
 .user-empty { padding: 50px 20px; text-align: center; border: 1px dashed #d8dade; border-radius: 16px; background: #fff; color: var(--site-muted); display: grid; gap: 14px; justify-items: center; }
 .user-pagination { margin-top: 6px; }
 
+/* ── Sidebar quick actions ── */
+.user-sidebar-actions { width: 100%; margin-top: 16px; display: grid; gap: 8px; }
+.user-sidebar-link { width: 100%; height: 40px; display: flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid var(--site-line); border-radius: 11px; background: #fff; color: var(--site-ink); font-size: 13px; font-weight: 700; cursor: pointer; text-decoration: none; transition: .15s; }
+.user-sidebar-link:hover { background: #f5f6f8; }
+.user-sidebar-link.danger { color: #c62828; border-color: rgba(198,40,40,.22); background: #fff; }
+.user-sidebar-link.danger:hover { background: #fdecea; }
+
+/* Avatar image in sidebar */
+.user-avatar-img { width: 76px; height: 76px; border-radius: 50%; object-fit: cover; border: 3px solid var(--site-yellow); box-shadow: 0 4px 14px rgba(244,191,25,.28); }
+
+/* ── Account settings section ── */
+.user-settings-head { display: flex; align-items: center; gap: 12px; padding: 0 0 12px; border-bottom: 2px solid var(--site-yellow); margin-bottom: 18px; }
+.user-settings-head h2 { margin: 0; font-size: 20px; font-weight: 900; }
+
+.user-settings-form { display: grid; gap: 20px; padding: 24px; border: 1px solid var(--site-line); border-radius: 18px; background: #fff; box-shadow: 0 8px 24px rgba(23,32,42,.06); }
+
+.user-settings-avatar-row { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+.user-settings-ava-wrap { flex: 0 0 auto; }
+.user-settings-ava { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid var(--site-yellow); box-shadow: 0 4px 14px rgba(244,191,25,.2); }
+.user-settings-ava-ph { width: 80px; height: 80px; border-radius: 50%; background: var(--site-ink); color: #fff; display: grid; place-items: center; font-size: 32px; font-weight: 900; }
+.user-settings-ava-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.user-settings-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.user-settings-field { display: grid; gap: 6px; }
+.user-settings-field.full { grid-column: 1 / -1; }
+.user-settings-field span { color: #6b7280; font-size: 12px; font-weight: 700; }
+.user-settings-field span i { color: #e53e3e; }
+.user-settings-field input, .user-settings-field select { height: 46px; padding: 0 14px; border: 1px solid var(--site-line); border-radius: 11px; background: #fbfbfd; font-size: 14px; outline: 0; }
+.user-settings-field input:focus, .user-settings-field select:focus { border-color: var(--site-yellow); box-shadow: 0 0 0 3px rgba(244,191,25,.16); background: #fff; }
+.ff-err { display: block; margin-top: 4px; color: #c62828; font-size: 12px; font-weight: 600; font-style: normal; }
+
+.user-settings-save { justify-self: start; min-height: 46px; padding: 0 24px; border: 0; border-radius: 12px; background: var(--site-yellow); color: #1a1300; font-size: 14px; font-weight: 900; cursor: pointer; transition: .15s; }
+.user-settings-save:hover { background: var(--site-yellow-dark); color: #fff; }
+.user-settings-save.danger { background: #c62828; color: #fff; }
+.user-settings-save.danger:hover { background: #9b1a1a; }
+
+.user-btn-outline { min-height: 38px; padding: 0 16px; border: 1px solid var(--site-line); border-radius: 10px; background: #fff; color: var(--site-ink); font-size: 13px; font-weight: 700; cursor: pointer; transition: .15s; }
+.user-btn-outline:hover { background: #f5f6f8; }
+.user-btn-outline.danger { border-color: rgba(198,40,40,.3); color: #c62828; }
+.user-btn-outline.danger:hover { background: #fdecea; }
+.user-btn-ghost { min-height: 38px; padding: 0 14px; border: 0; background: transparent; color: #6b7280; font-size: 13px; font-weight: 700; cursor: pointer; }
+.user-btn-ghost.danger { color: #c62828; }
+.user-btn-ghost.danger:hover { text-decoration: underline; }
+
+/* Danger zone */
+.user-danger-zone, .user-danger-confirm { display: grid; justify-items: center; text-align: center; gap: 12px; padding: 32px 24px; border: 1px dashed rgba(198,40,40,.35); border-radius: 16px; background: #fff9f9; }
+.user-danger-icon { font-size: 44px; line-height: 1; }
+.user-danger-zone h3, .user-danger-confirm h3 { margin: 0; font-size: 18px; font-weight: 900; color: #c62828; }
+.user-danger-zone p, .user-danger-confirm p { margin: 0; color: #6b7280; font-size: 14px; max-width: 440px; line-height: 1.6; }
+.user-danger-btns { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+
 /* Form đăng tin */
 .user-form-wrap { max-width: 880px; margin: 0 auto; }
 .user-form-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
@@ -261,6 +313,7 @@ body.site-noscroll { overflow: hidden; }
 @media (max-width: 880px) {
     .user-grid { grid-template-columns: 1fr; }
     .user-profile { position: static; }
+    .user-settings-grid { grid-template-columns: 1fr; }
     .user-form-grid, .user-amenities { grid-template-columns: 1fr 1fr; }
     .user-img-grid { grid-template-columns: repeat(3, 1fr); }
     .user-listing { grid-template-columns: 104px 1fr; }
