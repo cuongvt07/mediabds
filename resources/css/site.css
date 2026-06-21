@@ -91,6 +91,53 @@ button, input, select { font: inherit; }
 body.site-noscroll { overflow: hidden; }
 .site-auth-modal { position: fixed; inset: 0; z-index: 120; display: grid; place-items: center; padding: 16px; }
 .site-auth-modal[hidden] { display: none; }
+
+/* Modal xác nhận đăng xuất */
+.site-logout-modal { position: fixed; inset: 0; z-index: 130; display: grid; place-items: center; padding: 16px; }
+.site-logout-modal[hidden] { display: none; }
+.site-logout-backdrop { position: absolute; inset: 0; background: rgba(12,18,24,.6); }
+.site-logout-box {
+    position: relative;
+    width: min(380px, 100%);
+    padding: 32px 28px 26px;
+    border-radius: 22px;
+    background: #fff;
+    box-shadow: 0 40px 100px rgba(0,0,0,.28);
+    text-align: center;
+    animation: site-logout-in .22s ease;
+}
+@keyframes site-logout-in {
+    from { transform: translateY(12px) scale(.97); opacity: 0; }
+    to   { transform: translateY(0) scale(1); opacity: 1; }
+}
+.site-logout-emoji { font-size: 52px; line-height: 1; margin-bottom: 12px; }
+.site-logout-box h3 { margin: 0 0 8px; font-size: 18px; font-weight: 900; color: #1a1300; line-height: 1.3; }
+.site-logout-box p { margin: 0 0 22px; color: #6b7280; font-size: 14px; font-weight: 600; }
+.site-logout-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.site-logout-yes {
+    height: 48px;
+    border: 0;
+    border-radius: 13px;
+    background: #1a1300;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 900;
+    cursor: pointer;
+    transition: .15s;
+}
+.site-logout-yes:hover { background: #333; }
+.site-logout-no {
+    height: 48px;
+    border: 2px solid var(--site-yellow);
+    border-radius: 13px;
+    background: #fff;
+    color: #1a1300;
+    font-size: 14px;
+    font-weight: 900;
+    cursor: pointer;
+    transition: .15s;
+}
+.site-logout-no:hover { background: var(--site-yellow); }
 .site-auth-backdrop { position: absolute; inset: 0; background: rgba(12,18,24,.55); }
 .site-auth-box { position: relative; width: min(420px, 100%); padding: 26px 24px 22px; border-radius: 18px; background: #fff; box-shadow: 0 30px 80px rgba(0,0,0,.3); }
 .site-auth-x { position: absolute; right: 12px; top: 10px; width: 34px; height: 34px; border: 0; border-radius: 50%; background: #f1f3f5; color: #555; font-size: 22px; line-height: 1; cursor: pointer; }
@@ -239,7 +286,17 @@ body.site-noscroll { overflow: hidden; }
 .site-slider-dots { position: absolute; z-index: 5; right: 28px; bottom: 25px; display: flex; gap: 7px; }
 .site-slider-dots button { width: 28px; height: 5px; padding: 0; border: 0; border-radius: 99px; background: rgba(255,255,255,.4); cursor: pointer; transition: .2s; }
 .site-slider-dots button.is-active { width: 48px; background: var(--site-yellow); }
-.site-filter-wrap { position: relative; z-index: 10; margin-top: 18px; padding: 0; }
+.site-filter-wrap {
+    position: sticky;
+    top: 64px; /* chiều cao header */
+    z-index: 20;
+    margin-top: 0;
+    padding: 12px 0;
+    background: var(--site-bg, #fff);
+    border-bottom: 1px solid rgba(23,32,42,.07);
+    box-shadow: 0 4px 16px rgba(23,32,42,.07);
+    transition: box-shadow .2s;
+}
 .site-filter { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)) auto; gap: 10px; padding: 18px; border: 1px solid rgba(23,32,42,.08); border-radius: 20px; background: #fff; box-shadow: 0 20px 50px rgba(23,32,42,.14); }
 .site-field label { display: block; margin: 0 0 7px 4px; color: #8a8f89; font-size: 10px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
 .site-field select { width: 100%; height: 46px; padding: 0 34px 0 13px; border: 1px solid var(--site-line); border-radius: 11px; color: #303631; background: #fbfbf9; outline: 0; }
@@ -435,7 +492,7 @@ body.site-noscroll { overflow: hidden; }
     .site-slider { min-height: 210px; border-radius: 14px; }
     .site-slide:after { background: linear-gradient(0deg, rgba(12,18,24,.88), rgba(12,18,24,.28)); }
     .site-hero-copy { left: 24px; top: auto; bottom: 68px; transform: none; }
-    .site-filter-wrap { margin-top: 12px; padding: 0; }
+    .site-filter-wrap { top: 56px; padding: 8px 0; }
     .site-filter { display: none; }
     .site-mobile-filter { display: grid; gap: 8px; padding: 8px; border: 1px solid #e3e6ea; border-radius: 14px; background: rgba(255,255,255,.96); box-shadow: 0 10px 24px rgba(23,32,42,.12); }
     .site-mobile-search { width: 100%; height: 38px; display: flex; align-items: center; gap: 9px; padding: 0 12px; border: 1px solid #e2e4e8; border-radius: 11px; color: #8a9199; background: #f8f9fb; text-align: left; }

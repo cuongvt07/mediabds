@@ -42,6 +42,7 @@
 @endphp
 
 @section('content')
+    {{-- HERO: Banner slider --}}
     <section class="site-hero">
         <div class="site-shell">
             <div class="site-slider" data-slider>
@@ -73,102 +74,108 @@
                     @endforeach
                 </div>
             </div>
-
-            <div class="site-filter-wrap" id="tim-phong">
-                <form class="site-filter" method="GET" action="{{ route('site.home') }}#danh-sach">
-                    <input type="hidden" name="tab" value="{{ request('tab') }}">
-                    <div class="site-field">
-                        <label for="district">Quận</label>
-                        <select id="district" name="district" onchange="this.form.ward.value=''; this.form.submit()">
-                            <option value="">Tất cả quận</option>
-                            @foreach($districts as $district)
-                                <option value="{{ $district->district_id }}" @selected(request('district') == $district->district_id)>{{ $district->district_name }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="site-field">
-                        <label for="ward">Phường</label>
-                        <select id="ward" name="ward">
-                            <option value="">Tất cả phường</option>
-                            @foreach($wards as $ward)
-                                <option value="{{ $ward->ward_id }}" @selected(request('ward') == $ward->ward_id)>{{ $ward->ward_name }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="site-field">
-                        <label for="price">Giá phòng</label>
-                        <select id="price" name="price">
-                            <option value="">Mới cập nhật</option>
-                            <option value="low_high" @selected(request('price') === 'low_high')>Từ thấp đến cao</option>
-                            <option value="high_low" @selected(request('price') === 'high_low')>Từ cao đến thấp</option>
-                            <option value="under_3" @selected(request('price') === 'under_3')>Dưới 3 triệu</option>
-                            <option value="3_4" @selected(request('price') === '3_4')>Từ 3 - 4 triệu</option>
-                            <option value="4_5" @selected(request('price') === '4_5')>Từ 4 - 5 triệu</option>
-                            <option value="5_6" @selected(request('price') === '5_6')>Từ 5 - 6 triệu</option>
-                            <option value="over_6" @selected(request('price') === 'over_6')>Trên 6 triệu</option>
-                        </select>
-                    </div>
-                    <div class="site-field">
-                        <label for="room_type">Dạng phòng</label>
-                        <select id="room_type" name="room_type">
-                            <option value="">Tất cả dạng phòng</option>
-                            @foreach($roomLabels as $value => $label)
-                                <option value="{{ $value }}" @selected(request('room_type') === $value)>{{ $label }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="site-field site-multi-field">
-                        <label>Nội thất</label>
-                        <details>
-                            <summary>
-                                <span>{{ $selectedFurnitureText ?: 'Tất cả nội thất' }}</span>
-                                <i>⌄</i>
-                            </summary>
-                            <div class="site-multi-options">
-                                @foreach($furnitureItems as $item)
-                                    <label>
-                                        <input type="checkbox" name="furniture[]" value="{{ $item->key }}" @checked(in_array($item->key, $selectedFurniture, true))>
-                                        <span>{!! $amenityIconHtml($item) !!}{{ $item->name }}</span>
-                                    </label>
-                                @endforeach
-                            </div>
-                        </details>
-                    </div>
-                    <button class="site-search-btn" type="submit">Tìm phòng</button>
-                    <div class="site-amenity-filter">
-                        <h3>Tiện ích phòng trọ</h3>
-                        <div class="site-amenity-options">
-                            @foreach($amenityItems as $item)
-                                <label class="site-amenity-card">
-                                    <input type="checkbox" name="amenities[]" value="{{ $item->key }}" @checked(in_array($item->key, $selectedAmenities, true))>
-                                    <span>
-                                        {!! $amenityIconHtml($item) !!}
-                                        <b>{{ $item->name }}</b>
-                                    </span>
-                                </label>
-                            @endforeach
-                        </div>
-                    </div>
-                </form>
-
-                <div class="site-mobile-filter" aria-label="Bộ lọc phòng trọ">
-                    <button class="site-mobile-search" type="button" data-filter-open>
-                        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m21 21-4.3-4.3m1.3-5.2a6.5 6.5 0 1 1-13 0 6.5 6.5 0 0 1 13 0Z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-                        <span>Tìm phòng trọ...</span>
-                    </button>
-                    <div class="site-mobile-filter-row">
-                        <button class="site-filter-chip site-filter-chip-icon" type="button" data-filter-open>
-                            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 7h14M8 12h8m-5 5h2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-                            Lọc
-                        </button>
-                        <button class="site-filter-chip is-active" type="button" data-filter-open>Thành phố Hồ Chí Minh</button>
-                        <button class="site-filter-chip" type="button" data-filter-open>{{ $currentDistrict->district_name ?? 'Quận/Huyện' }}</button>
-                    </div>
-                </div>
-            </div>
         </div>
     </section>
 
+    {{-- FILTER: sticky bar bên ngoài hero section để position:sticky hoạt động --}}
+    <div class="site-filter-wrap" id="tim-phong">
+        <div class="site-shell">
+            {{-- Desktop filter --}}
+            <form class="site-filter" method="GET" action="{{ route('site.home') }}#danh-sach">
+                <input type="hidden" name="tab" value="{{ request('tab') }}">
+                <div class="site-field">
+                    <label for="district">Quận</label>
+                    <select id="district" name="district" onchange="this.form.ward.value=''; this.form.submit()">
+                        <option value="">Tất cả quận</option>
+                        @foreach($districts as $district)
+                            <option value="{{ $district->district_id }}" @selected(request('district') == $district->district_id)>{{ $district->district_name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="site-field">
+                    <label for="ward">Phường</label>
+                    <select id="ward" name="ward">
+                        <option value="">Tất cả phường</option>
+                        @foreach($wards as $ward)
+                            <option value="{{ $ward->ward_id }}" @selected(request('ward') == $ward->ward_id)>{{ $ward->ward_name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="site-field">
+                    <label for="price">Giá phòng</label>
+                    <select id="price" name="price">
+                        <option value="">Mới cập nhật</option>
+                        <option value="low_high" @selected(request('price') === 'low_high')>Từ thấp đến cao</option>
+                        <option value="high_low" @selected(request('price') === 'high_low')>Từ cao đến thấp</option>
+                        <option value="under_3" @selected(request('price') === 'under_3')>Dưới 3 triệu</option>
+                        <option value="3_4" @selected(request('price') === '3_4')>Từ 3 - 4 triệu</option>
+                        <option value="4_5" @selected(request('price') === '4_5')>Từ 4 - 5 triệu</option>
+                        <option value="5_6" @selected(request('price') === '5_6')>Từ 5 - 6 triệu</option>
+                        <option value="over_6" @selected(request('price') === 'over_6')>Trên 6 triệu</option>
+                    </select>
+                </div>
+                <div class="site-field">
+                    <label for="room_type">Dạng phòng</label>
+                    <select id="room_type" name="room_type">
+                        <option value="">Tất cả dạng phòng</option>
+                        @foreach($roomLabels as $value => $label)
+                            <option value="{{ $value }}" @selected(request('room_type') === $value)>{{ $label }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="site-field site-multi-field">
+                    <label>Nội thất</label>
+                    <details>
+                        <summary>
+                            <span>{{ $selectedFurnitureText ?: 'Tất cả nội thất' }}</span>
+                            <i>⌄</i>
+                        </summary>
+                        <div class="site-multi-options">
+                            @foreach($furnitureItems as $item)
+                                <label>
+                                    <input type="checkbox" name="furniture[]" value="{{ $item->key }}" @checked(in_array($item->key, $selectedFurniture, true))>
+                                    <span>{!! $amenityIconHtml($item) !!}{{ $item->name }}</span>
+                                </label>
+                            @endforeach
+                        </div>
+                    </details>
+                </div>
+                <button class="site-search-btn" type="submit">Tìm phòng</button>
+                <div class="site-amenity-filter">
+                    <h3>Tiện ích phòng trọ</h3>
+                    <div class="site-amenity-options">
+                        @foreach($amenityItems as $item)
+                            <label class="site-amenity-card">
+                                <input type="checkbox" name="amenities[]" value="{{ $item->key }}" @checked(in_array($item->key, $selectedAmenities, true))>
+                                <span>
+                                    {!! $amenityIconHtml($item) !!}
+                                    <b>{{ $item->name }}</b>
+                                </span>
+                            </label>
+                        @endforeach
+                    </div>
+                </div>
+            </form>
+
+            {{-- Mobile filter trigger --}}
+            <div class="site-mobile-filter" aria-label="Bộ lọc phòng trọ">
+                <button class="site-mobile-search" type="button" data-filter-open>
+                    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m21 21-4.3-4.3m1.3-5.2a6.5 6.5 0 1 1-13 0 6.5 6.5 0 0 1 13 0Z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                    <span>Tìm phòng trọ...</span>
+                </button>
+                <div class="site-mobile-filter-row">
+                    <button class="site-filter-chip site-filter-chip-icon" type="button" data-filter-open>
+                        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 7h14M8 12h8m-5 5h2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                        Lọc
+                    </button>
+                    <button class="site-filter-chip is-active" type="button" data-filter-open>Thành phố Hồ Chí Minh</button>
+                    <button class="site-filter-chip" type="button" data-filter-open>{{ $currentDistrict->district_name ?? 'Quận/Huyện' }}</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Mobile filter bottom-sheet modal --}}
     <div class="site-filter-modal" data-filter-modal aria-hidden="true">
         <button class="site-filter-backdrop" type="button" data-filter-close aria-label="Đóng bộ lọc"></button>
         <form class="site-filter-sheet" method="GET" action="{{ route('site.home') }}#danh-sach" role="dialog" aria-modal="true" aria-labelledby="mobile-filter-title">
@@ -180,7 +187,6 @@
                     <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
                 </button>
             </div>
-
             <div class="site-field">
                 <label for="mobile_province">Tỉnh/Thành phố</label>
                 <select id="mobile_province" disabled>
@@ -399,7 +405,7 @@
             dots.forEach((dot, i) => dot.classList.toggle('is-active', i === current));
         };
         dots.forEach((dot, i) => dot.addEventListener('click', () => show(i)));
-        setInterval(() => show((current + 1) % slides.length), 5000);
+        setInterval(() => show((current + 1) % slides.length), 2000);
     })();
 
     (() => {

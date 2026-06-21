@@ -99,9 +99,7 @@
                                     <a href="{{ route('user.listing.create') }}"><i></i> Đăng tin mới</a>
                                 @endif
                                 <a href="{{ route('site.home') }}"><i></i> Trang chủ</a>
-                                <form method="POST" action="{{ route('logout') }}">@csrf
-                                    <button type="submit"><i></i> Đăng xuất</button>
-                                </form>
+                                <button type="button" onclick="window.__openLogoutConfirm()"><i></i> Đăng xuất</button>
                             </div>
                         @else
                             <div class="site-account-promo">
@@ -158,6 +156,25 @@
             <span>{{ $authUser ? 'Tài khoản' : 'Đăng nhập' }}</span>
         </a>
     </nav>
+
+    {{-- Logout confirmation modal --}}
+    <div class="site-logout-modal" id="site-logout-modal" hidden aria-modal="true" role="dialog" aria-labelledby="logout-modal-title">
+        <div class="site-logout-backdrop" onclick="window.__closeLogoutConfirm()"></div>
+        <div class="site-logout-box">
+            <div class="site-logout-emoji">😭</div>
+            <h3 id="logout-modal-title">Bạn có chắc muốn đăng xuất không?</h3>
+            <p>Chúng tôi sẽ nhớ bạn lắm đấy&nbsp;😭</p>
+            <div class="site-logout-actions">
+                <form method="POST" action="{{ route('logout') }}" id="site-logout-form">@csrf</form>
+                <button type="button" class="site-logout-yes" onclick="document.getElementById('site-logout-form').submit()">
+                    😭 Yes, đăng xuất
+                </button>
+                <button type="button" class="site-logout-no" onclick="window.__closeLogoutConfirm()">
+                    No, ở lại thôi!
+                </button>
+            </div>
+        </div>
+    </div>
 
     <div class="site-auth-modal" data-auth-modal data-open="{{ session('authMode') }}" hidden>
         <div class="site-auth-backdrop" data-auth-close></div>
@@ -232,6 +249,19 @@
             document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { closeModal(); closeAccount(); } });
 
             if (modal && modal.dataset.open) { openModal(modal.dataset.open); }
+
+            // Logout confirm modal
+            window.__openLogoutConfirm = function() {
+                var m = document.getElementById('site-logout-modal');
+                if (m) { m.hidden = false; document.body.classList.add('site-noscroll'); closeAccount(); }
+            };
+            window.__closeLogoutConfirm = function() {
+                var m = document.getElementById('site-logout-modal');
+                if (m) { m.hidden = true; document.body.classList.remove('site-noscroll'); }
+            };
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') { window.__closeLogoutConfirm(); }
+            });
         })();
     </script>
 
