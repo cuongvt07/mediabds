@@ -178,7 +178,7 @@ class Dashboard extends Component
         $this->showDeleteConfirm = true;
     }
 
-    public function deleteAccount(): void
+    public function deleteAccount()
     {
         $this->validate([
             'deleteConfirmPassword' => 'required|string',
