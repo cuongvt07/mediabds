@@ -63,6 +63,7 @@ class ListingResource extends JsonResource
             'video_url' => $this->youtube_link_short ?: $this->youtube_link ?: $this->facebook_video_link ?: $this->tiktok_link,
             'vip_tier' => $this->vip_tier ?: 'normal',
             'status' => $this->is_sold ? 'sold' : ($this->status ?: 'active'),
+            'rejection_reason' => $this->rejection_reason ?? null,
             'is_sold' => (bool) $this->is_sold,
             'view_count' => (int) ($this->view_count ?? 0),
             'created_at' => optional($this->created_at)->toISOString(),

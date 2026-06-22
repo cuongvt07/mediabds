@@ -10,6 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/intersect@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://cdn.ckeditor.com/ckeditor5/41.4.2/classic/ckeditor.js"></script>
     @livewireStyles
     <style>
         :root {
@@ -389,6 +390,12 @@
             padding: 12px;
         }
 
+        /* CKEditor inside the dark CMS — keep editable area light with dark text. */
+        .ck.ck-editor__main > .ck-editor__editable { min-height: 240px; color: #1a1a1a; }
+        .ck.ck-editor__editable_inline { background: #fff; }
+        .ck.ck-toolbar { background: #f1f1f4; border-color: var(--border); }
+        .ck-body-wrapper { position: relative; z-index: 90; }
+
         .cms-field { display: grid; gap: 4px; }
         .cms-field.full { grid-column: 1 / -1; }
         .cms-label {
@@ -425,6 +432,10 @@
         'saved-searches' => ['Tìm kiếm lưu', 'fa-bookmark', null],
         'analytics' => ['Thống kê', 'fa-chart-line', null],
     ];
+    $systemItems = [
+        'reports' => ['Báo cáo vi phạm', 'fa-flag', $stats['open_reports'] ?? null],
+        'settings' => ['Cài đặt', 'fa-gear', null],
+    ];
 @endphp
 
 <body>
@@ -455,6 +466,7 @@
                 <x-website-cms-nav-group title="Vận hành" :items="$mainItems" :active-tab="$activeTab" />
                 <x-website-cms-nav-group title="Nội dung" :items="$catalogItems" :active-tab="$activeTab" />
                 <x-website-cms-nav-group title="Người dùng" :items="$userItems" :active-tab="$activeTab" />
+                <x-website-cms-nav-group title="Hệ thống" :items="$systemItems" :active-tab="$activeTab" />
             </nav>
         </aside>
 

@@ -5,6 +5,7 @@ namespace App\Livewire;
 use App\Models\BlogPost;
 use App\Models\ListingCategory;
 use App\Models\ListingContactRequest;
+use App\Models\ListingReport;
 use App\Models\RealEstateListing;
 use App\Models\User;
 use App\Models\UserInvite;
@@ -98,6 +99,15 @@ class WebsiteAdmin extends Component
     public $accountExistingInviteCode = '';
     public $accountViewPhonePin = '';
 
+    public $settings = [];
+
+    public $reportSearch = '';
+    public $reportStatus = 'pending';
+    public $reportTarget = 'all';
+    public $showReportModal = false;
+    public $reportEditingId = null;
+    public $reportAdminReason = '';
+
     protected $queryString = [
         'activeTab' => ['except' => 'overview', 'as' => 'tab'],
         'listingSearch' => ['except' => ''],
@@ -110,22 +120,139 @@ class WebsiteAdmin extends Component
         'leadStatus' => ['except' => 'all'],
         'accountSearch' => ['except' => ''],
         'accountRole' => ['except' => 'all'],
+        'reportSearch' => ['except' => ''],
+        'reportStatus' => ['except' => 'pending'],
+        'reportTarget' => ['except' => 'all'],
     ];
 
     public function setTab($tab)
     {
-        $allowed = ['overview', 'home', 'listings', 'categories', 'blogs', 'accounts', 'leads', 'favorites', 'saved-searches', 'analytics'];
+        $allowed = ['overview', 'home', 'listings', 'categories', 'blogs', 'accounts', 'leads', 'reports', 'favorites', 'saved-searches', 'analytics', 'settings'];
         if (in_array($tab, $allowed, true)) {
             $this->activeTab = $tab;
             $this->resetPage();
         }
     }
 
+    public function mount()
+    {
+        $this->settings = Schema::hasTable('site_settings')
+            ? \App\Models\SiteSetting::values()
+            : config('site.defaults');
+    }
+
     public function updated($property)
     {
-        if (Str::contains($property, ['Search', 'Status', 'Vip', 'Role'])) {
+        if (Str::contains($property, ['Search', 'Status', 'Vip', 'Role', 'Target'])) {
             $this->resetPage();
         }
+    }
+
+    public function openReport($id)
+    {
+        if (! Schema::hasTable('listing_reports')) {
+            return;
+        }
+
+        $report = ListingReport::findOrFail($id);
+        $this->reportEditingId = $report->id;
+        $this->reportAdminReason = $report->admin_reason ?: '';
+        $this->showReportModal = true;
+    }
+
+    /**
+     * Resolve a report. $action = 'remove' (gỡ bài) | 'keep' (giữ bài).
+     * Both require an admin reason that is surfaced to the user.
+     */
+    public function resolveReport($action)
+    {
+        if (! in_array($action, ['remove', 'keep'], true) || ! $this->reportEditingId || ! Schema::hasTable('listing_reports')) {
+            return;
+        }
+
+        $this->validate([
+            'reportAdminReason' => 'required|string|min:5|max:2000',
+        ], [], ['reportAdminReason' => 'lý do']);
+
+        $report = ListingReport::findOrFail($this->reportEditingId);
+
+        $report->update([
+            'status' => $action === 'remove' ? 'resolved_removed' : 'resolved_kept',
+            'admin_reason' => $this->reportAdminReason,
+            'handled_by' => auth()->id(),
+            'handled_at' => now(),
+        ]);
+
+        // "Gỡ" → mark the listing rejected with the reason so the owner sees it.
+        if ($action === 'remove' && $report->listing_id) {
+            RealEstateListing::where('id', $report->listing_id)->update([
+                'status' => 'rejected',
+                'rejection_reason' => $this->reportAdminReason,
+            ]);
+        }
+
+        session()->flash('message', $action === 'remove' ? 'Đã gỡ bài và lưu lý do.' : 'Đã giữ bài và lưu phản hồi.');
+        $this->closeReportModal();
+    }
+
+    public function deleteReport($id)
+    {
+        if (Schema::hasTable('listing_reports')) {
+            ListingReport::where('id', $id)->delete();
+            session()->flash('message', 'Đã xóa báo cáo.');
+        }
+    }
+
+    public function closeReportModal()
+    {
+        $this->showReportModal = false;
+        $this->reportEditingId = null;
+        $this->reportAdminReason = '';
+        $this->resetValidation();
+    }
+
+    public function saveSettings()
+    {
+        $data = $this->validate([
+            'settings.contact.site_name' => 'required|string|max:120',
+            'settings.contact.hotline' => 'required|string|max:40',
+            'settings.contact.zalo_phone' => 'required|string|max:40',
+            'settings.contact.email' => 'nullable|email|max:160',
+            'settings.contact.support_hours' => 'nullable|string|max:120',
+
+            'settings.packages.free_daily_quota' => 'required|integer|min:0|max:1000',
+            'settings.packages.tier_30_price' => 'required|integer|min:0|max:100000000',
+            'settings.packages.tier_30_quota' => 'required|integer|min:0|max:1000',
+            'settings.packages.tier_50_price' => 'required|integer|min:0|max:100000000',
+            'settings.packages.tier_50_quota' => 'required|integer|min:0|max:1000',
+            'settings.packages.online_payment_enabled' => 'boolean',
+
+            'settings.watermark.enabled' => 'boolean',
+            'settings.watermark.text' => 'nullable|string|max:60',
+            'settings.watermark.position' => 'required|in:top-left,top-right,bottom-left,bottom-right,center',
+            'settings.watermark.opacity' => 'required|integer|min:0|max:100',
+            'settings.watermark.font_size' => 'required|integer|min:8|max:200',
+            'settings.watermark.color' => 'required|string|max:9',
+            'settings.watermark.margin' => 'required|integer|min:0|max:200',
+
+            'settings.upload.max_size_mb' => 'required|integer|min:1|max:50',
+            'settings.upload.max_count' => 'required|integer|min:1|max:60',
+            'settings.upload.compress_quality' => 'required|integer|min:30|max:100',
+            'settings.upload.max_dimension' => 'required|integer|min:480|max:8000',
+        ]);
+
+        // Cast booleans/ints that arrive as strings from the form.
+        $data['settings']['packages']['online_payment_enabled'] = (bool) ($this->settings['packages']['online_payment_enabled'] ?? false);
+        $data['settings']['watermark']['enabled'] = (bool) ($this->settings['watermark']['enabled'] ?? false);
+
+        $setting = \App\Models\SiteSetting::current();
+        $setting->forceFill([
+            'value' => array_replace_recursive(config('site.defaults'), $data['settings']),
+            'updated_by' => auth()->id(),
+        ])->save();
+
+        $this->settings = \App\Models\SiteSetting::values();
+        session()->flash('message', 'Đã lưu cấu hình website.');
     }
 
     public function render()
@@ -139,6 +266,8 @@ class WebsiteAdmin extends Component
             'categories' => $this->categories(),
             'blogs' => $this->blogs(),
             'leads' => $this->leads(),
+            'reports' => $this->reports(),
+            'selectedReport' => $this->selectedReport(),
             'accounts' => $this->accounts(),
             'accountInviters' => $this->accountInviters(),
             'selectedAccount' => $this->selectedAccount(),
@@ -329,13 +458,16 @@ class WebsiteAdmin extends Component
 
     public function updateListingStatus($id, $status)
     {
-        if (! in_array($status, ['active', 'pending', 'expired', 'sold'], true)) {
+        if (! in_array($status, ['active', 'pending', 'expired', 'sold', 'rejected'], true)) {
             return;
         }
 
         $listing = RealEstateListing::findOrFail($id);
         $listing->status = $status;
         $listing->is_sold = $status === 'sold';
+        if ($status !== 'rejected') {
+            $listing->rejection_reason = null;
+        }
         $listing->save();
     }
 
@@ -733,6 +865,7 @@ class WebsiteAdmin extends Component
             'leads' => $this->countTable('listing_contact_requests'),
             'open_leads' => $this->countLeadStatus('new'),
             'accounts' => $this->countTable('users'),
+            'open_reports' => $this->countReportStatus('pending'),
             'favorites' => $this->countTable('listing_favorites'),
             'saved_searches' => $this->countTable('saved_searches'),
             'views' => $this->countTable('listing_view_events'),
@@ -957,6 +1090,52 @@ class WebsiteAdmin extends Component
             })
             ->latest()
             ->paginate(10, ['*'], 'leadsPage');
+    }
+
+    private function reports()
+    {
+        if (! Schema::hasTable('listing_reports')) {
+            return $this->emptyPaginator('reportsPage');
+        }
+
+        return ListingReport::query()
+            ->with(['listing:id,title,code,status', 'reportedUser:id,name,phone', 'reporter:id,name,phone'])
+            ->when($this->reportSearch, function ($query) {
+                $query->where(function ($q) {
+                    $q->where('detail', 'like', '%' . $this->reportSearch . '%')
+                        ->orWhere('reporter_name', 'like', '%' . $this->reportSearch . '%')
+                        ->orWhere('reporter_phone', 'like', '%' . $this->reportSearch . '%')
+                        ->orWhereHas('listing', fn ($l) => $l->where('title', 'like', '%' . $this->reportSearch . '%')->orWhere('code', 'like', '%' . $this->reportSearch . '%'));
+                });
+            })
+            ->when($this->reportStatus !== 'all', fn ($q) => $q->where('status', $this->reportStatus))
+            ->when($this->reportTarget !== 'all', fn ($q) => $q->where('target_type', $this->reportTarget))
+            ->latest()
+            ->paginate(12, ['*'], 'reportsPage');
+    }
+
+    private function selectedReport()
+    {
+        if (! $this->reportEditingId || ! Schema::hasTable('listing_reports')) {
+            return null;
+        }
+
+        return ListingReport::query()
+            ->with(['listing', 'reportedUser:id,name,phone', 'reporter:id,name,phone', 'handler:id,name'])
+            ->find($this->reportEditingId);
+    }
+
+    private function countReportStatus($status)
+    {
+        if (! Schema::hasTable('listing_reports')) {
+            return 0;
+        }
+
+        try {
+            return ListingReport::where('status', $status)->count();
+        } catch (\Throwable $e) {
+            return 0;
+        }
     }
 
     private function accounts()

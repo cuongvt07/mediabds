@@ -15,6 +15,8 @@ use App\Http\Controllers\Api\MeApiController;
 use App\Http\Controllers\Api\SavedSearchApiController;
 use App\Http\Controllers\Api\ExtensionConfigController;
 use App\Http\Controllers\Api\ExtensionActivationController;
+use App\Http\Controllers\Api\SettingsApiController;
+use App\Http\Controllers\Api\ReportApiController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -26,6 +28,7 @@ Route::prefix('v1')->group(function () {
         ->middleware('throttle:10,1');
     Route::get('/extension/config', [ExtensionConfigController::class, 'show'])
         ->middleware(['extension.device', 'throttle:60,1']);
+    Route::get('/settings', [SettingsApiController::class, 'show']);
     Route::get('/categories', [CategoryApiController::class, 'index']);
     Route::get('/locations', [LocationApiController::class, 'index']);
     Route::get('/blogs', [BlogApiController::class, 'index']);
@@ -40,6 +43,9 @@ Route::prefix('v1')->group(function () {
 
     // Leads: rate-limit 3/5min
     Route::post('/leads', [LeadApiController::class, 'store'])->middleware('throttle:3,5');
+
+    // Abuse reports (listing/user): rate-limit 5/5min
+    Route::post('/reports', [ReportApiController::class, 'store'])->middleware('throttle:5,5');
 
     // Authenticated
     Route::middleware('auth:sanctum')->group(function () {

@@ -3,6 +3,7 @@
         'pending' => ['Chờ duyệt', 'warning'],
         'active' => ['Đã đăng', 'success'],
         'expired' => ['Hết hạn', 'muted'],
+        'rejected' => ['Từ chối', 'danger'],
         'sold' => ['Đã giao dịch', 'info'],
         'draft' => ['Nháp', 'muted'],
         'published' => ['Đã đăng', 'success'],
@@ -153,6 +154,7 @@
                         <option value="pending">Chờ duyệt</option>
                         <option value="active">Đã đăng</option>
                         <option value="expired">Hết hạn</option>
+                        <option value="rejected">Từ chối</option>
                         <option value="sold">Đã giao dịch</option>
                     </select>
                     <select class="cms-select" wire:model.live="listingVip">
@@ -193,7 +195,7 @@
                                 <td class="mono">{{ $listing->area ? $listing->area . ' m²' : '-' }}</td>
                                 <td>
                                     <select class="cms-select" wire:change="updateListingStatus({{ $listing->id }}, $event.target.value)">
-                                        @foreach (['pending' => 'Chờ duyệt', 'active' => 'Đã đăng', 'expired' => 'Hết hạn', 'sold' => 'Đã giao dịch'] as $value => $label)
+                                        @foreach (['pending' => 'Chờ duyệt', 'active' => 'Đã đăng', 'expired' => 'Hết hạn', 'rejected' => 'Từ chối', 'sold' => 'Đã giao dịch'] as $value => $label)
                                             <option value="{{ $value }}" @selected($state === $value)>{{ $label }}</option>
                                         @endforeach
                                     </select>
@@ -647,6 +649,149 @@
                 </div>
             </section>
         </div>
+    @elseif ($activeTab === 'reports')
+        @php
+            $reasonLabels = \App\Models\ListingReport::REASONS;
+            $reportStatusLabels = ['pending' => ['Chờ xử lý', 'warning'], 'resolved_removed' => ['Đã gỡ', 'danger'], 'resolved_kept' => ['Giữ bài', 'success']];
+        @endphp
+        <section class="cms-panel">
+            <div class="cms-panel-head">
+                <h2 class="cms-panel-title">Báo cáo vi phạm</h2>
+                <div style="display:flex; gap:8px;">
+                    <input class="cms-input" style="width: 260px;" wire:model.live.debounce.300ms="reportSearch" placeholder="Tìm tin, người báo cáo, nội dung">
+                    <select class="cms-select" wire:model.live="reportTarget">
+                        <option value="all">Tất cả đối tượng</option>
+                        <option value="listing">Bài đăng</option>
+                        <option value="user">Tài khoản</option>
+                    </select>
+                    <select class="cms-select" wire:model.live="reportStatus">
+                        <option value="pending">Chờ xử lý</option>
+                        <option value="resolved_removed">Đã gỡ</option>
+                        <option value="resolved_kept">Giữ bài</option>
+                        <option value="all">Tất cả</option>
+                    </select>
+                </div>
+            </div>
+            <div class="cms-table-wrap cms-scrollbar">
+                <table class="cms-table">
+                    <thead>
+                        <tr>
+                            <th style="width:80px;">Đối tượng</th>
+                            <th>Bài đăng / Tài khoản bị báo cáo</th>
+                            <th style="width:140px;">Lý do</th>
+                            <th style="width:160px;">Người báo cáo</th>
+                            <th style="width:120px;">Trạng thái</th>
+                            <th style="width:120px;">Ngày</th>
+                            <th class="right" style="width:150px;">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse ($reports as $report)
+                            @php $rsMeta = $reportStatusLabels[$report->status] ?? ['—', 'muted']; @endphp
+                            <tr>
+                                <td><span class="cms-badge {{ $report->target_type === 'listing' ? 'info' : 'warning' }}">{{ $report->target_type === 'listing' ? 'Bài đăng' : 'Tài khoản' }}</span></td>
+                                <td>
+                                    @if ($report->target_type === 'listing')
+                                        <div class="cms-truncate" style="color: var(--text-primary); font-weight:700">{{ $report->listing?->title ?: 'Tin đã xóa' }}</div>
+                                        <div class="mono cms-truncate" style="color: var(--text-muted); font-size:11px">{{ $report->listing?->code ?: ($report->listing_id ? '#' . $report->listing_id : '-') }}</div>
+                                    @else
+                                        <div class="cms-truncate" style="color: var(--text-primary); font-weight:700">{{ $report->reportedUser?->name ?: 'Tài khoản' }}</div>
+                                        <div class="mono cms-truncate" style="color: var(--text-muted); font-size:11px">{{ $report->reportedUser?->phone ?: '-' }}</div>
+                                    @endif
+                                </td>
+                                <td><div class="cms-truncate" title="{{ $report->detail }}">{{ $reasonLabels[$report->reason] ?? $report->reason }}</div></td>
+                                <td>
+                                    <div class="cms-truncate">{{ $report->reporter?->name ?: $report->reporter_name ?: 'Ẩn danh' }}</div>
+                                    <div class="mono" style="color: var(--text-muted); font-size:11px">{{ $report->reporter?->phone ?: $report->reporter_phone ?: '-' }}</div>
+                                </td>
+                                <td><span class="cms-badge {{ $rsMeta[1] }}">{{ $rsMeta[0] }}</span></td>
+                                <td class="mono">{{ optional($report->created_at)->format('d/m/Y H:i') }}</td>
+                                <td class="right">
+                                    <button class="cms-btn primary" wire:click="openReport({{ $report->id }})">Xử lý</button>
+                                    <button class="cms-btn danger" wire:click="deleteReport({{ $report->id }})" wire:confirm="Xóa báo cáo này?"><i class="fa-solid fa-trash"></i></button>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="7" style="text-align:center; height:72px;">Không có báo cáo nào khớp bộ lọc.</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+            <div class="cms-pagination">{{ $reports->links(data: ['scrollTo' => false]) }}</div>
+        </section>
+    @elseif ($activeTab === 'settings')
+        <div class="cms-grid-2">
+            <section class="cms-panel">
+                <div class="cms-panel-head">
+                    <h2 class="cms-panel-title">Liên hệ &amp; Zalo</h2>
+                    <span style="color: var(--text-secondary)">Hiển thị trên website &amp; nút mua gói</span>
+                </div>
+                <div class="cms-form-grid">
+                    <label class="cms-field full"><span class="cms-label">Tên website</span><input class="cms-input" wire:model="settings.contact.site_name"></label>
+                    <label class="cms-field"><span class="cms-label">Hotline</span><input class="cms-input mono" wire:model="settings.contact.hotline"></label>
+                    <label class="cms-field"><span class="cms-label">Số Zalo (nhận liên hệ mua gói)</span><input class="cms-input mono" wire:model="settings.contact.zalo_phone"></label>
+                    <label class="cms-field"><span class="cms-label">Email</span><input class="cms-input" wire:model="settings.contact.email"></label>
+                    <label class="cms-field"><span class="cms-label">Giờ hỗ trợ</span><input class="cms-input" wire:model="settings.contact.support_hours"></label>
+                    @error('settings.contact.zalo_phone') <div class="cms-field full" style="color:var(--danger); font-size:12px;">{{ $message }}</div> @enderror
+                </div>
+
+                <div class="cms-panel-head"><h3 class="cms-panel-title">Gói đăng tin</h3></div>
+                <div class="cms-form-grid">
+                    <label class="cms-field"><span class="cms-label">Hạn mức gói Free (tin/ngày)</span><input class="cms-input mono" type="number" wire:model="settings.packages.free_daily_quota"></label>
+                    <label class="cms-field"><span class="cms-label">Thanh toán online</span>
+                        <select class="cms-select" wire:model="settings.packages.online_payment_enabled">
+                            <option value="0">Tắt - liên hệ Zalo</option>
+                            <option value="1">Bật</option>
+                        </select>
+                    </label>
+                    <label class="cms-field"><span class="cms-label">Gói 1 - hạn mức (tin/ngày)</span><input class="cms-input mono" type="number" wire:model="settings.packages.tier_30_quota"></label>
+                    <label class="cms-field"><span class="cms-label">Gói 1 - giá (đ/tháng)</span><input class="cms-input mono" type="number" wire:model="settings.packages.tier_30_price"></label>
+                    <label class="cms-field"><span class="cms-label">Gói 2 - hạn mức (tin/ngày)</span><input class="cms-input mono" type="number" wire:model="settings.packages.tier_50_quota"></label>
+                    <label class="cms-field"><span class="cms-label">Gói 2 - giá (đ/tháng)</span><input class="cms-input mono" type="number" wire:model="settings.packages.tier_50_price"></label>
+                </div>
+            </section>
+
+            <section class="cms-panel">
+                <div class="cms-panel-head">
+                    <h2 class="cms-panel-title">Watermark ảnh</h2>
+                    <span style="color: var(--text-secondary)">Tự động chèn khi upload ảnh tin</span>
+                </div>
+                <div class="cms-form-grid">
+                    <label class="cms-field"><span class="cms-label">Bật watermark</span>
+                        <select class="cms-select" wire:model="settings.watermark.enabled">
+                            <option value="1">Bật</option>
+                            <option value="0">Tắt</option>
+                        </select>
+                    </label>
+                    <label class="cms-field"><span class="cms-label">Vị trí</span>
+                        <select class="cms-select" wire:model="settings.watermark.position">
+                            <option value="bottom-right">Dưới phải</option>
+                            <option value="bottom-left">Dưới trái</option>
+                            <option value="top-right">Trên phải</option>
+                            <option value="top-left">Trên trái</option>
+                            <option value="center">Giữa ảnh</option>
+                        </select>
+                    </label>
+                    <label class="cms-field full"><span class="cms-label">Chữ watermark</span><input class="cms-input" wire:model="settings.watermark.text"></label>
+                    <label class="cms-field"><span class="cms-label">Độ mờ (0-100)</span><input class="cms-input mono" type="number" wire:model="settings.watermark.opacity"></label>
+                    <label class="cms-field"><span class="cms-label">Cỡ chữ (px)</span><input class="cms-input mono" type="number" wire:model="settings.watermark.font_size"></label>
+                    <label class="cms-field"><span class="cms-label">Màu chữ (hex)</span><input class="cms-input mono" wire:model="settings.watermark.color"></label>
+                    <label class="cms-field"><span class="cms-label">Lề (px)</span><input class="cms-input mono" type="number" wire:model="settings.watermark.margin"></label>
+                </div>
+
+                <div class="cms-panel-head"><h3 class="cms-panel-title">Giới hạn upload ảnh</h3></div>
+                <div class="cms-form-grid">
+                    <label class="cms-field"><span class="cms-label">Dung lượng tối đa/ảnh (MB)</span><input class="cms-input mono" type="number" wire:model="settings.upload.max_size_mb"></label>
+                    <label class="cms-field"><span class="cms-label">Số ảnh tối đa/tin</span><input class="cms-input mono" type="number" wire:model="settings.upload.max_count"></label>
+                    <label class="cms-field"><span class="cms-label">Chất lượng nén (30-100)</span><input class="cms-input mono" type="number" wire:model="settings.upload.compress_quality"></label>
+                    <label class="cms-field"><span class="cms-label">Cạnh dài tối đa (px)</span><input class="cms-input mono" type="number" wire:model="settings.upload.max_dimension"></label>
+                </div>
+
+                <div class="cms-panel-head" style="justify-content:flex-end;">
+                    <button class="cms-btn primary" wire:click="saveSettings"><i class="fa-solid fa-floppy-disk"></i> Lưu cấu hình</button>
+                </div>
+            </section>
+        </div>
     @endif
 
     @if ($showAccountModal)
@@ -788,7 +933,27 @@
                     <label class="cms-field full"><span class="cms-label">Tiêu đề *</span><input class="cms-input" wire:model="blogTitle"></label>
                     <label class="cms-field full"><span class="cms-label">Slug</span><input class="cms-input mono" wire:model="blogSlug"></label>
                     <label class="cms-field full"><span class="cms-label">Tóm tắt</span><textarea class="cms-textarea" style="min-height:70px" wire:model="blogExcerpt"></textarea></label>
-                    <label class="cms-field full"><span class="cms-label">Nội dung *</span><textarea class="cms-textarea" style="min-height:220px" wire:model="blogContent"></textarea></label>
+                    <div class="cms-field full" wire:ignore wire:key="blog-editor-{{ $blogEditingId ?? 'new' }}">
+                        <span class="cms-label">Nội dung *</span>
+                        <div x-data="{
+                                editor: null,
+                                init() {
+                                    if (typeof ClassicEditor === 'undefined') { return; }
+                                    ClassicEditor.create(this.$refs.ed).then((editor) => {
+                                        this.editor = editor;
+                                        editor.setData(@js($blogContent ?? ''));
+                                        let t;
+                                        editor.model.document.on('change:data', () => {
+                                            clearTimeout(t);
+                                            t = setTimeout(() => $wire.set('blogContent', editor.getData(), false), 300);
+                                        });
+                                    }).catch((e) => console.error('CKEditor:', e));
+                                },
+                                destroy() { if (this.editor) { this.editor.destroy().catch(() => {}); this.editor = null; } }
+                            }">
+                            <textarea x-ref="ed"></textarea>
+                        </div>
+                    </div>
                     <label class="cms-field full"><span class="cms-label">Ảnh đại diện</span><input class="cms-input" wire:model="blogCoverImage"></label>
                     <label class="cms-field"><span class="cms-label">Tác giả</span><input class="cms-input" wire:model="blogAuthorName"></label>
                     <label class="cms-field"><span class="cms-label">Tag chính</span><input class="cms-input" wire:model="blogCategoryTag"></label>
@@ -822,6 +987,49 @@
                 <div class="cms-panel-head" style="justify-content:flex-end;">
                     <button class="cms-btn" wire:click="closeLeadModal">Hủy</button>
                     <button class="cms-btn primary" wire:click="saveLead">Lưu khách liên hệ</button>
+                </div>
+            </section>
+        </div>
+    @endif
+
+    @if ($showReportModal && $selectedReport)
+        @php
+            $reasonLabels = \App\Models\ListingReport::REASONS;
+        @endphp
+        <div class="cms-modal-backdrop">
+            <section class="cms-modal" style="width: min(640px, calc(100vw - 48px));">
+                <div class="cms-panel-head">
+                    <h2 class="cms-panel-title">Xử lý báo cáo vi phạm</h2>
+                    <button class="cms-icon-btn" wire:click="closeReportModal"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <div class="cms-form-grid">
+                    <div class="cms-field"><span class="cms-label">Đối tượng</span><div style="color:var(--text-primary); font-weight:700">{{ $selectedReport->target_type === 'listing' ? 'Bài đăng' : 'Tài khoản' }}</div></div>
+                    <div class="cms-field"><span class="cms-label">Lý do</span><div>{{ $reasonLabels[$selectedReport->reason] ?? $selectedReport->reason }}</div></div>
+
+                    @if ($selectedReport->target_type === 'listing')
+                        <div class="cms-field full"><span class="cms-label">Tin bị báo cáo</span><div style="color:var(--text-primary)">{{ $selectedReport->listing?->title ?: 'Tin đã xóa' }} <span class="mono" style="color:var(--text-muted)">{{ $selectedReport->listing?->code ? '· ' . $selectedReport->listing->code : '' }}</span></div></div>
+                    @else
+                        <div class="cms-field full"><span class="cms-label">Tài khoản bị báo cáo</span><div style="color:var(--text-primary)">{{ $selectedReport->reportedUser?->name ?: '-' }} <span class="mono" style="color:var(--text-muted)">{{ $selectedReport->reportedUser?->phone ?: '' }}</span></div></div>
+                    @endif
+
+                    <div class="cms-field full"><span class="cms-label">Nội dung báo cáo</span><div style="color:var(--text-secondary)">{{ $selectedReport->detail ?: 'Không có mô tả thêm.' }}</div></div>
+                    <div class="cms-field"><span class="cms-label">Người báo cáo</span><div>{{ $selectedReport->reporter?->name ?: $selectedReport->reporter_name ?: 'Ẩn danh' }}</div></div>
+                    <div class="cms-field"><span class="cms-label">Liên hệ</span><div class="mono">{{ $selectedReport->reporter?->phone ?: $selectedReport->reporter_phone ?: '-' }}</div></div>
+
+                    <label class="cms-field full">
+                        <span class="cms-label">Lý do phản hồi (hiển thị cho người dùng) *</span>
+                        <textarea class="cms-textarea" wire:model="reportAdminReason" placeholder="Gỡ: nêu rõ bài vi phạm điều gì. Giữ: giải thích vì sao không gỡ."></textarea>
+                    </label>
+                    @error('reportAdminReason') <div class="cms-field full" style="color:var(--danger); font-size:12px;">{{ $message }}</div> @enderror
+
+                    <div class="cms-field full" style="color:var(--text-muted); font-size:11px;">
+                        “Gỡ bài” sẽ chuyển tin sang trạng thái <strong>Từ chối</strong> kèm lý do và hiển thị ở mục bị từ chối của người đăng. “Giữ bài” lưu phản hồi gửi tới người báo cáo.
+                    </div>
+                </div>
+                <div class="cms-panel-head" style="justify-content:flex-end;">
+                    <button class="cms-btn" wire:click="closeReportModal">Hủy</button>
+                    <button class="cms-btn success" wire:click="resolveReport('keep')">Giữ bài</button>
+                    <button class="cms-btn danger" wire:click="resolveReport('remove')">Gỡ bài</button>
                 </div>
             </section>
         </div>
