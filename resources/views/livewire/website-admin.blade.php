@@ -736,18 +736,42 @@
                 </div>
 
                 <div class="cms-panel-head"><h3 class="cms-panel-title">Gói đăng tin</h3></div>
+                @php
+                    $quotaOptions = [10, 15, 20, 30, 50, 100];
+                    $priceOptions = [199000, 299000, 399000, 499000, 599000, 699000, 799000, 999000, 1499000, 1999000];
+                @endphp
                 <div class="cms-form-grid">
-                    <label class="cms-field"><span class="cms-label">Hạn mức gói Free (tin/ngày)</span><input class="cms-input mono" type="number" wire:model="settings.packages.free_daily_quota"></label>
+                    <label class="cms-field"><span class="cms-label">Hạn mức gói Free</span>
+                        <select class="cms-select" wire:model="settings.packages.free_daily_quota">
+                            @foreach ($quotaOptions as $q)<option value="{{ $q }}">{{ $q }} tin/ngày</option>@endforeach
+                        </select>
+                    </label>
                     <label class="cms-field"><span class="cms-label">Thanh toán online</span>
                         <select class="cms-select" wire:model="settings.packages.online_payment_enabled">
                             <option value="0">Tắt - liên hệ Zalo</option>
                             <option value="1">Bật</option>
                         </select>
                     </label>
-                    <label class="cms-field"><span class="cms-label">Gói 1 - hạn mức (tin/ngày)</span><input class="cms-input mono" type="number" wire:model="settings.packages.tier_30_quota"></label>
-                    <label class="cms-field"><span class="cms-label">Gói 1 - giá (đ/tháng)</span><input class="cms-input mono" type="number" wire:model="settings.packages.tier_30_price"></label>
-                    <label class="cms-field"><span class="cms-label">Gói 2 - hạn mức (tin/ngày)</span><input class="cms-input mono" type="number" wire:model="settings.packages.tier_50_quota"></label>
-                    <label class="cms-field"><span class="cms-label">Gói 2 - giá (đ/tháng)</span><input class="cms-input mono" type="number" wire:model="settings.packages.tier_50_price"></label>
+                    <label class="cms-field"><span class="cms-label">Gói 1 - hạn mức</span>
+                        <select class="cms-select" wire:model="settings.packages.tier_30_quota">
+                            @foreach ($quotaOptions as $q)<option value="{{ $q }}">{{ $q }} tin/ngày</option>@endforeach
+                        </select>
+                    </label>
+                    <label class="cms-field"><span class="cms-label">Gói 1 - giá / tháng</span>
+                        <select class="cms-select" wire:model="settings.packages.tier_30_price">
+                            @foreach ($priceOptions as $p)<option value="{{ $p }}">{{ number_format($p, 0, ',', '.') }}đ</option>@endforeach
+                        </select>
+                    </label>
+                    <label class="cms-field"><span class="cms-label">Gói 2 - hạn mức</span>
+                        <select class="cms-select" wire:model="settings.packages.tier_50_quota">
+                            @foreach ($quotaOptions as $q)<option value="{{ $q }}">{{ $q }} tin/ngày</option>@endforeach
+                        </select>
+                    </label>
+                    <label class="cms-field"><span class="cms-label">Gói 2 - giá / tháng</span>
+                        <select class="cms-select" wire:model="settings.packages.tier_50_price">
+                            @foreach ($priceOptions as $p)<option value="{{ $p }}">{{ number_format($p, 0, ',', '.') }}đ</option>@endforeach
+                        </select>
+                    </label>
                 </div>
             </section>
 
@@ -773,18 +797,76 @@
                         </select>
                     </label>
                     <label class="cms-field full"><span class="cms-label">Chữ watermark</span><input class="cms-input" wire:model="settings.watermark.text"></label>
-                    <label class="cms-field"><span class="cms-label">Độ mờ (0-100)</span><input class="cms-input mono" type="number" wire:model="settings.watermark.opacity"></label>
-                    <label class="cms-field"><span class="cms-label">Cỡ chữ (px)</span><input class="cms-input mono" type="number" wire:model="settings.watermark.font_size"></label>
-                    <label class="cms-field"><span class="cms-label">Màu chữ (hex)</span><input class="cms-input mono" wire:model="settings.watermark.color"></label>
-                    <label class="cms-field"><span class="cms-label">Lề (px)</span><input class="cms-input mono" type="number" wire:model="settings.watermark.margin"></label>
+                    <label class="cms-field"><span class="cms-label">Độ đậm chữ</span>
+                        <select class="cms-select" wire:model="settings.watermark.opacity">
+                            <option value="25">Nhạt</option>
+                            <option value="40">Hơi nhạt</option>
+                            <option value="55">Vừa</option>
+                            <option value="70">Đậm</option>
+                            <option value="90">Rất đậm</option>
+                        </select>
+                    </label>
+                    <label class="cms-field"><span class="cms-label">Cỡ chữ</span>
+                        <select class="cms-select" wire:model="settings.watermark.font_size">
+                            <option value="16">Nhỏ</option>
+                            <option value="22">Vừa</option>
+                            <option value="32">Lớn</option>
+                            <option value="44">Rất lớn</option>
+                        </select>
+                    </label>
+                    <label class="cms-field"><span class="cms-label">Màu chữ</span>
+                        <select class="cms-select" wire:model="settings.watermark.color">
+                            <option value="#FFFFFF">Trắng</option>
+                            <option value="#000000">Đen</option>
+                            <option value="#FFC21C">Vàng</option>
+                            <option value="#07366B">Xanh navy</option>
+                        </select>
+                    </label>
+                    <label class="cms-field"><span class="cms-label">Khoảng cách viền</span>
+                        <select class="cms-select" wire:model="settings.watermark.margin">
+                            <option value="8">Sát viền</option>
+                            <option value="16">Vừa</option>
+                            <option value="24">Xa</option>
+                            <option value="32">Rất xa</option>
+                        </select>
+                    </label>
                 </div>
 
                 <div class="cms-panel-head"><h3 class="cms-panel-title">Giới hạn upload ảnh</h3></div>
                 <div class="cms-form-grid">
-                    <label class="cms-field"><span class="cms-label">Dung lượng tối đa/ảnh (MB)</span><input class="cms-input mono" type="number" wire:model="settings.upload.max_size_mb"></label>
-                    <label class="cms-field"><span class="cms-label">Số ảnh tối đa/tin</span><input class="cms-input mono" type="number" wire:model="settings.upload.max_count"></label>
-                    <label class="cms-field"><span class="cms-label">Chất lượng nén (30-100)</span><input class="cms-input mono" type="number" wire:model="settings.upload.compress_quality"></label>
-                    <label class="cms-field"><span class="cms-label">Cạnh dài tối đa (px)</span><input class="cms-input mono" type="number" wire:model="settings.upload.max_dimension"></label>
+                    <label class="cms-field"><span class="cms-label">Dung lượng tối đa mỗi ảnh</span>
+                        <select class="cms-select" wire:model="settings.upload.max_size_mb">
+                            <option value="2">2 MB</option>
+                            <option value="3">3 MB</option>
+                            <option value="5">5 MB</option>
+                            <option value="8">8 MB</option>
+                            <option value="10">10 MB</option>
+                        </select>
+                    </label>
+                    <label class="cms-field"><span class="cms-label">Số ảnh tối đa mỗi tin</span>
+                        <select class="cms-select" wire:model="settings.upload.max_count">
+                            <option value="10">10 ảnh</option>
+                            <option value="15">15 ảnh</option>
+                            <option value="20">20 ảnh</option>
+                            <option value="30">30 ảnh</option>
+                            <option value="40">40 ảnh</option>
+                        </select>
+                    </label>
+                    <label class="cms-field"><span class="cms-label">Chất lượng ảnh sau nén</span>
+                        <select class="cms-select" wire:model="settings.upload.compress_quality">
+                            <option value="60">Tiết kiệm dung lượng</option>
+                            <option value="80">Cân bằng</option>
+                            <option value="90">Nét cao</option>
+                        </select>
+                    </label>
+                    <label class="cms-field"><span class="cms-label">Kích thước ảnh tối đa</span>
+                        <select class="cms-select" wire:model="settings.upload.max_dimension">
+                            <option value="1280">HD - 1280px</option>
+                            <option value="1600">1600px</option>
+                            <option value="1920">Full HD - 1920px</option>
+                            <option value="2560">2K - 2560px</option>
+                        </select>
+                    </label>
                 </div>
 
                 <div class="cms-panel-head" style="justify-content:flex-end;">
@@ -880,11 +962,25 @@
                     <label class="cms-field"><span class="cms-label">Nguồn dữ liệu</span><select class="cms-select" wire:model="homeSectionSourceType">@foreach($sourceTypeLabels as $value => $label)<option value="{{ $value }}">{{ $label }}</option>@endforeach</select></label>
                     <label class="cms-field"><span class="cms-label">Giao dịch</span><select class="cms-select" wire:model="homeSectionTransactionType"><option value="">Tất cả</option><option value="sale">Bán</option><option value="rent">Cho thuê</option></select></label>
                     <label class="cms-field"><span class="cms-label">Loại BĐS</span><select class="cms-select" wire:model="homeSectionPropertyKind"><option value="">Tất cả</option>@foreach($propertyKindLabels as $value => $label)<option value="{{ $value }}">{{ $label }}</option>@endforeach</select></label>
-                    <label class="cms-field"><span class="cms-label">Danh mục</span><input class="cms-input" wire:model="homeSectionCategoryId"></label>
-                    <label class="cms-field"><span class="cms-label">Tỉnh/Thành</span><input class="cms-input" wire:model="homeSectionProvinceName"></label>
+                    <label class="cms-field"><span class="cms-label">Danh mục</span>
+                        <select class="cms-select" wire:model="homeSectionCategoryId">
+                            <option value="">— Tất cả danh mục —</option>
+                            @foreach($categoryOptions as $opt)<option value="{{ $opt->id }}">{{ $opt->name }}</option>@endforeach
+                        </select>
+                    </label>
+                    <label class="cms-field"><span class="cms-label">Tỉnh/Thành</span>
+                        <select class="cms-select" wire:model="homeSectionProvinceName">
+                            <option value="">— Tất cả tỉnh/thành —</option>
+                            @foreach($provinceOptions as $province)<option value="{{ $province }}">{{ $province }}</option>@endforeach
+                        </select>
+                    </label>
                     <label class="cms-field"><span class="cms-label">Sắp xếp theo</span><select class="cms-select" wire:model="homeSectionSortBy"><option value="created_at">Ngày đăng</option><option value="price">Giá</option><option value="area">Diện tích</option><option value="view_count">Lượt xem</option></select></label>
                     <label class="cms-field"><span class="cms-label">Chiều sắp xếp</span><select class="cms-select" wire:model="homeSectionSortOrder"><option value="desc">Giảm dần</option><option value="asc">Tăng dần</option></select></label>
-                    <label class="cms-field"><span class="cms-label">Giới hạn</span><input class="cms-input mono" type="number" wire:model="homeSectionLimit"></label>
+                    <label class="cms-field"><span class="cms-label">Số tin hiển thị</span>
+                        <select class="cms-select" wire:model="homeSectionLimit">
+                            @foreach([4, 6, 8, 10, 12, 16, 20, 24] as $n)<option value="{{ $n }}">{{ $n }} tin</option>@endforeach
+                        </select>
+                    </label>
                     <label class="cms-field"><span class="cms-label">Thứ tự</span><input class="cms-input mono" type="number" wire:model="homeSectionSortOrderIndex"></label>
                     <label class="cms-field full"><span class="cms-label">Đường dẫn</span><input class="cms-input" wire:model="homeSectionHref"></label>
                     <label class="cms-field full"><span class="cms-label">ID tin thủ công, cách nhau bằng dấu phẩy</span><input class="cms-input mono" wire:model="homeSectionManualIds"></label>
@@ -910,7 +1006,12 @@
                     <label class="cms-field"><span class="cms-label">Tên *</span><input class="cms-input" wire:model="categoryName"></label>
                     <label class="cms-field"><span class="cms-label">Slug</span><input class="cms-input mono" wire:model="categorySlug"></label>
                     <label class="cms-field"><span class="cms-label">Giao dịch</span><select class="cms-select" wire:model="categoryTransactionType"><option value="both">Cả hai</option><option value="sale">Bán</option><option value="rent">Cho thuê</option></select></label>
-                    <label class="cms-field"><span class="cms-label">Loại BĐS</span><input class="cms-input" wire:model="categoryPropertyType"></label>
+                    <label class="cms-field"><span class="cms-label">Loại BĐS</span>
+                        <select class="cms-select" wire:model="categoryPropertyType">
+                            <option value="">— Không —</option>
+                            @foreach($propertyKindLabels as $value => $label)<option value="{{ $value }}">{{ $label }}</option>@endforeach
+                        </select>
+                    </label>
                     <label class="cms-field"><span class="cms-label">Icon</span><input class="cms-input mono" wire:model="categoryIcon"></label>
                     <label class="cms-field"><span class="cms-label">Thứ tự</span><input class="cms-input mono" type="number" wire:model="categorySortOrder"></label>
                 </div>
@@ -956,7 +1057,11 @@
                     </div>
                     <label class="cms-field full"><span class="cms-label">Ảnh đại diện</span><input class="cms-input" wire:model="blogCoverImage"></label>
                     <label class="cms-field"><span class="cms-label">Tác giả</span><input class="cms-input" wire:model="blogAuthorName"></label>
-                    <label class="cms-field"><span class="cms-label">Tag chính</span><input class="cms-input" wire:model="blogCategoryTag"></label>
+                    <label class="cms-field"><span class="cms-label">Tag chính</span>
+                        <select class="cms-select" wire:model="blogCategoryTag">
+                            @foreach(['Tin tức', 'Hướng dẫn', 'Phân tích thị trường', 'Kinh nghiệm', 'Pháp lý', 'Phong thủy', 'Dự án'] as $tag)<option value="{{ $tag }}">{{ $tag }}</option>@endforeach
+                        </select>
+                    </label>
                     <label class="cms-field"><span class="cms-label">Tags</span><input class="cms-input" wire:model="blogTags"></label>
                     <label class="cms-field"><span class="cms-label">Phút đọc</span><input class="cms-input mono" type="number" wire:model="blogReadingMinutes"></label>
                     <label class="cms-field"><span class="cms-label">Trạng thái</span><select class="cms-select" wire:model="blogStatusValue"><option value="draft">Nháp</option><option value="published">Đã đăng</option><option value="archived">Lưu trữ</option></select></label>

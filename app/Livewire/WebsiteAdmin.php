@@ -264,6 +264,8 @@ class WebsiteAdmin extends Component
             'homeSections' => $this->homeSections(),
             'listings' => $this->listings(),
             'categories' => $this->categories(),
+            'categoryOptions' => $this->categoryOptions(),
+            'provinceOptions' => $this->provinceOptions(),
             'blogs' => $this->blogs(),
             'leads' => $this->leads(),
             'reports' => $this->reports(),
@@ -1052,6 +1054,38 @@ class WebsiteAdmin extends Component
             ->orderBy('sort_order')
             ->orderBy('name')
             ->paginate(10, ['*'], 'categoriesPage');
+    }
+
+    private function categoryOptions()
+    {
+        if (! Schema::hasTable('listing_categories')) {
+            return collect();
+        }
+
+        try {
+            return ListingCategory::query()->orderBy('name')->get(['id', 'name']);
+        } catch (\Throwable $e) {
+            return collect();
+        }
+    }
+
+    private function provinceOptions()
+    {
+        if (! Schema::hasColumn('real_estate_listings', 'province_name')) {
+            return collect();
+        }
+
+        try {
+            return RealEstateListing::query()
+                ->whereNotNull('province_name')
+                ->where('province_name', '<>', '')
+                ->distinct()
+                ->orderBy('province_name')
+                ->limit(100)
+                ->pluck('province_name');
+        } catch (\Throwable $e) {
+            return collect();
+        }
     }
 
     private function blogs()
