@@ -493,11 +493,7 @@
         </footer>
     </div>
 
-    @if (session()->has('message'))
-        <div class="cms-flash" x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 4000)">
-            <i class="fa-solid fa-circle-check"></i> {{ session('message') }}
-        </div>
-    @endif
+    {{-- Flash toast is rendered inside the Livewire component so it appears on AJAX saves. --}}
 
     @livewireScripts
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />

@@ -147,6 +147,14 @@ class WebsiteAdmin extends Component
             : config('site.defaults');
     }
 
+    public function rendered()
+    {
+        // The flash message is shown as a toast inside this component's view
+        // (so it appears on Livewire AJAX saves). Clear it afterwards so it
+        // doesn't re-appear on the next interaction.
+        session()->forget('message');
+    }
+
     /**
      * Short Vietnamese money format: 3.150.000.000 → "3,15 tỷ", 550.000.000 → "550 triệu".
      */

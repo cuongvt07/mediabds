@@ -47,6 +47,10 @@ class ListingApiController extends BaseApiController
             $query->where('property_type', $req->string('property_type'));
         }
 
+        if ($req->filled('user_id')) {
+            $query->where('user_id', (int) $req->integer('user_id'));
+        }
+
         if ($req->filled('province')) {
             $v = (string) $req->string('province');
             $query->where(function ($q) use ($v) {
@@ -141,6 +145,8 @@ class ListingApiController extends BaseApiController
             return $this->fail('Không tìm thấy tin', 404);
         }
 
+        // increment() persists and also bumps the in-memory attribute, so we can
+        // return $listing directly without an extra fresh() round-trip.
         $listing->increment('view_count');
 
         try {
@@ -154,7 +160,7 @@ class ListingApiController extends BaseApiController
             // Analytics must not block listing details.
         }
 
-        return new ListingResource($listing->fresh(['user:id,name,phone', 'reporter:id,name']));
+        return new ListingResource($listing);
     }
 
     public function store(CreateListingRequest $req)
@@ -164,12 +170,16 @@ class ListingApiController extends BaseApiController
         $data = $this->normalizeListingPayload($req->validated());
         $data['user_id'] = auth()->id();
         $data['code'] = $this->makeCode($data['property_type'] ?? null);
-        $data['slug'] = $this->makeSlug($data['title']);
         $data['status'] = $data['status'] ?? 'active';
         $data['published_at'] = $data['published_at'] ?? now();
         $data['expires_at'] = $data['expires_at'] ?? now()->addDays(60);
 
         $listing = RealEstateListing::create($data);
+
+        // Re-slug with the real ID so the public URL ends with a stable, numeric
+        // id (title-based, WordPress-like, but always resolvable on the frontend).
+        $listing->slug = $this->makeSlug($listing->title, $listing->id);
+        $listing->save();
 
         return $this->ok(new ListingResource($listing->fresh('user')), 'Created', 201);
     }

@@ -54,6 +54,12 @@
 @endphp
 
 <div>
+    @if (session()->has('message'))
+        <div class="cms-flash" wire:key="cms-flash-{{ md5(session('message')) }}" x-data="{ show: true }" x-show="show" x-transition x-init="setTimeout(() => show = false, 3500)">
+            <i class="fa-solid fa-circle-check"></i> {{ session('message') }}
+        </div>
+    @endif
+
     @if ($activeTab === 'overview')
         <div class="cms-grid-2">
             <section class="cms-panel">
