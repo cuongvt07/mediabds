@@ -611,8 +611,8 @@
                     <tbody>
                         @forelse ($savedSearches as $item)
                             <tr>
-                                <td>{{ $item->user_name ?: $item->user_phone ?: 'Người dùng' }}</td>
-                                <td>{{ $item->name ?: 'Bộ lọc' }}</td>
+                                <td>{{ ($item->user_name ?? null) ?: ($item->user_phone ?? null) ?: 'Người dùng' }}</td>
+                                <td>{{ ($item->name ?? $item->title ?? null) ?: 'Bộ lọc' }}</td>
                                 <td><div class="cms-truncate mono">{{ json_encode($item->filters ?? [], JSON_UNESCAPED_UNICODE) }}</div></td>
                                 <td class="mono">{{ $item->created_at }}</td>
                             </tr>
