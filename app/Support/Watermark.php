@@ -14,6 +14,9 @@ use Illuminate\Support\Facades\Schema;
  */
 class Watermark
 {
+    /** Tăng số này mỗi khi đổi CÁCH VẼ watermark (cỡ chữ, vị trí…) để bust cache _wm cũ. */
+    private const RENDER = 'v2';
+
     private static ?string $version = null;
 
     /** Chuyển URL/đường dẫn ảnh trong storage public thành URL có watermark. Ảnh ngoài giữ nguyên. */
@@ -48,7 +51,7 @@ class Watermark
             $siteName = (string) (SiteSetting::query()->whereKey('site_name')->value('value') ?: '');
         }
 
-        return self::$version = substr(md5($mode . '|' . $watermarkImage . '|' . $siteName), 0, 10);
+        return self::$version = substr(md5(self::RENDER . '|' . $mode . '|' . $watermarkImage . '|' . $siteName), 0, 10);
     }
 
     /** Trích đường dẫn tương đối trong disk public; null nếu không thuộc storage của site. */

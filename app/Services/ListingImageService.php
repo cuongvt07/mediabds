@@ -149,7 +149,7 @@ class ListingImageService
             $base = 100;
             $baseBox = imagettfbbox($base, 0, $font, $text);
             $baseWidth = max(1, abs($baseBox[2] - $baseBox[0]));
-            $fontSize = max(12, (int) round($base * ($imageWidth * 0.72) / $baseWidth));
+            $fontSize = max(12, (int) round($base * ($imageWidth * 0.80) / $baseWidth));
 
             $box = imagettfbbox($fontSize, 0, $font, $text);
             $textWidth = abs($box[2] - $box[0]);
@@ -160,14 +160,26 @@ class ListingImageService
             imagettftext($image, $fontSize, 0, $x + 2, $y + 2, $shadow, $font, $text);
             imagettftext($image, $fontSize, 0, $x, $y, $white, $font, $text);
         } else {
-            // Fallback không cần TTF (LƯU Ý: font built-in không hiện được dấu tiếng Việt).
+            // Fallback không có TTF: vẽ chữ bằng font built-in lên ảnh tạm rồi PHÓNG TO,
+            // để watermark vẫn lớn (~80% bề ngang). Sẽ hơi vỡ nét — muốn nét thì bỏ font .ttf
+            // vào resources/fonts/. (LƯU Ý: font built-in không hiện được dấu tiếng Việt.)
             $gdFont = 5;
-            $textWidth = imagefontwidth($gdFont) * strlen($text);
-            $textHeight = imagefontheight($gdFont);
-            $x = (int) round(($imageWidth - $textWidth) / 2);
-            $y = (int) round(($imageHeight - $textHeight) / 2);
-            imagestring($image, $gdFont, $x + 1, $y + 1, $text, $shadow);
-            imagestring($image, $gdFont, $x, $y, $text, $white);
+            $srcWidth = max(1, imagefontwidth($gdFont) * strlen($text));
+            $srcHeight = max(1, imagefontheight($gdFont));
+
+            $tmp = imagecreatetruecolor($srcWidth, $srcHeight);
+            imagealphablending($tmp, false);
+            imagesavealpha($tmp, true);
+            imagefill($tmp, 0, 0, imagecolorallocatealpha($tmp, 0, 0, 0, 127));
+            $tmpWhite = imagecolorallocatealpha($tmp, 255, 255, 255, 88);
+            imagestring($tmp, $gdFont, 0, 0, $text, $tmpWhite);
+
+            $targetWidth = (int) round($imageWidth * 0.80);
+            $targetHeight = (int) round($srcHeight * ($targetWidth / $srcWidth));
+            $x = (int) round(($imageWidth - $targetWidth) / 2);
+            $y = (int) round(($imageHeight - $targetHeight) / 2);
+            imagecopyresampled($image, $tmp, $x, $y, 0, 0, $targetWidth, $targetHeight, $srcWidth, $srcHeight);
+            imagedestroy($tmp);
         }
 
         $this->saveImage($image, $imagePath, $imageType);
