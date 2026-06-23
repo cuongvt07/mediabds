@@ -8,7 +8,8 @@
         $salesTarget = str_starts_with($salesHref, 'http') ? '_blank' : null;
     @endphp
 
-    <div class="site-shell user-grid">
+    <div class="site-shell">
+        <div class="user-grid">
         {{-- 3 phần: hồ sơ cá nhân --}}
         <aside class="user-profile">
             @php $avatarUrl = $user->avatar ? (str_starts_with($user->avatar,'http') ? $user->avatar : asset('storage/'.ltrim($user->avatar,'/'))) : null; @endphp
@@ -44,6 +45,8 @@
             </div>
         </aside>
 
+        {{-- Cột phải: chứa cả 2 khối (tin đăng + cài đặt), xếp dọc --}}
+        <div class="user-col-main">
         {{-- 7 phần: khối tin đăng --}}
         <section class="user-main">
             <div class="user-main-head">
@@ -284,6 +287,8 @@
             </div>
             @endif
         </section>
+        </div>{{-- /user-col-main --}}
+        </div>{{-- /user-grid --}}
     </div>
 
 </div>
