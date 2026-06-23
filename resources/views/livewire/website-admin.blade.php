@@ -182,7 +182,7 @@
                             <th>Tiêu đề</th>
                             <th style="width:110px;">Khu vực</th>
                             <th class="right" style="width:110px;">Giá</th>
-                            <th style="width:86px;">Diện tích</th>
+                            <th style="width:150px;">Người đăng</th>
                             <th style="width:125px;">Trạng thái</th>
                             <th style="width:88px;">Ưu tiên</th>
                             <th class="right" style="width:80px;">Lượt xem</th>
@@ -199,7 +199,10 @@
                                 <td><div class="cms-truncate" title="{{ $listing->title }}">{{ $listing->title }}</div></td>
                                 <td><div class="cms-truncate">{{ $listing->district_name ?: $listing->province_name ?: '-' }}</div></td>
                                 <td class="right mono" style="color: var(--success)" title="{{ number_format((float) $listing->price, 0, ',', '.') }} đ">{{ $this->formatMoneyShort($listing->price) }}</td>
-                                <td class="mono">{{ $listing->area ? $listing->area . ' m²' : '-' }}</td>
+                                <td>
+                                    <div class="cms-truncate" style="color: var(--text-primary)">{{ optional($listing->user)->name ?: 'Ẩn danh' }}</div>
+                                    <div class="mono cms-truncate" style="color: var(--text-muted); font-size:11px">{{ optional($listing->user)->phone ?: '' }}</div>
+                                </td>
                                 <td>
                                     <select class="cms-select" wire:change="updateListingStatus({{ $listing->id }}, $event.target.value)">
                                         @foreach (['pending' => 'Chờ duyệt', 'active' => 'Đã đăng', 'expired' => 'Hết hạn', 'rejected' => 'Từ chối', 'sold' => 'Đã giao dịch'] as $value => $label)

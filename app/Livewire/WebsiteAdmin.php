@@ -1599,6 +1599,7 @@ class WebsiteAdmin extends Component
     {
         try {
             $query = RealEstateListing::query()
+                ->with('user:id,name,phone')
                 ->when($this->listingSearch, function ($query) {
                     $query->where(function ($q) {
                         $q->where('title', 'like', '%' . $this->listingSearch . '%')

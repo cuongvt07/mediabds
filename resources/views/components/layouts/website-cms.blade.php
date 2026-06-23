@@ -220,11 +220,15 @@
         }
 
         .cms-panel-title {
-            color: var(--text-primary);
+            color: #9bb7ff;
             font-size: 11px;
             font-weight: 800;
             letter-spacing: .12em;
             text-transform: uppercase;
+            padding: 3px 8px 3px 9px;
+            border-left: 3px solid var(--accent);
+            background: linear-gradient(90deg, rgba(61,111,255,.16), rgba(61,111,255,0));
+            border-radius: 0 3px 3px 0;
         }
 
         .cms-grid-2 {
@@ -256,10 +260,10 @@
         }
 
         .cms-table th {
-            height: 30px;
-            border-bottom: 1px solid var(--border);
-            background: #11151f;
-            color: var(--text-muted);
+            height: 32px;
+            border-bottom: 1px solid var(--accent);
+            background: #1a2238;
+            color: #9bb7ff;
             font-size: 10px;
             font-weight: 800;
             letter-spacing: .08em;
@@ -399,11 +403,18 @@
         .cms-field { display: grid; gap: 4px; }
         .cms-field.full { grid-column: 1 / -1; }
         .cms-label {
-            color: var(--text-muted);
+            align-self: start;
+            display: inline-block;
+            width: fit-content;
+            color: #aeb9d6;
+            background: rgba(155, 183, 255, .10);
+            border-left: 2px solid var(--accent);
             font-size: 10px;
             font-weight: 800;
-            letter-spacing: .08em;
+            letter-spacing: .06em;
             text-transform: uppercase;
+            padding: 2px 7px;
+            border-radius: 0 3px 3px 0;
         }
 
         @media (max-width: 1439px) {
