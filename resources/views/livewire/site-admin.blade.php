@@ -1,4 +1,17 @@
 <div class="site-cms">
+    {{-- Toast thông báo (hiện khi bấm Lưu — chạy được cả với action Livewire vì nằm trong component) --}}
+    @if (session()->has('message'))
+        <div wire:key="cms-flash-{{ uniqid() }}"
+             x-data="{ show: true }"
+             x-init="setTimeout(() => show = false, 3000)"
+             x-show="show"
+             x-transition.opacity.duration.300ms
+             class="cms-flash"
+             @click="show = false">
+            {{ session('message') }}
+        </div>
+    @endif
+
     <aside class="site-cms-sidebar">
         <div class="site-cms-sidebar-head">
             <span class="site-cms-sidebar-mark"><i class="fa-solid fa-house"></i></span>

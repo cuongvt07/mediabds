@@ -874,9 +874,8 @@
         </main>
     </div>
 
-    @if (session()->has('message'))
-        <div class="cms-flash">{{ session('message') }}</div>
-    @endif
+    {{-- Toast thông báo đã chuyển vào trong component Livewire (livewire/site-admin.blade.php)
+         để hiện được cả khi bấm Lưu bằng action Livewire (AJAX không re-render layout). --}}
 
     <script>
         // Đăng ký Alpine imageUploader trước khi Alpine khởi động.
