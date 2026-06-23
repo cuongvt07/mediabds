@@ -141,6 +141,27 @@ class WebsiteAdmin extends Component
             : config('site.defaults');
     }
 
+    /**
+     * Short Vietnamese money format: 3.150.000.000 → "3,15 tỷ", 550.000.000 → "550 triệu".
+     */
+    public function formatMoneyShort($amount): string
+    {
+        $n = (float) $amount;
+        if ($n <= 0) {
+            return '—';
+        }
+
+        if ($n >= 1000000000) {
+            return rtrim(rtrim(number_format($n / 1000000000, 2, ',', '.'), '0'), ',') . ' tỷ';
+        }
+
+        if ($n >= 1000000) {
+            return rtrim(rtrim(number_format($n / 1000000, 1, ',', '.'), '0'), ',') . ' triệu';
+        }
+
+        return number_format($n, 0, ',', '.') . ' đ';
+    }
+
     public function updated($property)
     {
         if (Str::contains($property, ['Search', 'Status', 'Vip', 'Role', 'Target'])) {
@@ -220,6 +241,11 @@ class WebsiteAdmin extends Component
             'settings.contact.email' => 'nullable|email|max:160',
             'settings.contact.support_hours' => 'nullable|string|max:120',
 
+            'settings.branding.logo' => 'nullable|string|max:2048',
+            'settings.branding.logo_dark' => 'nullable|string|max:2048',
+            'settings.branding.favicon' => 'nullable|string|max:2048',
+            'settings.branding.tagline' => 'nullable|string|max:200',
+
             'settings.packages.free_daily_quota' => 'required|integer|min:0|max:1000',
             'settings.packages.tier_30_price' => 'required|integer|min:0|max:100000000',
             'settings.packages.tier_30_quota' => 'required|integer|min:0|max:1000',
@@ -239,6 +265,18 @@ class WebsiteAdmin extends Component
             'settings.upload.max_count' => 'required|integer|min:1|max:60',
             'settings.upload.compress_quality' => 'required|integer|min:30|max:100',
             'settings.upload.max_dimension' => 'required|integer|min:480|max:8000',
+
+            'settings.seo.default_title' => 'required|string|max:180',
+            'settings.seo.title_template' => 'required|string|max:120',
+            'settings.seo.default_description' => 'required|string|max:320',
+            'settings.seo.keywords' => 'nullable|string|max:500',
+            'settings.seo.og_image' => 'nullable|string|max:2048',
+            'settings.seo.robots_index' => 'boolean',
+            'settings.seo.canonical_base' => 'nullable|string|max:255',
+            'settings.seo.google_site_verification' => 'nullable|string|max:255',
+            'settings.seo.facebook_app_id' => 'nullable|string|max:64',
+            'settings.seo.twitter_handle' => 'nullable|string|max:64',
+            'settings.seo.analytics_id' => 'nullable|string|max:64',
         ]);
 
         // Cast booleans/ints that arrive as strings from the form.

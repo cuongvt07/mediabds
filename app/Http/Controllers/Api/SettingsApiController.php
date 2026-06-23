@@ -17,8 +17,10 @@ class SettingsApiController extends BaseApiController
 
         return $this->ok([
             'contact' => $values['contact'] ?? [],
+            'branding' => $values['branding'] ?? [],
             'packages' => $values['packages'] ?? [],
             'upload' => $values['upload'] ?? [],
+            'seo' => $values['seo'] ?? [],
             'watermark' => [
                 'enabled' => (bool) ($values['watermark']['enabled'] ?? false),
             ],

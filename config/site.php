@@ -14,6 +14,13 @@ return [
             'support_hours' => '8:00 - 21:00 (T2 - CN)',
         ],
 
+        'branding' => [
+            'logo' => '',          // absolute URL of the header logo
+            'logo_dark' => '',     // optional logo variant for dark backgrounds
+            'favicon' => '',       // absolute URL of the favicon (.ico/.png/.svg)
+            'tagline' => 'Nền tảng tin đăng bất động sản hàng đầu',
+        ],
+
         'packages' => [
             'free_daily_quota' => 20,
             'tier_30_price' => 399000,
@@ -39,6 +46,21 @@ return [
             'max_count' => 20,        // images per listing
             'compress_quality' => 80, // client-side jpeg quality 1-100
             'max_dimension' => 1920,  // client-side longest edge px
+        ],
+
+        'seo' => [
+            'default_title' => 'BDS Việt — Nền tảng tin đăng bất động sản',
+            // %s is replaced by the page title.
+            'title_template' => '%s | BDS Việt',
+            'default_description' => 'Tìm kiếm và đăng tin cho thuê, mua bán bất động sản: căn hộ, phòng trọ, nhà nguyên căn, đất nền, văn phòng trên toàn quốc.',
+            'keywords' => 'bất động sản, nhà đất, cho thuê, mua bán, căn hộ, đất nền',
+            'og_image' => '',                 // absolute URL of the default share image
+            'robots_index' => true,           // false → noindex the whole site
+            'canonical_base' => 'https://vmphuthinhland.com',
+            'google_site_verification' => '',
+            'facebook_app_id' => '',
+            'twitter_handle' => '',           // e.g. @bdsviet
+            'analytics_id' => '',             // GA4 (G-XXXX) or GTM (GTM-XXXX)
         ],
     ],
 ];

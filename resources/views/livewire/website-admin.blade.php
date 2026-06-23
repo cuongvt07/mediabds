@@ -191,7 +191,7 @@
                                 <td class="mono" style="color: var(--text-primary)">{{ $listing->code ?: '#' . $listing->id }}</td>
                                 <td><div class="cms-truncate" title="{{ $listing->title }}">{{ $listing->title }}</div></td>
                                 <td><div class="cms-truncate">{{ $listing->district_name ?: $listing->province_name ?: '-' }}</div></td>
-                                <td class="right mono" style="color: var(--success)">{{ number_format((float) $listing->price, 2) }} {{ $listing->price_unit }}</td>
+                                <td class="right mono" style="color: var(--success)" title="{{ number_format((float) $listing->price, 0, ',', '.') }} đ">{{ $this->formatMoneyShort($listing->price) }}</td>
                                 <td class="mono">{{ $listing->area ? $listing->area . ' m²' : '-' }}</td>
                                 <td>
                                     <select class="cms-select" wire:change="updateListingStatus({{ $listing->id }}, $event.target.value)">
@@ -462,7 +462,7 @@
                     </div>
 
                     <div class="cms-data-list">
-                        <div class="cms-kpi-row"><span>Tổng doanh thu cá nhân</span><strong class="mono">{{ number_format((float) ($selectedAccountStats['total_revenue'] ?? 0), 0, ',', '.') }} đ</strong><span></span></div>
+                        <div class="cms-kpi-row"><span>Tổng doanh thu cá nhân</span><strong class="mono" title="{{ number_format((float) ($selectedAccountStats['total_revenue'] ?? 0), 0, ',', '.') }} đ">{{ $this->formatMoneyShort($selectedAccountStats['total_revenue'] ?? 0) }}</strong><span></span></div>
                         <div class="cms-kpi-row"><span>Tin đã đăng/phụ trách</span><strong class="mono">{{ number_format((int) ($selectedAccountStats['listings'] ?? 0)) }}</strong><span></span></div>
                         <div class="cms-kpi-row"><span>Lead gửi bởi tài khoản</span><strong class="mono">{{ number_format((int) ($selectedAccountStats['direct_leads'] ?? 0)) }}</strong><span></span></div>
                         <div class="cms-kpi-row"><span>Lead phát sinh trên tin của tài khoản</span><strong class="mono">{{ number_format((int) ($selectedAccountStats['listing_leads'] ?? 0)) }}</strong><span></span></div>
@@ -490,7 +490,7 @@
                         @forelse ($selectedAccountTransactions as $tx)
                             <div class="cms-data-row">
                                 <span class="cms-truncate">{{ $tx->listing_title }}</span>
-                                <span class="mono">{{ number_format((float) $tx->received_amount, 0, ',', '.') }} đ</span>
+                                <span class="mono" title="{{ number_format((float) $tx->received_amount, 0, ',', '.') }} đ">{{ $this->formatMoneyShort($tx->received_amount) }}</span>
                                 <span class="mono" style="text-align:right">{{ $tx->sold_at ? \Carbon\Carbon::parse($tx->sold_at)->format('d/m') : '-' }}</span>
                             </div>
                         @empty
@@ -869,6 +869,61 @@
                     </label>
                 </div>
 
+                <div class="cms-panel-head" style="justify-content:flex-end;">
+                    <button class="cms-btn primary" wire:click="saveSettings"><i class="fa-solid fa-floppy-disk"></i> Lưu cấu hình</button>
+                </div>
+            </section>
+        </div>
+
+        <div class="cms-grid-2" style="margin-top:12px;">
+            <section class="cms-panel">
+                <div class="cms-panel-head">
+                    <h2 class="cms-panel-title">Nhận diện thương hiệu</h2>
+                    <span style="color: var(--text-secondary)">Logo &amp; favicon hiển thị trên website</span>
+                </div>
+                <div class="cms-form-grid">
+                    <label class="cms-field full"><span class="cms-label">Logo (URL)</span><input class="cms-input" wire:model="settings.branding.logo" placeholder="https://.../logo.png"></label>
+                    @if (!empty($settings['branding']['logo'] ?? ''))
+                        <div class="cms-field full" style="background:var(--bg-raised); border:1px solid var(--border); padding:8px; display:flex; align-items:center; gap:8px;">
+                            <img src="{{ $settings['branding']['logo'] }}" alt="logo" style="max-height:40px; max-width:160px; object-fit:contain;">
+                            <span style="color:var(--text-muted); font-size:11px;">Xem trước logo</span>
+                        </div>
+                    @endif
+                    <label class="cms-field full"><span class="cms-label">Logo nền tối (URL, tùy chọn)</span><input class="cms-input" wire:model="settings.branding.logo_dark" placeholder="https://.../logo-white.png"></label>
+                    <label class="cms-field full"><span class="cms-label">Favicon (URL .ico/.png/.svg)</span><input class="cms-input" wire:model="settings.branding.favicon" placeholder="https://.../favicon.ico"></label>
+                    @if (!empty($settings['branding']['favicon'] ?? ''))
+                        <div class="cms-field" style="background:var(--bg-raised); border:1px solid var(--border); padding:8px; display:flex; align-items:center; gap:8px;">
+                            <img src="{{ $settings['branding']['favicon'] }}" alt="favicon" style="height:24px; width:24px; object-fit:contain;">
+                            <span style="color:var(--text-muted); font-size:11px;">Favicon</span>
+                        </div>
+                    @endif
+                    <label class="cms-field full"><span class="cms-label">Slogan / Tagline</span><input class="cms-input" wire:model="settings.branding.tagline"></label>
+                </div>
+            </section>
+
+            <section class="cms-panel">
+                <div class="cms-panel-head">
+                    <h2 class="cms-panel-title">SEO &amp; chia sẻ</h2>
+                    <span style="color: var(--text-secondary)">Tiêu đề, mô tả, ảnh share, tracking</span>
+                </div>
+                <div class="cms-form-grid">
+                    <label class="cms-field full"><span class="cms-label">Tiêu đề mặc định (trang chủ)</span><input class="cms-input" wire:model="settings.seo.default_title"></label>
+                    <label class="cms-field full"><span class="cms-label">Mẫu tiêu đề (dùng %s cho tên trang)</span><input class="cms-input mono" wire:model="settings.seo.title_template" placeholder="%s | BDS Việt"></label>
+                    <label class="cms-field full"><span class="cms-label">Mô tả mặc định</span><textarea class="cms-textarea" style="min-height:64px" wire:model="settings.seo.default_description"></textarea></label>
+                    <label class="cms-field full"><span class="cms-label">Từ khóa (cách nhau dấu phẩy)</span><input class="cms-input" wire:model="settings.seo.keywords"></label>
+                    <label class="cms-field full"><span class="cms-label">Ảnh chia sẻ mạng xã hội (OG image URL)</span><input class="cms-input" wire:model="settings.seo.og_image" placeholder="https://.../og.jpg"></label>
+                    <label class="cms-field"><span class="cms-label">Cho phép Google lập chỉ mục</span>
+                        <select class="cms-select" wire:model="settings.seo.robots_index">
+                            <option value="1">Có (index)</option>
+                            <option value="0">Không (noindex)</option>
+                        </select>
+                    </label>
+                    <label class="cms-field"><span class="cms-label">Tên miền chuẩn (canonical)</span><input class="cms-input mono" wire:model="settings.seo.canonical_base" placeholder="https://..."></label>
+                    <label class="cms-field full"><span class="cms-label">Google Site Verification</span><input class="cms-input mono" wire:model="settings.seo.google_site_verification"></label>
+                    <label class="cms-field"><span class="cms-label">Facebook App ID</span><input class="cms-input mono" wire:model="settings.seo.facebook_app_id"></label>
+                    <label class="cms-field"><span class="cms-label">Twitter/X handle</span><input class="cms-input mono" wire:model="settings.seo.twitter_handle" placeholder="@bdsviet"></label>
+                    <label class="cms-field full"><span class="cms-label">Mã Analytics (GA4 G-... hoặc GTM-...)</span><input class="cms-input mono" wire:model="settings.seo.analytics_id"></label>
+                </div>
                 <div class="cms-panel-head" style="justify-content:flex-end;">
                     <button class="cms-btn primary" wire:click="saveSettings"><i class="fa-solid fa-floppy-disk"></i> Lưu cấu hình</button>
                 </div>
