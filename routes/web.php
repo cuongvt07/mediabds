@@ -17,6 +17,10 @@ Route::get('/', [RoomSiteController::class, 'index'])->name('site.home');
 Route::get('/tin-dang/{listing}', [RoomSiteController::class, 'show'])->name('site.listings.show');
 
 Route::get('/login', Login::class)->name('login');
+// /auth/login và /auth/register chỉ nhận POST (form submit). Nếu mở thẳng bằng GET
+// (gõ URL, bookmark, bot, nút back) thì redirect về trang đăng nhập thay vì lỗi 405.
+Route::get('/auth/login', fn () => redirect()->route('login'));
+Route::get('/auth/register', fn () => redirect()->route('login', ['register' => 1]));
 Route::post('/auth/login', [SiteAuthController::class, 'login'])->name('site.auth.login');
 Route::post('/auth/register', [SiteAuthController::class, 'register'])->name('site.auth.register');
 Route::post('/logout', function () {
