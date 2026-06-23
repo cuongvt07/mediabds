@@ -3,7 +3,7 @@
 @php
     $images = is_array($listing->images) ? $listing->images : [];
     if ($listing->avatar && ! in_array($listing->avatar, $images, true)) array_unshift($images, $listing->avatar);
-    $imageUrl = fn ($path) => str_starts_with((string) $path, 'http') ? $path : asset('storage/' . ltrim((string) $path, '/'));
+    $imageUrl = fn ($path) => \App\Support\Watermark::url((string) $path) ?: asset('storage/' . ltrim((string) $path, '/'));
     if (empty($images)) $images = ['https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=1400&q=85'];
     $roomLabels = ['duplex' => 'Duplex', 'studio' => 'Studio', 'loft' => 'Phòng có gác', 'balcony' => 'Phòng ban công'];
     $furnishLabels = ['full' => 'Đầy đủ nội thất', 'basic' => 'Nội thất cơ bản', 'empty' => 'Phòng trống'];

@@ -1,6 +1,6 @@
 <div class="user-page">
     @php
-        $imageUrl = fn ($path) => $path ? (str_starts_with((string) $path, 'http') ? $path : asset('storage/' . ltrim((string) $path, '/'))) : 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=600&q=70';
+        $imageUrl = fn ($path) => $path ? \App\Support\Watermark::url((string) $path) : 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=600&q=70';
         $initial = mb_strtoupper(mb_substr($user->name ?: 'U', 0, 1));
         $effectivePlan = $user->posting_plan_expires_at && $user->posting_plan_expires_at->isPast() ? 'free' : ($user->posting_plan ?: 'free');
         $salesPhone = $siteContact['phone'] ?? '';

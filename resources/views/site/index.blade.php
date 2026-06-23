@@ -9,7 +9,7 @@
         if (! $path) {
             return 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=1400&q=85';
         }
-        return str_starts_with($path, 'http') ? $path : asset('storage/' . ltrim($path, '/'));
+        return \App\Support\Watermark::url($path);
     };
     $slideImageUrl = fn ($slide) => $slide->image_url ?? $imageUrl($slide);
     $roomLabels = ['duplex' => 'Duplex', 'studio' => 'Studio', 'loft' => 'Phòng có gác', 'balcony' => 'Phòng ban công'];

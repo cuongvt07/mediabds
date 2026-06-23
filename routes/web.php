@@ -2,10 +2,16 @@
 
 use App\Http\Controllers\Site\RoomSiteController;
 use App\Http\Controllers\Site\SiteAuthController;
+use App\Http\Controllers\WatermarkController;
 use App\Livewire\Auth\Login;
 use App\Livewire\SiteAdmin;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
+
+// Ảnh tin đăng có watermark chèn on-the-fly (cache theo version cấu hình watermark).
+Route::get('/wm/{version}/{path}', [WatermarkController::class, 'show'])
+    ->where('path', '.*')
+    ->name('wm');
 
 Route::get('/', [RoomSiteController::class, 'index'])->name('site.home');
 Route::get('/tin-dang/{listing}', [RoomSiteController::class, 'show'])->name('site.listings.show');

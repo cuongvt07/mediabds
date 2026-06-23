@@ -9,22 +9,33 @@ use Illuminate\Support\Facades\Storage;
 
 class ListingImageService
 {
+    /**
+     * Lưu ảnh GỐC SẠCH (không bake watermark).
+     *
+     * Watermark được chèn ON-THE-FLY khi hiển thị (xem App\Support\Watermark + route /wm),
+     * nên ảnh cũ lẫn ảnh mới đều luôn có dấu, đổi setting là tự cập nhật, và không làm hỏng
+     * ảnh gốc (không re-encode chồng nhiều lần).
+     */
     public function storeWithWatermark(UploadedFile $file, string $directory = 'site/listings'): string
     {
         $path = $file->store($directory, 'public');
-        $absolute = storage_path('app/public/' . $path);
-
-        // 2 chế độ watermark cấu hình trong admin: 'image' (ảnh logo) hoặc 'text' (tên site).
-        // 'image' nhưng chưa upload ảnh → tự rơi về chữ tên site để ảnh không bao giờ thiếu dấu.
-        if ($this->watermarkMode() === 'text') {
-            $this->applyTextWatermark($absolute);
-        } elseif ($this->watermarkPath()) {
-            $this->applyWatermark($absolute);
-        } else {
-            $this->applyTextWatermark($absolute);
-        }
 
         return Storage::disk('public')->url($path);
+    }
+
+    /**
+     * Chèn watermark theo chế độ cấu hình trong admin: 'image' (ảnh logo) hoặc 'text' (tên site).
+     * 'image' nhưng chưa upload logo → tự rơi về chữ tên site để ảnh không bao giờ thiếu dấu.
+     */
+    public function applyWatermarkAuto(string $imagePath): void
+    {
+        if ($this->watermarkMode() === 'text') {
+            $this->applyTextWatermark($imagePath);
+        } elseif ($this->watermarkPath()) {
+            $this->applyWatermark($imagePath);
+        } else {
+            $this->applyTextWatermark($imagePath);
+        }
     }
 
     private function watermarkMode(): string
@@ -38,6 +49,7 @@ class ListingImageService
             : 'image';
     }
 
+    /** Watermark bằng ảnh logo — đặt GIỮA ảnh, kích thước ~40% chiều rộng. */
     public function applyWatermark(string $imagePath): void
     {
         if (! extension_loaded('gd') || ! is_file($imagePath)) {
@@ -73,10 +85,13 @@ class ListingImageService
             return;
         }
 
-        $targetWidth = max(80, (int) round($imageWidth * 0.22));
+        // Kích thước mục tiêu ~40% chiều rộng ảnh, giới hạn không quá 40% chiều cao.
+        $targetWidth = max(80, (int) round($imageWidth * 0.40));
         $targetHeight = (int) round($watermarkHeight * ($targetWidth / $watermarkWidth));
-        $targetWidth = min($targetWidth, (int) round($imageWidth * 0.45));
-        $targetHeight = min($targetHeight, (int) round($imageHeight * 0.25));
+        if ($targetHeight > $imageHeight * 0.40) {
+            $targetHeight = (int) round($imageHeight * 0.40);
+            $targetWidth = (int) round($watermarkWidth * ($targetHeight / $watermarkHeight));
+        }
 
         $resized = imagecreatetruecolor($targetWidth, $targetHeight);
         imagealphablending($resized, false);
@@ -85,9 +100,8 @@ class ListingImageService
         imagecopyresampled($resized, $watermark, 0, 0, 0, 0, $targetWidth, $targetHeight, $watermarkWidth, $watermarkHeight);
 
         imagealphablending($image, true);
-        $padding = max(12, (int) round($imageWidth * 0.025));
-        $x = max(0, $imageWidth - $targetWidth - $padding);
-        $y = max(0, $imageHeight - $targetHeight - $padding);
+        $x = (int) round(($imageWidth - $targetWidth) / 2);
+        $y = (int) round(($imageHeight - $targetHeight) / 2);
         imagecopy($image, $resized, $x, $y, 0, 0, $targetWidth, $targetHeight);
 
         $this->saveImage($image, $imagePath, $imageType);
@@ -97,6 +111,7 @@ class ListingImageService
         imagedestroy($resized);
     }
 
+    /** Watermark bằng tên site — chữ TO, MỜ, nổi (emboss), đặt GIỮA ảnh. */
     public function applyTextWatermark(string $imagePath): void
     {
         if (! extension_loaded('gd') || ! is_file($imagePath)) {
@@ -123,26 +138,34 @@ class ListingImageService
         imagealphablending($image, true);
         imagesavealpha($image, true);
 
-        $padding = max(12, (int) round($imageWidth * 0.025));
-        $fontSize = max(14, (int) round($imageWidth * 0.030));
         $font = $this->fontPath();
 
-        $white = imagecolorallocatealpha($image, 255, 255, 255, 35);  // chữ trắng mờ
-        $shadow = imagecolorallocatealpha($image, 0, 0, 0, 70);       // bóng đen
+        // Chữ trắng MỜ + bóng tối nhẹ lệch 2px → cảm giác "nổi mờ" đè giữa ảnh.
+        $white = imagecolorallocatealpha($image, 255, 255, 255, 88);  // alpha cao = mờ
+        $shadow = imagecolorallocatealpha($image, 0, 0, 0, 96);
 
         if ($font && function_exists('imagettftext')) {
+            // Tính cỡ chữ để bề ngang chữ ~72% chiều rộng ảnh.
+            $base = 100;
+            $baseBox = imagettfbbox($base, 0, $font, $text);
+            $baseWidth = max(1, abs($baseBox[2] - $baseBox[0]));
+            $fontSize = max(12, (int) round($base * ($imageWidth * 0.72) / $baseWidth));
+
             $box = imagettfbbox($fontSize, 0, $font, $text);
             $textWidth = abs($box[2] - $box[0]);
-            $x = max(0, $imageWidth - $textWidth - $padding);
-            $y = max($fontSize, $imageHeight - $padding);
+            $textHeight = abs($box[1] - $box[7]);
+            $x = (int) round(($imageWidth - $textWidth) / 2 - $box[0]);
+            $y = (int) round(($imageHeight - $textHeight) / 2 - $box[7]);
+
             imagettftext($image, $fontSize, 0, $x + 2, $y + 2, $shadow, $font, $text);
             imagettftext($image, $fontSize, 0, $x, $y, $white, $font, $text);
         } else {
             // Fallback không cần TTF (LƯU Ý: font built-in không hiện được dấu tiếng Việt).
             $gdFont = 5;
             $textWidth = imagefontwidth($gdFont) * strlen($text);
-            $x = max(0, $imageWidth - $textWidth - $padding);
-            $y = max(0, $imageHeight - imagefontheight($gdFont) - $padding);
+            $textHeight = imagefontheight($gdFont);
+            $x = (int) round(($imageWidth - $textWidth) / 2);
+            $y = (int) round(($imageHeight - $textHeight) / 2);
             imagestring($image, $gdFont, $x + 1, $y + 1, $text, $shadow);
             imagestring($image, $gdFont, $x, $y, $text, $white);
         }
