@@ -16,11 +16,13 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 use Livewire\WithPagination;
 
 class WebsiteAdmin extends Component
 {
     use WithPagination;
+    use WithFileUploads;
 
     public $activeTab = 'overview';
 
@@ -107,6 +109,10 @@ class WebsiteAdmin extends Component
     public $showReportModal = false;
     public $reportEditingId = null;
     public $reportAdminReason = '';
+
+    public $showMediaPicker = false;
+    public $mediaTarget = null;   // wire path, e.g. 'settings.branding.logo' or 'blogCoverImage'
+    public $mediaUpload;          // temporary uploaded file
 
     protected $queryString = [
         'activeTab' => ['except' => 'overview', 'as' => 'tab'],
@@ -232,6 +238,122 @@ class WebsiteAdmin extends Component
         $this->resetValidation();
     }
 
+    public function openMediaPicker($target)
+    {
+        $this->mediaTarget = $target;
+        $this->mediaUpload = null;
+        $this->resetErrorBag('mediaUpload');
+        $this->showMediaPicker = true;
+    }
+
+    public function closeMediaPicker()
+    {
+        $this->showMediaPicker = false;
+        $this->mediaTarget = null;
+        $this->mediaUpload = null;
+    }
+
+    /**
+     * Handle a new upload (max 3MB) → store to the media library and apply the URL.
+     */
+    public function updatedMediaUpload()
+    {
+        $this->validate([
+            'mediaUpload' => 'image|mimes:jpg,jpeg,png,webp,gif,svg|max:3072',
+        ], [], ['mediaUpload' => 'ảnh']);
+
+        $url = $this->storeMediaUpload($this->mediaUpload);
+        if ($url) {
+            $this->applyMediaValue($url);
+            session()->flash('message', 'Đã tải ảnh lên thư viện.');
+            $this->closeMediaPicker();
+        }
+    }
+
+    public function selectExistingMedia($url)
+    {
+        if ($url) {
+            $this->applyMediaValue($url);
+        }
+        $this->closeMediaPicker();
+    }
+
+    public function clearMedia($target)
+    {
+        $this->mediaTarget = $target;
+        $this->applyMediaValue('');
+        $this->mediaTarget = null;
+    }
+
+    private function applyMediaValue($url)
+    {
+        if (! $this->mediaTarget) {
+            return;
+        }
+
+        if (str_starts_with($this->mediaTarget, 'settings.')) {
+            data_set($this->settings, substr($this->mediaTarget, strlen('settings.')), $url);
+        } else {
+            $this->{$this->mediaTarget} = $url;
+        }
+    }
+
+    private function storeMediaUpload($file): ?string
+    {
+        try {
+            $disk = config('filesystems.disks.s3.bucket') ? 's3' : 'public';
+            $ext = strtolower($file->getClientOriginalExtension() ?: 'png');
+            $name = preg_replace('/[^a-zA-Z0-9._-]/', '_', pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME)) ?: 'media';
+            $filename = $name . '_' . now()->format('YmdHis') . '_' . Str::lower(Str::random(5)) . '.' . $ext;
+            $dir = 'media/' . now()->format('Y/m');
+
+            $path = $file->storeAs($dir, $filename, ['disk' => $disk, 'visibility' => 'public']);
+
+            $publicUrl = $disk === 's3'
+                ? rtrim((string) config('filesystems.disks.s3.endpoint'), '/') . '/' . config('filesystems.disks.s3.bucket') . '/' . $path
+                : \Illuminate\Support\Facades\Storage::disk($disk)->url($path);
+
+            if (Schema::hasTable('files')) {
+                \App\Models\File::create([
+                    'folder_id' => null,
+                    'name' => $file->getClientOriginalName(),
+                    'path' => $path,
+                    'disk' => $disk,
+                    'mime_type' => $file->getMimeType(),
+                    'size' => $file->getSize(),
+                    'metadata' => ['public_url' => $publicUrl],
+                    'user_id' => auth()->id(),
+                ]);
+            }
+
+            return $publicUrl;
+        } catch (\Throwable $e) {
+            report($e);
+            $this->addError('mediaUpload', 'Tải ảnh thất bại: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    private function mediaImages()
+    {
+        if (! $this->showMediaPicker || ! Schema::hasTable('files')) {
+            return collect();
+        }
+
+        try {
+            return \App\Models\File::query()
+                ->where('mime_type', 'like', 'image/%')
+                ->latest()
+                ->limit(60)
+                ->get(['id', 'name', 'metadata'])
+                ->map(fn ($f) => ['name' => $f->name, 'url' => $f->metadata['public_url'] ?? ''])
+                ->filter(fn ($m) => ! empty($m['url']))
+                ->values();
+        } catch (\Throwable $e) {
+            return collect();
+        }
+    }
+
     public function saveSettings()
     {
         $data = $this->validate([
@@ -320,6 +442,7 @@ class WebsiteAdmin extends Component
             'savedSearches' => $this->savedSearches(),
             'topViewedListings' => $this->topViewedListings(),
             'dailyViews' => $this->dailyViews(),
+            'mediaImages' => $this->mediaImages(),
         ])->layout('components.layouts.website-cms', [
             'title' => 'Quản trị website BĐS',
             'stats' => $this->stats(),

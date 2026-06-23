@@ -882,21 +882,9 @@
                     <span style="color: var(--text-secondary)">Logo &amp; favicon hiển thị trên website</span>
                 </div>
                 <div class="cms-form-grid">
-                    <label class="cms-field full"><span class="cms-label">Logo (URL)</span><input class="cms-input" wire:model="settings.branding.logo" placeholder="https://.../logo.png"></label>
-                    @if (!empty($settings['branding']['logo'] ?? ''))
-                        <div class="cms-field full" style="background:var(--bg-raised); border:1px solid var(--border); padding:8px; display:flex; align-items:center; gap:8px;">
-                            <img src="{{ $settings['branding']['logo'] }}" alt="logo" style="max-height:40px; max-width:160px; object-fit:contain;">
-                            <span style="color:var(--text-muted); font-size:11px;">Xem trước logo</span>
-                        </div>
-                    @endif
-                    <label class="cms-field full"><span class="cms-label">Logo nền tối (URL, tùy chọn)</span><input class="cms-input" wire:model="settings.branding.logo_dark" placeholder="https://.../logo-white.png"></label>
-                    <label class="cms-field full"><span class="cms-label">Favicon (URL .ico/.png/.svg)</span><input class="cms-input" wire:model="settings.branding.favicon" placeholder="https://.../favicon.ico"></label>
-                    @if (!empty($settings['branding']['favicon'] ?? ''))
-                        <div class="cms-field" style="background:var(--bg-raised); border:1px solid var(--border); padding:8px; display:flex; align-items:center; gap:8px;">
-                            <img src="{{ $settings['branding']['favicon'] }}" alt="favicon" style="height:24px; width:24px; object-fit:contain;">
-                            <span style="color:var(--text-muted); font-size:11px;">Favicon</span>
-                        </div>
-                    @endif
+                    <x-cms-media-field label="Logo" :value="$settings['branding']['logo'] ?? ''" target="settings.branding.logo" />
+                    <x-cms-media-field label="Logo nền tối (tùy chọn)" :value="$settings['branding']['logo_dark'] ?? ''" target="settings.branding.logo_dark" />
+                    <x-cms-media-field label="Favicon" :value="$settings['branding']['favicon'] ?? ''" target="settings.branding.favicon" />
                     <label class="cms-field full"><span class="cms-label">Slogan / Tagline</span><input class="cms-input" wire:model="settings.branding.tagline"></label>
                 </div>
             </section>
@@ -911,7 +899,7 @@
                     <label class="cms-field full"><span class="cms-label">Mẫu tiêu đề (dùng %s cho tên trang)</span><input class="cms-input mono" wire:model="settings.seo.title_template" placeholder="%s | BDS Việt"></label>
                     <label class="cms-field full"><span class="cms-label">Mô tả mặc định</span><textarea class="cms-textarea" style="min-height:64px" wire:model="settings.seo.default_description"></textarea></label>
                     <label class="cms-field full"><span class="cms-label">Từ khóa (cách nhau dấu phẩy)</span><input class="cms-input" wire:model="settings.seo.keywords"></label>
-                    <label class="cms-field full"><span class="cms-label">Ảnh chia sẻ mạng xã hội (OG image URL)</span><input class="cms-input" wire:model="settings.seo.og_image" placeholder="https://.../og.jpg"></label>
+                    <x-cms-media-field label="Ảnh chia sẻ mạng xã hội (OG image)" :value="$settings['seo']['og_image'] ?? ''" target="settings.seo.og_image" />
                     <label class="cms-field"><span class="cms-label">Cho phép Google lập chỉ mục</span>
                         <select class="cms-select" wire:model="settings.seo.robots_index">
                             <option value="1">Có (index)</option>
@@ -1110,7 +1098,7 @@
                             <textarea x-ref="ed"></textarea>
                         </div>
                     </div>
-                    <label class="cms-field full"><span class="cms-label">Ảnh đại diện</span><input class="cms-input" wire:model="blogCoverImage"></label>
+                    <x-cms-media-field label="Ảnh đại diện" :value="$blogCoverImage" target="blogCoverImage" />
                     <label class="cms-field"><span class="cms-label">Tác giả</span><input class="cms-input" wire:model="blogAuthorName"></label>
                     <label class="cms-field"><span class="cms-label">Tag chính</span>
                         <select class="cms-select" wire:model="blogCategoryTag">
@@ -1190,6 +1178,35 @@
                     <button class="cms-btn" wire:click="closeReportModal">Hủy</button>
                     <button class="cms-btn success" wire:click="resolveReport('keep')">Giữ bài</button>
                     <button class="cms-btn danger" wire:click="resolveReport('remove')">Gỡ bài</button>
+                </div>
+            </section>
+        </div>
+    @endif
+
+    @if ($showMediaPicker)
+        <div class="cms-modal-backdrop">
+            <section class="cms-modal" style="width: min(780px, calc(100vw - 48px));">
+                <div class="cms-panel-head">
+                    <h2 class="cms-panel-title">Chọn ảnh từ thư viện</h2>
+                    <button class="cms-icon-btn" wire:click="closeMediaPicker"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <div style="padding:12px;">
+                    <div class="cms-field full" style="margin-bottom:12px;">
+                        <span class="cms-label">Tải ảnh mới (tối đa 3MB)</span>
+                        <input type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml" wire:model="mediaUpload" class="cms-input" style="height:auto; padding:6px;">
+                        <div wire:loading wire:target="mediaUpload" style="color:var(--text-secondary); font-size:12px; margin-top:4px;"><i class="fa-solid fa-spinner fa-spin"></i> Đang tải lên...</div>
+                        @error('mediaUpload') <span style="color:var(--danger); font-size:12px;">{{ $message }}</span> @enderror
+                    </div>
+                    <div class="cms-label" style="margin-bottom:6px;">Hoặc chọn từ thư viện đã có</div>
+                    <div class="cms-scrollbar" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(110px, 1fr)); gap:8px; max-height:360px; overflow:auto; padding:2px;">
+                        @forelse ($mediaImages as $img)
+                            <button type="button" wire:click="selectExistingMedia(@js($img['url']))" title="{{ $img['name'] }}" style="border:1px solid var(--border); background:var(--bg-raised); padding:0; cursor:pointer; aspect-ratio:1; overflow:hidden;">
+                                <img src="{{ $img['url'] }}" alt="{{ $img['name'] }}" loading="lazy" style="width:100%; height:100%; object-fit:cover;">
+                            </button>
+                        @empty
+                            <div style="grid-column:1 / -1; text-align:center; color:var(--text-secondary); padding:24px;">Thư viện chưa có ảnh. Hãy tải ảnh mới ở trên.</div>
+                        @endforelse
+                    </div>
                 </div>
             </section>
         </div>
