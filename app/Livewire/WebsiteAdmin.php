@@ -30,6 +30,44 @@ class WebsiteAdmin extends Component
     public $listingStatus = 'all';
     public $listingVip = 'all';
 
+    // --- Listing create/edit form (full CRUD, mirrors the /listings form) ---
+    public $showListingModal = false;
+    public $listingFormId = null;          // null = create, id = edit
+    public $listingTitle = '';
+    public $listingType = 'Cần bán';
+    public $listingContactType = '';
+    public $listingContactPhone = '';
+    public $listingHousePassword = '';
+    public $listingCode = '';
+    public $listingState = 'active';       // -> status column
+    public $listingTier = 'normal';        // -> vip_tier column
+    public $listingPropertyType = 110;
+    public $listingProvinceId = '';
+    public $listingDistrictId = '';
+    public $listingWardId = '';
+    public $listingAddress = '';
+    public $listingArea = '';
+    public $listingPrice = '';
+    public $listingPriceUnit = '1';        // 1=VNĐ, 2=VNĐ/tháng, 3=VNĐ/m2 (khớp form /listings)
+    public $listingFloors = '';
+    public $listingBedrooms = '';
+    public $listingToilets = '';
+    public $listingDirection = '';          // 1..8 theo \App\Livewire\RealEstateListing::DIRECTIONS
+    public $listingFrontWidth = '';
+    public $listingRoadWidth = '';
+    public $listingYoutubeLink = '';
+    public $listingFacebookLink = '';
+    public $listingFacebookVideoLink = '';
+    public $listingGoogleMapLink = '';
+    public $listingTiktokLink = '';
+    public $listingDescription = '';
+    public $listingImages = [];
+    public $listingAvatar = '';
+    public $listingReporterId = '';
+    public $listingDistricts = [];         // [districtId => name] for the picked province
+    public $listingWards = [];             // [wardId => name] for the picked district
+    protected $listingLocationCache = null;
+
     public $showHomeSectionModal = false;
     public $homeSectionEditingId = null;
     public $homeSectionKey = '';
@@ -183,6 +221,368 @@ class WebsiteAdmin extends Component
         }
     }
 
+    /* =========================================================
+     |  Quản lý tin đăng — tạo / sửa (CRUD đầy đủ như /listings)
+     |  Tái sử dụng hằng số tỉnh/loại BĐS/hướng từ component
+     |  \App\Livewire\RealEstateListing và media picker sẵn có.
+     * =======================================================*/
+
+    /** Dữ liệu địa giới (tỉnh → huyện → xã) dùng chung cache với /listings. */
+    protected function listingLocationData(): array
+    {
+        if ($this->listingLocationCache === null) {
+            $this->listingLocationCache = \Illuminate\Support\Facades\Cache::remember('vietnam_locations_full', 86400, function () {
+                $path = 'locations/all_vietnam.json';
+                if (\Illuminate\Support\Facades\Storage::disk('local')->exists($path)) {
+                    return json_decode(\Illuminate\Support\Facades\Storage::disk('local')->get($path), true) ?: [];
+                }
+                return [];
+            });
+        }
+
+        return $this->listingLocationCache;
+    }
+
+    protected function fetchListingDistricts($provinceId): void
+    {
+        $data = $this->listingLocationData();
+        $this->listingDistricts = [];
+        if (! empty($data[$provinceId]['districts'])) {
+            foreach ($data[$provinceId]['districts'] as $id => $district) {
+                $this->listingDistricts[$id] = $district['name'];
+            }
+        }
+    }
+
+    protected function fetchListingWards($districtId): void
+    {
+        $data = $this->listingLocationData();
+        $this->listingWards = [];
+        $provinceId = $this->listingProvinceId;
+        if (! empty($data[$provinceId]['districts'][$districtId]['wards'])) {
+            $this->listingWards = $data[$provinceId]['districts'][$districtId]['wards'];
+        }
+    }
+
+    public function updatedListingProvinceId($value): void
+    {
+        $this->listingDistricts = [];
+        $this->listingWards = [];
+        $this->listingDistrictId = '';
+        $this->listingWardId = '';
+        if ($value) {
+            $this->fetchListingDistricts($value);
+        }
+    }
+
+    public function updatedListingDistrictId($value): void
+    {
+        $this->listingWards = [];
+        $this->listingWardId = '';
+        if ($value) {
+            $this->fetchListingWards($value);
+        }
+    }
+
+    public function updatedListingPropertyType($value): void
+    {
+        // Tự sinh mã tin theo loại BĐS khi đang tạo mới và chưa có mã.
+        if (! $this->listingFormId && $value && empty($this->listingCode)) {
+            $this->listingCode = $this->generateListingCode($value);
+        }
+    }
+
+    protected function generateListingCode($propertyType): string
+    {
+        $prefix = \App\Livewire\RealEstateListing::PREFIX_MAP[$propertyType] ?? '#RE';
+
+        for ($i = 0; $i < 5; $i++) {
+            $code = $prefix . str_pad((string) mt_rand(0, 9999), 4, '0', STR_PAD_LEFT);
+            if (! RealEstateListing::where('code', $code)->exists()) {
+                return $code;
+            }
+        }
+
+        return $prefix . str_pad((string) mt_rand(0, 999999), 6, '0', STR_PAD_LEFT);
+    }
+
+    public function openCreateListing(): void
+    {
+        $this->resetListingForm();
+        $this->showListingModal = true;
+    }
+
+    public function editListing($id): void
+    {
+        $listing = RealEstateListing::find($id);
+        if (! $listing) {
+            return;
+        }
+
+        $this->listingFormId = $listing->id;
+        $this->listingTitle = $listing->title ?: '';
+        $this->listingType = $listing->type ?: 'Cần bán';
+        $this->listingContactType = $listing->contact_type ?: '';
+        $this->listingContactPhone = $listing->contact_phone ?: '';
+        $this->listingHousePassword = $listing->house_password ?: '';
+        $this->listingCode = $listing->code ?: '';
+        $this->listingState = $listing->is_sold ? 'sold' : ($listing->status ?: 'active');
+        $this->listingTier = $listing->vip_tier ?: 'normal';
+        $this->listingPropertyType = $listing->property_type ?: 110;
+        $this->listingProvinceId = $listing->province_id ?: '';
+
+        if ($this->listingProvinceId) {
+            $this->fetchListingDistricts($this->listingProvinceId);
+        }
+        $this->listingDistrictId = $listing->district_id ?: '';
+
+        if ($this->listingDistrictId) {
+            $this->fetchListingWards($this->listingDistrictId);
+        }
+        $this->listingWardId = $listing->ward_id ?: '';
+
+        $this->listingAddress = $listing->address ?: '';
+        $this->listingArea = $listing->area !== null ? $this->formatDecimalForInput($listing->area) : '';
+        $this->listingPrice = $listing->price !== null ? $this->formatDecimalForInput($listing->price) : '';
+        $this->listingPriceUnit = $listing->price_unit ?: '1';
+        $this->listingFloors = $listing->floors ?? '';
+        $this->listingBedrooms = $listing->bedrooms ?? '';
+        $this->listingToilets = $listing->toilets ?? '';
+        $this->listingDirection = (string) ($listing->direction ?? '');
+        $this->listingFrontWidth = $listing->front_width !== null ? $this->formatDecimalForInput($listing->front_width) : '';
+        $this->listingRoadWidth = $listing->road_width !== null ? $this->formatDecimalForInput($listing->road_width) : '';
+        $this->listingYoutubeLink = $listing->youtube_link ?: '';
+        $this->listingFacebookLink = $listing->facebook_link ?: '';
+        $this->listingFacebookVideoLink = $listing->facebook_video_link ?: '';
+        $this->listingGoogleMapLink = $listing->google_map_link ?: '';
+        $this->listingTiktokLink = $listing->tiktok_link ?: '';
+        $this->listingDescription = $listing->description ?: '';
+        $this->listingImages = is_array($listing->images) ? array_values($listing->images) : [];
+        $this->listingAvatar = $listing->avatar ?: '';
+        $this->listingReporterId = $listing->reporter_id ?: '';
+
+        $this->resetValidation();
+        $this->showListingModal = true;
+    }
+
+    public function saveListing(): void
+    {
+        // Chuẩn hoá giá (VN: "3.150.000.000" hoặc "3,15") -> số thực.
+        $this->listingPrice = $this->normalizeListingCurrency($this->listingPrice);
+
+        foreach (['listingArea', 'listingFrontWidth', 'listingRoadWidth'] as $field) {
+            $this->{$field} = $this->normalizeListingDecimal($this->{$field});
+        }
+        foreach (['listingFloors', 'listingBedrooms', 'listingToilets'] as $field) {
+            if ($this->{$field} === '') {
+                $this->{$field} = null;
+            }
+        }
+        foreach (['listingFacebookLink', 'listingFacebookVideoLink', 'listingGoogleMapLink', 'listingTiktokLink'] as $field) {
+            if ($this->{$field} === '') {
+                $this->{$field} = null;
+            }
+        }
+
+        $rules = [
+            'listingTitle' => 'required|string|max:255',
+            'listingState' => 'required|in:pending,active,expired,rejected,sold',
+            'listingTier' => 'required|in:normal,vip1,vip2,vip3',
+            'listingFacebookLink' => 'nullable|url|max:2000',
+            'listingFacebookVideoLink' => 'nullable|url|max:2000',
+            'listingGoogleMapLink' => 'nullable|url|max:2000',
+            'listingTiktokLink' => 'nullable|url|max:2000',
+            'listingReporterId' => 'nullable|exists:users,id',
+        ];
+
+        if ($this->listingType !== 'Cần mua') {
+            $rules['listingProvinceId'] = 'required';
+            $rules['listingPrice'] = 'required|numeric';
+        }
+
+        $this->validate($rules, [], [
+            'listingTitle' => 'tiêu đề',
+            'listingProvinceId' => 'tỉnh/thành',
+            'listingPrice' => 'giá',
+        ]);
+
+        if (! $this->listingFormId && empty($this->listingCode)) {
+            $this->listingCode = $this->generateListingCode($this->listingPropertyType ?: 110);
+        }
+
+        $isSold = $this->listingState === 'sold';
+
+        $data = [
+            'title' => $this->listingTitle,
+            'type' => $this->listingType,
+            'contact_type' => $this->listingContactType ?: null,
+            'contact_phone' => $this->listingContactPhone ?: null,
+            'house_password' => $this->listingHousePassword ?: null,
+            'code' => $this->listingCode,
+            'status' => $this->listingState,
+            'is_sold' => $isSold,
+            'vip_tier' => $this->listingTier,
+            'property_type' => $this->listingPropertyType,
+            'province_id' => $this->listingProvinceId ?: null,
+            'district_id' => $this->listingDistrictId ?: null,
+            'ward_id' => $this->listingWardId ?: null,
+            'province_name' => \App\Livewire\RealEstateListing::PROVINCES[$this->listingProvinceId] ?? null,
+            'district_name' => $this->listingDistricts[$this->listingDistrictId] ?? null,
+            'ward_name' => $this->listingWards[$this->listingWardId] ?? null,
+            'address' => $this->listingAddress ?: null,
+            'area' => $this->listingArea,
+            'price' => $this->listingPrice,
+            'price_unit' => $this->listingPriceUnit,
+            'floors' => $this->listingFloors,
+            'bedrooms' => $this->listingBedrooms,
+            'toilets' => $this->listingToilets,
+            'direction' => $this->listingDirection,
+            'front_width' => $this->listingFrontWidth,
+            'road_width' => $this->listingRoadWidth,
+            'youtube_link' => $this->listingYoutubeLink ?: null,
+            'facebook_link' => $this->listingFacebookLink,
+            'facebook_video_link' => $this->listingFacebookVideoLink,
+            'google_map_link' => $this->listingGoogleMapLink,
+            'tiktok_link' => $this->listingTiktokLink,
+            'description' => $this->listingDescription ?: null,
+            'images' => array_values($this->listingImages ?: []),
+            'avatar' => $this->listingAvatar ?: null,
+            'reporter_id' => $this->listingReporterId ?: null,
+        ];
+
+        if ($this->listingState === 'rejected') {
+            // giữ rejection_reason hiện có; nếu bỏ trạng thái từ chối thì xoá lý do
+        } else {
+            $data['rejection_reason'] = null;
+        }
+
+        try {
+            if ($this->listingFormId) {
+                RealEstateListing::where('id', $this->listingFormId)->update($data);
+                $message = 'Đã cập nhật tin đăng.';
+            } else {
+                $data['user_id'] = auth()->id();
+                RealEstateListing::create($data);
+                $message = 'Đã thêm tin đăng mới.';
+            }
+
+            \Illuminate\Support\Facades\Cache::put('listings_version', time(), now()->addDay());
+            session()->flash('message', $message);
+            $this->closeListingModal();
+        } catch (\Throwable $e) {
+            report($e);
+            $this->addError('listingTitle', 'Lưu tin thất bại: ' . $e->getMessage());
+        }
+    }
+
+    public function removeListingImage($index): void
+    {
+        if (isset($this->listingImages[$index])) {
+            array_splice($this->listingImages, $index, 1);
+        }
+    }
+
+    public function setListingAvatarFromImage($index): void
+    {
+        if (isset($this->listingImages[$index])) {
+            $this->listingAvatar = $this->listingImages[$index];
+        }
+    }
+
+    public function closeListingModal(): void
+    {
+        $this->showListingModal = false;
+        $this->resetListingForm();
+    }
+
+    protected function resetListingForm(): void
+    {
+        $this->listingFormId = null;
+        $this->listingTitle = '';
+        $this->listingType = 'Cần bán';
+        $this->listingContactType = '';
+        $this->listingContactPhone = '';
+        $this->listingHousePassword = '';
+        $this->listingCode = '';
+        $this->listingState = 'active';
+        $this->listingTier = 'normal';
+        $this->listingPropertyType = 110;
+        $this->listingProvinceId = '';
+        $this->listingDistrictId = '';
+        $this->listingWardId = '';
+        $this->listingAddress = '';
+        $this->listingArea = '';
+        $this->listingPrice = '';
+        $this->listingPriceUnit = '1';
+        $this->listingFloors = '';
+        $this->listingBedrooms = '';
+        $this->listingToilets = '';
+        $this->listingDirection = '';
+        $this->listingFrontWidth = '';
+        $this->listingRoadWidth = '';
+        $this->listingYoutubeLink = '';
+        $this->listingFacebookLink = '';
+        $this->listingFacebookVideoLink = '';
+        $this->listingGoogleMapLink = '';
+        $this->listingTiktokLink = '';
+        $this->listingDescription = '';
+        $this->listingImages = [];
+        $this->listingAvatar = '';
+        $this->listingReporterId = '';
+        $this->listingDistricts = [];
+        $this->listingWards = [];
+        $this->resetValidation();
+    }
+
+    private function formatDecimalForInput($value): string
+    {
+        $n = (float) $value;
+        if ($n == 0.0) {
+            return $value === 0 || $value === '0' || $value === 0.0 ? '0' : '';
+        }
+
+        // Số nguyên -> phân tách hàng nghìn; có thập phân -> dùng dấu phẩy.
+        if (floor($n) == $n) {
+            return number_format($n, 0, ',', '.');
+        }
+
+        return rtrim(rtrim(number_format($n, 4, ',', '.'), '0'), ',');
+    }
+
+    private function normalizeListingCurrency($value)
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        $clean = str_replace(['.', ' '], '', (string) $value);
+        $clean = str_replace(',', '.', $clean);
+
+        return is_numeric($clean) ? (float) $clean : null;
+    }
+
+    private function normalizeListingDecimal($value)
+    {
+        if ($value === '' || $value === null) {
+            return null;
+        }
+
+        if (is_string($value)) {
+            $clean = str_replace(' ', '', $value);
+            if (str_contains($clean, ',') && str_contains($clean, '.')) {
+                $clean = str_replace('.', '', $clean);
+                $clean = str_replace(',', '.', $clean);
+            } elseif (str_contains($clean, ',')) {
+                $clean = str_replace(',', '.', $clean);
+            }
+            $clean = preg_replace('/[^0-9.]/', '', $clean);
+
+            return is_numeric($clean) ? (float) $clean : null;
+        }
+
+        return is_numeric($value) ? (float) $value : null;
+    }
+
     public function openReport($id)
     {
         if (! Schema::hasTable('listing_reports')) {
@@ -274,7 +674,12 @@ class WebsiteAdmin extends Component
         if ($url) {
             $this->applyMediaValue($url);
             session()->flash('message', 'Đã tải ảnh lên thư viện.');
-            $this->closeMediaPicker();
+            // Gallery tin đăng: giữ picker mở để chọn/tải nhiều ảnh.
+            if ($this->mediaTarget === 'listingImages') {
+                $this->mediaUpload = null;
+            } else {
+                $this->closeMediaPicker();
+            }
         }
     }
 
@@ -283,7 +688,10 @@ class WebsiteAdmin extends Component
         if ($url) {
             $this->applyMediaValue($url);
         }
-        $this->closeMediaPicker();
+        // Gallery tin đăng: cho phép chọn nhiều ảnh liên tiếp, không đóng picker.
+        if ($this->mediaTarget !== 'listingImages') {
+            $this->closeMediaPicker();
+        }
     }
 
     public function clearMedia($target)
@@ -296,6 +704,14 @@ class WebsiteAdmin extends Component
     private function applyMediaValue($url)
     {
         if (! $this->mediaTarget) {
+            return;
+        }
+
+        // Gallery tin đăng: nối ảnh vào mảng thay vì gán đè.
+        if ($this->mediaTarget === 'listingImages') {
+            if ($url !== '' && ! in_array($url, $this->listingImages, true)) {
+                $this->listingImages[] = $url;
+            }
             return;
         }
 

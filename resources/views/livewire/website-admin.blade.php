@@ -170,6 +170,7 @@
                         <option value="vip2">Ưu tiên 2</option>
                         <option value="vip3">Ưu tiên 3</option>
                     </select>
+                    <button class="cms-btn primary" wire:click="openCreateListing"><i class="fa-solid fa-plus"></i> Thêm tin đăng</button>
                 </div>
             </div>
             <div class="cms-table-wrap cms-scrollbar">
@@ -186,7 +187,7 @@
                             <th style="width:88px;">Ưu tiên</th>
                             <th class="right" style="width:80px;">Lượt xem</th>
                             <th style="width:112px;">Ngày đăng</th>
-                            <th class="right" style="width:76px;">Thao tác</th>
+                            <th class="right" style="width:104px;">Thao tác</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -216,7 +217,10 @@
                                 <td class="right mono">{{ number_format((int) ($listing->view_count ?? 0)) }}</td>
                                 <td class="mono">{{ optional($listing->created_at)->format('d/m/Y') }}</td>
                                 <td class="right">
-                                    <button class="cms-btn danger" wire:click="deleteListing({{ $listing->id }})" wire:confirm="Xóa tin đăng này?"><i class="fa-solid fa-trash"></i></button>
+                                    <div style="display:flex; gap:6px; justify-content:flex-end;">
+                                        <button class="cms-btn" wire:click="editListing({{ $listing->id }})" title="Sửa tin đăng"><i class="fa-solid fa-pen"></i></button>
+                                        <button class="cms-btn danger" wire:click="deleteListing({{ $listing->id }})" wire:confirm="Xóa tin đăng này?" title="Xóa tin đăng"><i class="fa-solid fa-trash"></i></button>
+                                    </div>
                                 </td>
                             </tr>
                         @empty
@@ -1189,11 +1193,209 @@
         </div>
     @endif
 
+    @if ($showListingModal)
+        @php
+            $listingProvinces = \App\Livewire\RealEstateListing::PROVINCES;
+            $listingDirections = \App\Livewire\RealEstateListing::DIRECTIONS;
+        @endphp
+        <div class="cms-modal-backdrop">
+            <section class="cms-modal" style="width: min(960px, calc(100vw - 48px));">
+                <div class="cms-panel-head">
+                    <h2 class="cms-panel-title">{{ $listingFormId ? 'Sửa tin đăng' : 'Thêm tin đăng' }}</h2>
+                    <button class="cms-icon-btn" wire:click="closeListingModal"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+
+                <div class="cms-scrollbar" style="max-height:72vh; overflow:auto; padding:2px 4px 2px 2px;">
+                    {{-- Thông tin cơ bản --}}
+                    <div class="cms-label" style="margin:4px 0 8px; color:var(--text-primary); font-weight:700;">Thông tin cơ bản</div>
+                    <div class="cms-form-grid">
+                        <label class="cms-field full"><span class="cms-label">Tiêu đề *</span>
+                            <input class="cms-input" wire:model="listingTitle" placeholder="VD: Bán nhà mặt tiền Quận 1...">
+                            @error('listingTitle') <span style="color:var(--danger); font-size:12px;">{{ $message }}</span> @enderror
+                        </label>
+                        <label class="cms-field"><span class="cms-label">Loại giao dịch</span>
+                            <select class="cms-select" wire:model.live="listingType">
+                                <option value="Cần bán">Cần bán</option>
+                                <option value="Cho thuê">Cho thuê</option>
+                                <option value="Cần mua">Cần mua</option>
+                            </select>
+                        </label>
+                        <label class="cms-field"><span class="cms-label">Loại BĐS</span>
+                            <select class="cms-select" wire:model.live="listingPropertyType">
+                                @foreach ($propertyTypeOptions as $code => $label)
+                                    <option value="{{ $code }}">{{ $label }}</option>
+                                @endforeach
+                            </select>
+                        </label>
+                        <label class="cms-field"><span class="cms-label">Mã tin</span><input class="cms-input mono" wire:model="listingCode" placeholder="Tự sinh theo loại BĐS"></label>
+                        <label class="cms-field"><span class="cms-label">Liên hệ</span>
+                            <select class="cms-select" wire:model="listingContactType">
+                                <option value="">Chọn loại liên hệ</option>
+                                <option value="Chủ">Chủ</option>
+                                <option value="Môi giới">Môi giới</option>
+                                <option value="Công ty">Công ty</option>
+                            </select>
+                        </label>
+                        <label class="cms-field"><span class="cms-label">SĐT liên hệ</span><input class="cms-input mono" wire:model="listingContactPhone" placeholder="090..."></label>
+                        <label class="cms-field"><span class="cms-label">Mật khẩu nhà</span><input class="cms-input mono" wire:model="listingHousePassword"></label>
+                        <label class="cms-field"><span class="cms-label">Trạng thái</span>
+                            <select class="cms-select" wire:model="listingState">
+                                <option value="pending">Chờ duyệt</option>
+                                <option value="active">Đã đăng</option>
+                                <option value="expired">Hết hạn</option>
+                                <option value="rejected">Từ chối</option>
+                                <option value="sold">Đã giao dịch</option>
+                            </select>
+                        </label>
+                        <label class="cms-field"><span class="cms-label">Ưu tiên</span>
+                            <select class="cms-select" wire:model="listingTier">
+                                <option value="normal">Thường</option>
+                                <option value="vip1">Ưu tiên 1</option>
+                                <option value="vip2">Ưu tiên 2</option>
+                                <option value="vip3">Ưu tiên 3</option>
+                            </select>
+                        </label>
+                        <label class="cms-field"><span class="cms-label">Người đưa tin</span>
+                            <select class="cms-select" wire:model="listingReporterId">
+                                <option value="">— Không —</option>
+                                @foreach ($accountInviters as $u)
+                                    <option value="{{ $u->id }}">{{ $u->name }}{{ $u->phone ? ' — ' . $u->phone : '' }}</option>
+                                @endforeach
+                            </select>
+                        </label>
+                    </div>
+
+                    {{-- Vị trí --}}
+                    <div class="cms-label" style="margin:16px 0 8px; color:var(--text-primary); font-weight:700;">Vị trí</div>
+                    <div class="cms-form-grid">
+                        <label class="cms-field"><span class="cms-label">Tỉnh / Thành {{ $listingType !== 'Cần mua' ? '*' : '' }}</span>
+                            <select class="cms-select" wire:model.live="listingProvinceId">
+                                <option value="">Chọn tỉnh/thành</option>
+                                @foreach ($listingProvinces as $pid => $pname)
+                                    <option value="{{ $pid }}">{{ $pname }}</option>
+                                @endforeach
+                            </select>
+                            @error('listingProvinceId') <span style="color:var(--danger); font-size:12px;">{{ $message }}</span> @enderror
+                        </label>
+                        <label class="cms-field"><span class="cms-label">Quận / Huyện</span>
+                            <select class="cms-select" wire:model.live="listingDistrictId" @disabled(empty($listingDistricts))>
+                                <option value="">Chọn quận/huyện</option>
+                                @foreach ($listingDistricts as $did => $dname)
+                                    <option value="{{ $did }}">{{ $dname }}</option>
+                                @endforeach
+                            </select>
+                        </label>
+                        <label class="cms-field"><span class="cms-label">Phường / Xã</span>
+                            <select class="cms-select" wire:model="listingWardId" @disabled(empty($listingWards))>
+                                <option value="">Chọn phường/xã</option>
+                                @foreach ($listingWards as $wid => $wname)
+                                    <option value="{{ $wid }}">{{ $wname }}</option>
+                                @endforeach
+                            </select>
+                        </label>
+                        <label class="cms-field full"><span class="cms-label">Địa chỉ</span><input class="cms-input" wire:model="listingAddress" placeholder="Số nhà, tên đường..."></label>
+                    </div>
+
+                    {{-- Chi tiết --}}
+                    <div class="cms-label" style="margin:16px 0 8px; color:var(--text-primary); font-weight:700;">Chi tiết</div>
+                    <div class="cms-form-grid">
+                        <label class="cms-field"><span class="cms-label">Diện tích (m²)</span><input class="cms-input mono" wire:model="listingArea" placeholder="VD: 80"></label>
+                        <label class="cms-field"><span class="cms-label">Giá {{ $listingType !== 'Cần mua' ? '*' : '' }}</span>
+                            <input class="cms-input mono" wire:model="listingPrice" placeholder="VD: 3.150.000.000">
+                            @error('listingPrice') <span style="color:var(--danger); font-size:12px;">{{ $message }}</span> @enderror
+                        </label>
+                        <label class="cms-field"><span class="cms-label">Đơn vị giá</span>
+                            <select class="cms-select" wire:model="listingPriceUnit">
+                                <option value="1">VNĐ</option>
+                                <option value="2">VNĐ/tháng</option>
+                                <option value="3">VNĐ/m²</option>
+                            </select>
+                        </label>
+                        <label class="cms-field"><span class="cms-label">Số tầng</span><input class="cms-input mono" type="number" wire:model="listingFloors"></label>
+                        <label class="cms-field"><span class="cms-label">Phòng ngủ</span><input class="cms-input mono" type="number" wire:model="listingBedrooms"></label>
+                        <label class="cms-field"><span class="cms-label">Toilet</span><input class="cms-input mono" type="number" wire:model="listingToilets"></label>
+                        <label class="cms-field"><span class="cms-label">Hướng</span>
+                            <select class="cms-select" wire:model="listingDirection">
+                                <option value="">Chọn hướng nhà</option>
+                                @foreach ($listingDirections as $dirId => $dirName)
+                                    <option value="{{ $dirId }}">{{ $dirName }}</option>
+                                @endforeach
+                            </select>
+                        </label>
+                        <label class="cms-field"><span class="cms-label">Mặt tiền (m)</span><input class="cms-input mono" wire:model="listingFrontWidth"></label>
+                        <label class="cms-field"><span class="cms-label">Đường (m)</span><input class="cms-input mono" wire:model="listingRoadWidth"></label>
+                    </div>
+
+                    {{-- Hình ảnh --}}
+                    <div class="cms-label" style="margin:16px 0 8px; color:var(--text-primary); font-weight:700;">Hình ảnh</div>
+                    <div class="cms-form-grid">
+                        <x-cms-media-field label="Ảnh đại diện" :value="$listingAvatar" target="listingAvatar" :full="false" />
+                        <div class="cms-field">
+                            <span class="cms-label">Thư viện ảnh ({{ count($listingImages) }})</span>
+                            <button type="button" class="cms-btn" wire:click="openMediaPicker('listingImages')"><i class="fa-solid fa-images"></i> Thêm / chọn ảnh</button>
+                        </div>
+                        <div class="cms-field full">
+                            @if (count($listingImages))
+                                <div style="display:flex; flex-wrap:wrap; gap:8px;">
+                                    @foreach ($listingImages as $i => $img)
+                                        <div wire:key="limg-{{ $i }}-{{ md5($img) }}" style="position:relative; width:96px; height:96px; border:1px solid {{ $listingAvatar === $img ? 'var(--success)' : 'var(--border)' }}; background:var(--bg-raised); overflow:hidden;">
+                                            <img src="{{ $img }}" alt="" loading="lazy" style="width:100%; height:100%; object-fit:cover;">
+                                            @if ($listingAvatar === $img)
+                                                <span class="cms-badge success" style="position:absolute; top:2px; left:2px; font-size:9px;">Đại diện</span>
+                                            @endif
+                                            <div style="position:absolute; bottom:2px; right:2px; display:flex; gap:3px;">
+                                                <button type="button" class="cms-icon-btn" title="Đặt làm ảnh đại diện" wire:click="setListingAvatarFromImage({{ $i }})" style="width:22px; height:22px; background:rgba(0,0,0,.55); color:#fff;"><i class="fa-solid fa-star" style="font-size:10px;"></i></button>
+                                                <button type="button" class="cms-icon-btn" title="Xóa ảnh" wire:click="removeListingImage({{ $i }})" style="width:22px; height:22px; background:rgba(220,38,38,.85); color:#fff;"><i class="fa-solid fa-xmark" style="font-size:10px;"></i></button>
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @else
+                                <span style="color:var(--text-muted); font-size:12px;">Chưa có ảnh nào. Bấm "Thêm / chọn ảnh" để tải lên hoặc chọn từ thư viện.</span>
+                            @endif
+                        </div>
+                    </div>
+
+                    {{-- Liên kết & mô tả --}}
+                    <div class="cms-label" style="margin:16px 0 8px; color:var(--text-primary); font-weight:700;">Liên kết & mô tả</div>
+                    <div class="cms-form-grid">
+                        <label class="cms-field"><span class="cms-label">Youtube</span><input class="cms-input mono" wire:model="listingYoutubeLink"></label>
+                        <label class="cms-field"><span class="cms-label">Facebook</span>
+                            <input class="cms-input mono" wire:model="listingFacebookLink">
+                            @error('listingFacebookLink') <span style="color:var(--danger); font-size:12px;">{{ $message }}</span> @enderror
+                        </label>
+                        <label class="cms-field"><span class="cms-label">Facebook video</span>
+                            <input class="cms-input mono" wire:model="listingFacebookVideoLink">
+                            @error('listingFacebookVideoLink') <span style="color:var(--danger); font-size:12px;">{{ $message }}</span> @enderror
+                        </label>
+                        <label class="cms-field"><span class="cms-label">Google Map</span>
+                            <input class="cms-input mono" wire:model="listingGoogleMapLink">
+                            @error('listingGoogleMapLink') <span style="color:var(--danger); font-size:12px;">{{ $message }}</span> @enderror
+                        </label>
+                        <label class="cms-field"><span class="cms-label">Tiktok</span>
+                            <input class="cms-input mono" wire:model="listingTiktokLink">
+                            @error('listingTiktokLink') <span style="color:var(--danger); font-size:12px;">{{ $message }}</span> @enderror
+                        </label>
+                        <label class="cms-field full"><span class="cms-label">Mô tả</span><textarea class="cms-textarea" style="min-height:120px" wire:model="listingDescription"></textarea></label>
+                    </div>
+                </div>
+
+                <div class="cms-panel-head" style="justify-content:flex-end;">
+                    <button class="cms-btn" wire:click="closeListingModal">Hủy</button>
+                    <button class="cms-btn primary" wire:click="saveListing" wire:loading.attr="disabled" wire:target="saveListing">
+                        <span wire:loading.remove wire:target="saveListing">{{ $listingFormId ? 'Lưu thay đổi' : 'Thêm tin đăng' }}</span>
+                        <span wire:loading wire:target="saveListing"><i class="fa-solid fa-spinner fa-spin"></i> Đang lưu...</span>
+                    </button>
+                </div>
+            </section>
+        </div>
+    @endif
+
     @if ($showMediaPicker)
         <div class="cms-modal-backdrop">
             <section class="cms-modal" style="width: min(780px, calc(100vw - 48px));">
                 <div class="cms-panel-head">
-                    <h2 class="cms-panel-title">Chọn ảnh từ thư viện</h2>
+                    <h2 class="cms-panel-title">{{ $mediaTarget === 'listingImages' ? 'Thêm ảnh cho tin đăng' : 'Chọn ảnh từ thư viện' }}</h2>
                     <button class="cms-icon-btn" wire:click="closeMediaPicker"><i class="fa-solid fa-xmark"></i></button>
                 </div>
                 <div style="padding:12px;">
@@ -1214,6 +1416,12 @@
                         @endforelse
                     </div>
                 </div>
+                @if ($mediaTarget === 'listingImages')
+                    <div class="cms-panel-head" style="justify-content:space-between;">
+                        <span style="color:var(--text-secondary); font-size:13px;">Đã chọn {{ count($listingImages) }} ảnh cho tin đăng. Bấm ảnh để thêm.</span>
+                        <button class="cms-btn primary" wire:click="closeMediaPicker">Xong</button>
+                    </div>
+                @endif
             </section>
         </div>
     @endif
