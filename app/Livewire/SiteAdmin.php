@@ -185,6 +185,7 @@ class SiteAdmin extends Component
     public $contactPosition = 'right';
     public $watermarkImageUrl = '';
     public $watermarkImageFile;
+    public $watermarkMode = 'image'; // 'image' = ảnh logo | 'text' = tên site
 
     protected $queryString = [
         'activeTab' => ['except' => 'dashboard', 'as' => 'tab'],
@@ -203,6 +204,7 @@ class SiteAdmin extends Component
         $this->contactFacebook = SiteSetting::query()->whereKey('contact_facebook')->value('value') ?: '';
         $this->contactPosition = SiteSetting::query()->whereKey('contact_position')->value('value') ?: 'right';
         $this->watermarkImageUrl = SiteSetting::query()->whereKey('watermark_image_url')->value('value') ?: '';
+        $this->watermarkMode = SiteSetting::query()->whereKey('watermark_mode')->value('value') === 'text' ? 'text' : 'image';
         $this->loadDistricts($this->listingProvinceId);
     }
 
@@ -692,6 +694,7 @@ class SiteAdmin extends Component
             'contactFacebook' => 'nullable|string|max:255',
             'contactPosition' => 'nullable|in:left,right',
             'watermarkImageFile' => 'nullable|image|max:2048',
+            'watermarkMode' => 'nullable|in:image,text',
         ]);
 
         if ($this->logoFile) {
@@ -710,6 +713,7 @@ class SiteAdmin extends Component
         SiteSetting::updateOrCreate(['key' => 'contact_facebook'], ['value' => $this->contactFacebook ?: null]);
         SiteSetting::updateOrCreate(['key' => 'contact_position'], ['value' => $this->contactPosition ?: 'right']);
         SiteSetting::updateOrCreate(['key' => 'watermark_image_url'], ['value' => $this->watermarkImageUrl ?: null]);
+        SiteSetting::updateOrCreate(['key' => 'watermark_mode'], ['value' => $this->watermarkMode === 'text' ? 'text' : 'image']);
 
         $this->logoFile = null;
         $this->watermarkImageFile = null;

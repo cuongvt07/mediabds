@@ -255,6 +255,15 @@
                         @error('logoFile') <span class="cms-error">{{ $message }}</span> @enderror
                     </label>
                     <label class="cms-field">
+                        <span class="cms-label">Kiểu watermark</span>
+                        <select class="cms-select" wire:model.live="watermarkMode">
+                            <option value="image">Dùng ảnh logo</option>
+                            <option value="text">Dùng tên site (chữ)</option>
+                        </select>
+                        @error('watermarkMode') <span class="cms-error">{{ $message }}</span> @enderror
+                    </label>
+                    @if($watermarkMode === 'image')
+                    <label class="cms-field">
                         <span class="cms-label">Ảnh watermark nền trong suốt</span>
                         <input class="cms-input" type="file" wire:model="watermarkImageFile" accept="image/*">
                         @error('watermarkImageFile') <span class="cms-error">{{ $message }}</span> @enderror
@@ -273,6 +282,15 @@
                             <em>Tự chèn vào ảnh tin đăng được upload mới.</em>
                         </div>
                     </div>
+                    @else
+                    <div class="cms-field">
+                        <span class="cms-label">Xem trước</span>
+                        <div class="site-cms-logo-preview">
+                            <strong>{{ $siteName ?: 'Tên site' }}</strong>
+                            <em>Sẽ chèn tên site dạng chữ (góc dưới-phải) vào ảnh tin đăng mới.</em>
+                        </div>
+                    </div>
+                    @endif
                     <label class="cms-field">
                         <span class="cms-label">Số điện thoại liên hệ</span>
                         <input class="cms-input mono" wire:model="contactPhone" placeholder="VD: 0981847977">

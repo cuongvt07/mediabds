@@ -78,7 +78,7 @@
                         </article>
                     @endforeach
                 </div>
-                <p class="user-plan-contact">Chưa hỗ trợ thanh toán trực tuyến. Bấm liên hệ để được admin kích hoạt gói@if($salesPhone) · SĐT {{ $salesPhone }}@endif.</p>
+                <p class="user-plan-contact">Chưa hỗ trợ thanh toán trực tuyến. Bấm liên hệ để được admin kích hoạt gói{{ $salesPhone ? ' · SĐT ' . $salesPhone : '' }}.</p>
             </section>
 
             <div class="user-tabs">
