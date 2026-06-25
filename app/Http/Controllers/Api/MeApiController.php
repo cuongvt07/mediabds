@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Resources\ListingResource;
 use App\Http\Resources\UserResource;
+use App\Http\Resources\VehicleResource;
 use App\Models\RealEstateListing;
+use App\Models\VehicleListing;
 use Illuminate\Http\Request;
 
 class MeApiController extends BaseApiController
@@ -28,6 +30,19 @@ class MeApiController extends BaseApiController
             ->paginate($req->integer('per_page', 10));
 
         return ListingResource::collection($page);
+    }
+
+    /**
+     * Return paginated vehicle listings owned by the current user.
+     */
+    public function myVehicles(Request $req)
+    {
+        $page = VehicleListing::where('user_id', auth()->id())
+            ->with('user:id,name,phone')
+            ->orderBy('created_at', 'desc')
+            ->paginate($req->integer('per_page', 10));
+
+        return VehicleResource::collection($page);
     }
 
     /**

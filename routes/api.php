@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\CategoryApiController;
 use App\Http\Controllers\Api\FavoriteApiController;
 use App\Http\Controllers\Api\HomepageApiController;
 use App\Http\Controllers\Api\ListingApiController;
+use App\Http\Controllers\Api\VehicleApiController;
 use App\Http\Controllers\Api\LocationApiController;
 use App\Http\Controllers\Api\LeadApiController;
 use App\Http\Controllers\Api\ListingImageUploadController;
@@ -36,6 +37,8 @@ Route::prefix('v1')->group(function () {
     Route::get('/homepage', [HomepageApiController::class, 'index']);
     Route::get('/listings', [ListingApiController::class, 'index']);
     Route::get('/listings/{idOrCode}', [ListingApiController::class, 'show']);
+    Route::get('/vehicles', [VehicleApiController::class, 'index']);
+    Route::get('/vehicles/{idOrCode}', [VehicleApiController::class, 'show']);
 
     // Auth public endpoints
     Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:10,1');
@@ -58,8 +61,13 @@ Route::prefix('v1')->group(function () {
         Route::put('/listings/{id}', [ListingApiController::class, 'update']);
         Route::delete('/listings/{id}', [ListingApiController::class, 'destroy']);
 
+        Route::post('/vehicles', [VehicleApiController::class, 'store']);
+        Route::put('/vehicles/{id}', [VehicleApiController::class, 'update']);
+        Route::delete('/vehicles/{id}', [VehicleApiController::class, 'destroy']);
+
         Route::get('/me', [MeApiController::class, 'show']);
         Route::get('/me/listings', [MeApiController::class, 'myListings']);
+        Route::get('/me/vehicles', [MeApiController::class, 'myVehicles']);
         Route::get('/me/stats', [MeApiController::class, 'myStats']);
         Route::get('/me/favorites', [FavoriteApiController::class, 'index']);
         Route::post('/me/favorites', [FavoriteApiController::class, 'toggle']);

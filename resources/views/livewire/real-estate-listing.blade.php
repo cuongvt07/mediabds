@@ -58,6 +58,12 @@
                     class="bg-white border border-gray-200 hover:bg-gray-50 text-slate-600 px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 shadow-sm transition-all whitespace-nowrap">
                     <i class="fa-solid fa-photo-film"></i> <span>Media</span>
                 </a>
+                @if (auth()->user()?->isAdmin())
+                    <a href="{{ route('vehicles') }}" wire:navigate
+                        class="bg-white border border-blue-200 hover:bg-blue-50 text-blue-700 px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 shadow-sm transition-all whitespace-nowrap">
+                        <i class="fa-solid fa-car"></i> <span>Tin xe</span>
+                    </a>
+                @endif
             </div>
 
             <!-- Primary Actions (Visible both mobile & desktop) -->
