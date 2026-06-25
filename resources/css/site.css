@@ -353,7 +353,7 @@ body.site-noscroll { overflow: hidden; }
 /* Thanh lọc GỌN dính trên cùng, chỉ hiện khi đã cuộn qua bộ lọc lớn */
 .site-filter-mini {
     position: fixed;
-    top: 64px; /* chiều cao header */
+    top: 76px; /* dưới header (header cao ~72px) + chừa khoảng hở nhỏ */
     left: 0;
     right: 0;
     z-index: 30;
