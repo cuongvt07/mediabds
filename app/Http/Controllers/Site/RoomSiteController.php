@@ -54,6 +54,15 @@ class RoomSiteController extends Controller
         if ($request->filled('room_type')) {
             $query->where('room_type', (string) $request->input('room_type'));
         }
+        if ($request->filled('q')) {
+            $keyword = trim((string) $request->input('q'));
+            if ($keyword !== '') {
+                $query->where(function (Builder $sub) use ($keyword) {
+                    $sub->where('title', 'like', '%' . $keyword . '%')
+                        ->orWhere('code', 'like', $keyword . '%');
+                });
+            }
+        }
         foreach ($this->selectedFurniture($request) as $furniture) {
             $query->whereJsonContains('amenities', $furniture);
         }
@@ -99,6 +108,31 @@ class RoomSiteController extends Controller
             'listings', 'slides', 'usingSiteBanners', 'districts', 'wards', 'wardOptions',
             'amenityItems', 'furnitureItems'
         ));
+    }
+
+    /**
+     * Gợi ý autocomplete theo tiêu đề tin (dropdown). Tối ưu: chỉ select cột `title`,
+     * giới hạn 12 dòng, tối thiểu 2 ký tự, khử trùng phía PHP.
+     */
+    public function suggest(Request $request)
+    {
+        $keyword = trim((string) $request->input('q', ''));
+        if (mb_strlen($keyword) < 2) {
+            return response()->json([]);
+        }
+
+        $suggestions = $this->publicRoomQuery()
+            ->where('title', 'like', '%' . $keyword . '%')
+            ->orderByDesc('id')
+            ->limit(12)
+            ->pluck('title')
+            ->map(fn ($title) => trim((string) $title))
+            ->filter()
+            ->unique()
+            ->take(8)
+            ->values();
+
+        return response()->json($suggestions);
     }
 
     public function show(RealEstateListing $listing)

@@ -83,6 +83,16 @@
             {{-- Desktop filter --}}
             <form class="site-filter" method="GET" action="{{ route('site.home') }}#danh-sach">
                 <input type="hidden" name="tab" value="{{ request('tab') }}">
+                {{-- Ô tìm kiếm: 1 dòng riêng, full width, có gợi ý autocomplete theo tiêu đề tin --}}
+                <div class="site-field site-filter-search">
+                    <label for="siteSearchInput">Tìm kiếm</label>
+                    <div class="site-suggest" data-suggest>
+                        <input type="text" id="siteSearchInput" name="q" value="{{ request('q') }}"
+                               placeholder="Tìm theo tiêu đề tin đăng..." autocomplete="off"
+                               data-suggest-input data-suggest-url="{{ route('site.suggest') }}">
+                        <ul class="site-suggest-list" data-suggest-list hidden></ul>
+                    </div>
+                </div>
                 <div class="site-field">
                     <label for="district">Quận</label>
                     <select id="district" name="district" onchange="this.form.ward.value=''; this.form.submit()">
@@ -186,6 +196,15 @@
                 <button type="button" data-filter-close aria-label="Đóng bộ lọc">
                     <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
                 </button>
+            </div>
+            <div class="site-field site-filter-search">
+                <label for="mobileSearchInput">Tìm kiếm</label>
+                <div class="site-suggest" data-suggest>
+                    <input type="text" id="mobileSearchInput" name="q" value="{{ request('q') }}"
+                           placeholder="Tìm theo tiêu đề tin đăng..." autocomplete="off"
+                           data-suggest-input data-suggest-url="{{ route('site.suggest') }}">
+                    <ul class="site-suggest-list" data-suggest-list hidden></ul>
+                </div>
             </div>
             <div class="site-field">
                 <label for="mobile_province">Tỉnh/Thành phố</label>
@@ -485,6 +504,76 @@
                     item.dataset.wasChecked = 'false';
                 });
                 radio.dataset.wasChecked = 'true';
+            });
+        });
+    })();
+
+    // Autocomplete: gợi ý theo tiêu đề tin (dropdown dưới ô tìm kiếm).
+    (function () {
+        function escapeHtml(s) {
+            const d = document.createElement('div');
+            d.textContent = s;
+            return d.innerHTML;
+        }
+
+        document.querySelectorAll('[data-suggest]').forEach(function (box) {
+            const input = box.querySelector('[data-suggest-input]');
+            const list = box.querySelector('[data-suggest-list]');
+            if (!input || !list) return;
+            const url = input.dataset.suggestUrl;
+            let timer = null;
+            let controller = null;
+            let activeIndex = -1;
+
+            function close() { list.hidden = true; list.innerHTML = ''; activeIndex = -1; }
+
+            function render(items) {
+                if (!Array.isArray(items) || !items.length) { close(); return; }
+                list.innerHTML = items.map(function (t) {
+                    return '<li class="site-suggest-item" role="option">' + escapeHtml(t) + '</li>';
+                }).join('');
+                list.hidden = false;
+                activeIndex = -1;
+            }
+
+            input.addEventListener('input', function () {
+                const q = input.value.trim();
+                window.clearTimeout(timer);
+                if (q.length < 2) { close(); return; }
+                timer = window.setTimeout(function () {
+                    if (controller) controller.abort();
+                    controller = new AbortController();
+                    fetch(url + '?q=' + encodeURIComponent(q), { signal: controller.signal, headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                        .then(function (r) { return r.ok ? r.json() : []; })
+                        .then(render)
+                        .catch(function () {});
+                }, 280);
+            });
+
+            list.addEventListener('mousedown', function (e) {
+                const item = e.target.closest('.site-suggest-item');
+                if (!item) return;
+                e.preventDefault();
+                input.value = item.textContent;
+                close();
+                if (input.form) input.form.submit();
+            });
+
+            input.addEventListener('keydown', function (e) {
+                const items = Array.from(list.querySelectorAll('.site-suggest-item'));
+                if (list.hidden || !items.length) return;
+                if (e.key === 'ArrowDown') { e.preventDefault(); activeIndex = (activeIndex + 1) % items.length; }
+                else if (e.key === 'ArrowUp') { e.preventDefault(); activeIndex = (activeIndex - 1 + items.length) % items.length; }
+                else if (e.key === 'Enter') {
+                    if (activeIndex >= 0) { e.preventDefault(); input.value = items[activeIndex].textContent; close(); if (input.form) input.form.submit(); }
+                    return;
+                } else if (e.key === 'Escape') { close(); return; }
+                else { return; }
+                items.forEach(function (it, i) { it.classList.toggle('is-active', i === activeIndex); });
+            });
+
+            document.addEventListener('click', function (e) {
+                if (!box.contains(e.target)) close();
             });
         });
     })();

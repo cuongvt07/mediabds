@@ -14,6 +14,7 @@ Route::get('/wm/{version}/{path}', [WatermarkController::class, 'show'])
     ->name('wm');
 
 Route::get('/', [RoomSiteController::class, 'index'])->name('site.home');
+Route::get('/goi-y', [RoomSiteController::class, 'suggest'])->name('site.suggest');
 Route::get('/tin-dang/{listing}', [RoomSiteController::class, 'show'])->name('site.listings.show');
 
 Route::get('/login', Login::class)->name('login');
