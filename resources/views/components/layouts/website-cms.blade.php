@@ -430,6 +430,7 @@
     $mainItems = [
         'overview' => ['Tổng quan', 'fa-chart-pie', null],
         'listings' => ['Tin đăng', 'fa-newspaper', $stats['pending_listings'] ?? null],
+        'vehicles' => ['Xe cộ', 'fa-car', null],
         'home' => ['Trang chủ', 'fa-house-chimney-window', null],
     ];
     $catalogItems = [

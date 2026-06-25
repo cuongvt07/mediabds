@@ -234,6 +234,8 @@
             </div>
             <div class="cms-pagination">{{ $listings->links(data: ['scrollTo' => false]) }}</div>
         </section>
+    @elseif ($activeTab === 'vehicles')
+        <livewire:vehicle-listing />
     @elseif ($activeTab === 'home')
         <section class="cms-panel">
             <div class="cms-panel-head">

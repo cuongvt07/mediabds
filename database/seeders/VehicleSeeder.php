@@ -1,0 +1,184 @@
+<?php
+
+namespace Database\Seeders;
+
+use App\Models\VehicleListing;
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Str;
+
+class VehicleSeeder extends Seeder
+{
+    public function run(): void
+    {
+        $vehicles = [
+            [
+                'title' => 'Toyota Vios 2020 số tự động bản G, một chủ từ đầu',
+                'vehicle_type' => 'car',
+                'brand' => 'Toyota',
+                'model_name' => 'Vios',
+                'year' => 2020,
+                'mileage' => 38000,
+                'transmission' => 'automatic',
+                'fuel_type' => 'petrol',
+                'engine_capacity' => '1.5L',
+                'color' => 'Trắng',
+                'seats' => 5,
+                'condition' => 'used',
+                'origin' => 'domestic',
+                'price' => 450,
+                'price_unit' => 'Triệu',
+                'province_name' => 'TP. Hồ Chí Minh',
+                'district_name' => 'Quận Gò Vấp',
+                'address' => '123 Quang Trung',
+                'contact_name' => 'Anh Minh',
+                'contact_phone' => '0905123456',
+                'description' => "Xe gia đình sử dụng kỹ, bảo dưỡng định kỳ hãng đầy đủ.\nNội thất còn rất mới, máy êm, lốp còn 80%. Hỗ trợ trả góp 70%.",
+                'images' => [
+                    'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=1200&q=80&auto=format&fit=crop',
+                    'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=1200&q=80&auto=format&fit=crop',
+                ],
+                'tags' => ['một chủ', 'trả góp'],
+                'vip_tier' => 'vip1',
+                'view_count' => 134,
+                'days_ago' => 1,
+            ],
+            [
+                'title' => 'Mercedes-Benz C200 2019 nhập khẩu, biển thành phố',
+                'vehicle_type' => 'car',
+                'brand' => 'Mercedes-Benz',
+                'model_name' => 'C200',
+                'year' => 2019,
+                'mileage' => 52000,
+                'transmission' => 'automatic',
+                'fuel_type' => 'petrol',
+                'engine_capacity' => '1.5L Turbo',
+                'color' => 'Đen',
+                'seats' => 5,
+                'condition' => 'used',
+                'origin' => 'imported',
+                'price' => 1.05,
+                'price_unit' => 'Tỷ',
+                'province_name' => 'TP. Hà Nội',
+                'district_name' => 'Quận Cầu Giấy',
+                'address' => '88 Trần Thái Tông',
+                'contact_name' => 'Chị Lan',
+                'contact_phone' => '0918654321',
+                'description' => "Xe đẹp xuất sắc, không lỗi nhỏ. Bảo hành chính hãng còn hạn.\nFull options, cửa hít, ghế chỉnh điện nhớ vị trí.",
+                'images' => [
+                    'https://images.unsplash.com/photo-1494976388531-d1058494cdd8?w=1200&q=80&auto=format&fit=crop',
+                    'https://images.unsplash.com/photo-1583121274602-3e2820c69888?w=1200&q=80&auto=format&fit=crop',
+                ],
+                'tags' => ['nhập khẩu', 'full options'],
+                'vip_tier' => 'normal',
+                'view_count' => 271,
+                'days_ago' => 2,
+            ],
+            [
+                'title' => 'Honda SH 150i 2021 phanh ABS, odo thấp',
+                'vehicle_type' => 'motorbike',
+                'brand' => 'Honda',
+                'model_name' => 'SH 150i',
+                'year' => 2021,
+                'mileage' => 9000,
+                'transmission' => 'automatic',
+                'fuel_type' => 'petrol',
+                'engine_capacity' => '150cc',
+                'color' => 'Đỏ',
+                'seats' => null,
+                'condition' => 'used',
+                'origin' => 'domestic',
+                'price' => 88,
+                'price_unit' => 'Triệu',
+                'province_name' => 'TP. Hồ Chí Minh',
+                'district_name' => 'Quận 3',
+                'address' => '45 Võ Văn Tần',
+                'contact_name' => 'Anh Tuấn',
+                'contact_phone' => '0907888999',
+                'description' => "Xe chính chủ, giấy tờ đầy đủ sang tên ngay.\nMáy zin, sơn zin, smartkey, phanh ABS.",
+                'images' => [
+                    'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=1200&q=80&auto=format&fit=crop',
+                    'https://images.unsplash.com/photo-1449426468159-d96dbf08f19f?w=1200&q=80&auto=format&fit=crop',
+                ],
+                'tags' => ['chính chủ', 'smartkey'],
+                'vip_tier' => 'normal',
+                'view_count' => 96,
+                'days_ago' => 0,
+            ],
+            [
+                'title' => 'Yamaha Exciter 155 VVA 2022 côn tay, máy zin',
+                'vehicle_type' => 'motorbike',
+                'brand' => 'Yamaha',
+                'model_name' => 'Exciter 155 VVA',
+                'year' => 2022,
+                'mileage' => 12000,
+                'transmission' => 'manual',
+                'fuel_type' => 'petrol',
+                'engine_capacity' => '155cc',
+                'color' => 'Xanh GP',
+                'seats' => null,
+                'condition' => 'used',
+                'origin' => 'domestic',
+                'price' => 45,
+                'price_unit' => 'Triệu',
+                'province_name' => 'TP. Đà Nẵng',
+                'district_name' => 'Quận Hải Châu',
+                'address' => '12 Nguyễn Văn Linh',
+                'contact_name' => 'Anh Khoa',
+                'contact_phone' => '0935222333',
+                'description' => "Xe nguyên bản, chưa qua sửa chữa lớn. Bao test hãng.\nLốp mới thay, nhông sên dĩa còn tốt.",
+                'images' => [
+                    'https://images.unsplash.com/photo-1449426468159-d96dbf08f19f?w=1200&q=80&auto=format&fit=crop',
+                    'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=1200&q=80&auto=format&fit=crop',
+                ],
+                'tags' => ['côn tay', 'máy zin'],
+                'vip_tier' => 'normal',
+                'view_count' => 58,
+                'days_ago' => 3,
+            ],
+        ];
+
+        foreach ($vehicles as $v) {
+            $slug = Str::slug($v['title']);
+            $prefix = $v['vehicle_type'] === 'motorbike' ? 'XM' : 'OT';
+
+            VehicleListing::updateOrCreate(
+                ['slug' => $slug],
+                [
+                    'code' => $prefix . '-' . strtoupper(Str::substr(md5($slug), 0, 7)),
+                    'type' => 'Cần bán',
+                    'vehicle_type' => $v['vehicle_type'],
+                    'brand' => $v['brand'],
+                    'model_name' => $v['model_name'],
+                    'year' => $v['year'],
+                    'mileage' => $v['mileage'],
+                    'transmission' => $v['transmission'],
+                    'fuel_type' => $v['fuel_type'],
+                    'engine_capacity' => $v['engine_capacity'],
+                    'color' => $v['color'],
+                    'seats' => $v['seats'],
+                    'condition' => $v['condition'],
+                    'origin' => $v['origin'],
+                    'price' => $v['price'],
+                    'price_unit' => $v['price_unit'],
+                    'province_name' => $v['province_name'],
+                    'district_name' => $v['district_name'],
+                    'address' => $v['address'],
+                    'contact_name' => $v['contact_name'],
+                    'contact_phone' => $v['contact_phone'],
+                    'description' => $v['description'],
+                    'avatar' => $v['images'][0],
+                    'images' => $v['images'],
+                    'tags' => $v['tags'],
+                    'status' => 'active',
+                    'vip_tier' => $v['vip_tier'],
+                    'is_sold' => false,
+                    'view_count' => $v['view_count'],
+                    'published_at' => now()->subDays($v['days_ago']),
+                    'expires_at' => now()->addDays(60),
+                ]
+            );
+        }
+
+        echo "✅ Đã seed " . count($vehicles) . " tin xe (ô tô + xe máy).\n";
+    }
+}

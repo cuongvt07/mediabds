@@ -171,7 +171,7 @@ class WebsiteAdmin extends Component
 
     public function setTab($tab)
     {
-        $allowed = ['overview', 'home', 'listings', 'categories', 'blogs', 'accounts', 'leads', 'reports', 'favorites', 'saved-searches', 'analytics', 'settings'];
+        $allowed = ['overview', 'home', 'listings', 'vehicles', 'categories', 'blogs', 'accounts', 'leads', 'reports', 'favorites', 'saved-searches', 'analytics', 'settings'];
         if (in_array($tab, $allowed, true)) {
             $this->activeTab = $tab;
             $this->resetPage();
