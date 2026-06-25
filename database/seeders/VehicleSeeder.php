@@ -144,6 +144,7 @@ class VehicleSeeder extends Seeder
             VehicleListing::updateOrCreate(
                 ['slug' => $slug],
                 [
+                    'title' => $v['title'],
                     'code' => $prefix . '-' . strtoupper(Str::substr(md5($slug), 0, 7)),
                     'type' => 'Cần bán',
                     'vehicle_type' => $v['vehicle_type'],
