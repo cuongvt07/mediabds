@@ -341,16 +341,35 @@ body.site-noscroll { overflow: hidden; }
 .site-slider-dots button { width: 28px; height: 5px; padding: 0; border: 0; border-radius: 99px; background: rgba(255,255,255,.4); cursor: pointer; transition: .2s; }
 .site-slider-dots button.is-active { width: 48px; background: var(--site-yellow); }
 .site-filter-wrap {
-    position: sticky;
-    top: 64px; /* chiều cao header */
+    position: static; /* không sticky — cuộn qua sẽ hiện thanh lọc gọn .site-filter-mini */
     z-index: 20;
     margin-top: 0;
     padding: 12px 0;
     background: var(--site-bg, #fff);
     border-bottom: 1px solid rgba(23,32,42,.07);
     box-shadow: 0 4px 16px rgba(23,32,42,.07);
-    transition: box-shadow .2s;
 }
+
+/* Thanh lọc GỌN dính trên cùng, chỉ hiện khi đã cuộn qua bộ lọc lớn */
+.site-filter-mini {
+    position: fixed;
+    top: 64px; /* chiều cao header */
+    left: 0;
+    right: 0;
+    z-index: 30;
+    padding: 8px 0;
+    background: #fff;
+    border-bottom: 1px solid rgba(23,32,42,.08);
+    box-shadow: 0 6px 18px rgba(23,32,42,.10);
+    animation: site-mini-down .18s ease;
+}
+.site-filter-mini[hidden] { display: none; }
+@keyframes site-mini-down { from { transform: translateY(-100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+.site-filter-mini-form { display: flex; gap: 8px; align-items: center; }
+.site-filter-mini-form .site-suggest { flex: 1 1 auto; min-width: 0; }
+.site-filter-mini-form .site-search-btn { flex: 0 0 auto; height: 44px; }
+.site-filter-mini-more { flex: 0 0 auto; height: 44px; padding: 0 16px; border: 1px solid var(--site-line); border-radius: 11px; background: #fff; color: #303631; font-weight: 800; cursor: pointer; white-space: nowrap; }
+.site-filter-mini-more:hover { background: #fff6d6; border-color: var(--site-yellow); }
 .site-filter { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)) auto; gap: 10px; padding: 18px; border: 1px solid rgba(23,32,42,.08); border-radius: 20px; background: #fff; box-shadow: 0 20px 50px rgba(23,32,42,.14); }
 .site-field label { display: block; margin: 0 0 7px 4px; color: #8a8f89; font-size: 10px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
 .site-field select { width: 100%; height: 46px; padding: 0 34px 0 13px; border: 1px solid var(--site-line); border-radius: 11px; color: #303631; background: #fbfbf9; outline: 0; }

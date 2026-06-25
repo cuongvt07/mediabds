@@ -185,6 +185,27 @@
         </div>
     </div>
 
+    {{-- Thanh lọc GỌN: ẩn mặc định, hiện khi cuộn qua khỏi bộ lọc lớn (không sticky cả khối) --}}
+    <div class="site-filter-mini" data-filter-mini hidden>
+        <div class="site-shell">
+            <form class="site-filter-mini-form" method="GET" action="{{ route('site.home') }}#danh-sach">
+                <input type="hidden" name="tab" value="{{ request('tab') }}">
+                <input type="hidden" name="district" value="{{ request('district') }}">
+                <input type="hidden" name="ward" value="{{ request('ward') }}">
+                <input type="hidden" name="price" value="{{ request('price') }}">
+                <input type="hidden" name="room_type" value="{{ request('room_type') }}">
+                <div class="site-suggest" data-suggest>
+                    <input type="text" name="q" value="{{ request('q') }}"
+                           placeholder="Tìm theo tiêu đề tin đăng..." autocomplete="off"
+                           data-suggest-input data-suggest-url="{{ route('site.suggest') }}">
+                    <ul class="site-suggest-list" data-suggest-list hidden></ul>
+                </div>
+                <button type="submit" class="site-search-btn">Tìm</button>
+                <button type="button" class="site-filter-mini-more" data-scroll-filter>Bộ lọc</button>
+            </form>
+        </div>
+    </div>
+
     {{-- Mobile filter bottom-sheet modal --}}
     <div class="site-filter-modal" data-filter-modal aria-hidden="true">
         <button class="site-filter-backdrop" type="button" data-filter-close aria-label="Đóng bộ lọc"></button>
@@ -574,6 +595,30 @@
 
             document.addEventListener('click', function (e) {
                 if (!box.contains(e.target)) close();
+            });
+        });
+    })();
+
+    // Thanh lọc gọn: hiện khi cuộn vượt qua khối bộ lọc lớn, ẩn khi cuộn trở lại.
+    (function () {
+        const filterWrap = document.getElementById('tim-phong');
+        const mini = document.querySelector('[data-filter-mini]');
+        if (!filterWrap || !mini) return;
+
+        if ('IntersectionObserver' in window) {
+            const observer = new IntersectionObserver(function (entries) {
+                entries.forEach(function (entry) {
+                    // Đã cuộn qua (khối lớn nằm trên viewport) → hiện thanh gọn.
+                    const scrolledPast = !entry.isIntersecting && entry.boundingClientRect.top < 0;
+                    mini.hidden = !scrolledPast;
+                });
+            }, { threshold: 0 });
+            observer.observe(filterWrap);
+        }
+
+        document.querySelectorAll('[data-scroll-filter]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                filterWrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
             });
         });
     })();
