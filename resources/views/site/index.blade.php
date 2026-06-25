@@ -190,18 +190,42 @@
         <div class="site-shell">
             <form class="site-filter-mini-form" method="GET" action="{{ route('site.home') }}#danh-sach">
                 <input type="hidden" name="tab" value="{{ request('tab') }}">
-                <input type="hidden" name="district" value="{{ request('district') }}">
-                <input type="hidden" name="ward" value="{{ request('ward') }}">
-                <input type="hidden" name="price" value="{{ request('price') }}">
-                <input type="hidden" name="room_type" value="{{ request('room_type') }}">
-                <div class="site-suggest" data-suggest>
+                <div class="site-suggest site-mini-search" data-suggest>
                     <input type="text" name="q" value="{{ request('q') }}"
                            placeholder="Tìm theo tiêu đề tin đăng..." autocomplete="off"
                            data-suggest-input data-suggest-url="{{ route('site.suggest') }}">
                     <ul class="site-suggest-list" data-suggest-list hidden></ul>
                 </div>
+                <select class="site-mini-select" name="district" aria-label="Quận" onchange="this.form.ward.value=''; this.form.submit()">
+                    <option value="">Quận</option>
+                    @foreach($districts as $district)
+                        <option value="{{ $district->district_id }}" @selected(request('district') == $district->district_id)>{{ $district->district_name }}</option>
+                    @endforeach
+                </select>
+                <select class="site-mini-select" name="ward" aria-label="Phường">
+                    <option value="">Phường</option>
+                    @foreach($wards as $ward)
+                        <option value="{{ $ward->ward_id }}" @selected(request('ward') == $ward->ward_id)>{{ $ward->ward_name }}</option>
+                    @endforeach
+                </select>
+                <select class="site-mini-select" name="price" aria-label="Giá phòng">
+                    <option value="">Giá</option>
+                    <option value="low_high" @selected(request('price') === 'low_high')>Thấp → cao</option>
+                    <option value="high_low" @selected(request('price') === 'high_low')>Cao → thấp</option>
+                    <option value="under_3" @selected(request('price') === 'under_3')>Dưới 3 triệu</option>
+                    <option value="3_4" @selected(request('price') === '3_4')>3 - 4 triệu</option>
+                    <option value="4_5" @selected(request('price') === '4_5')>4 - 5 triệu</option>
+                    <option value="5_6" @selected(request('price') === '5_6')>5 - 6 triệu</option>
+                    <option value="over_6" @selected(request('price') === 'over_6')>Trên 6 triệu</option>
+                </select>
+                <select class="site-mini-select" name="room_type" aria-label="Dạng phòng">
+                    <option value="">Dạng phòng</option>
+                    @foreach($roomLabels as $value => $label)
+                        <option value="{{ $value }}" @selected(request('room_type') === $value)>{{ $label }}</option>
+                    @endforeach
+                </select>
                 <button type="submit" class="site-search-btn">Tìm</button>
-                <button type="button" class="site-filter-mini-more" data-scroll-filter>Bộ lọc</button>
+                <button type="button" class="site-filter-mini-more" data-scroll-filter>Lọc thêm</button>
             </form>
         </div>
     </div>
