@@ -9,7 +9,6 @@ use Illuminate\Support\Facades\DB;
 use App\Livewire\Auth\Login;
 
 use App\Livewire\RealEstateListing;
-use App\Livewire\VehicleListing;
 
 Route::get('/login', Login::class)->name('login');
 Route::post('/logout', function () {

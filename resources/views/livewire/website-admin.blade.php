@@ -32,6 +32,7 @@
         'blogs' => 'Bài viết',
         'feature_descriptions' => 'Mô tả tính năng',
         'promo' => 'Khuyến mãi',
+        'vehicles' => 'Khối xe',
     ];
 
     $sourceTypeLabels = [
@@ -72,6 +73,11 @@
                         <span>Tin chờ duyệt</span>
                         <strong class="mono">{{ number_format($stats['pending_listings']) }}</strong>
                         <button class="cms-btn" wire:click="setTab('listings')">Xem</button>
+                    </div>
+                    <div class="cms-kpi-row">
+                        <span>Tin xe chờ duyệt</span>
+                        <strong class="mono">{{ number_format($stats['pending_vehicles']) }}</strong>
+                        <button class="cms-btn" wire:click="setTab('vehicles')">Xem</button>
                     </div>
                     <div class="cms-kpi-row">
                     <span>Khách liên hệ mới từ trang web</span>
@@ -121,6 +127,7 @@
                     <span class="mono" style="color: var(--text-muted)">30 ngày gần đây</span>
                 </div>
                 <div>
+                    <div class="cms-kpi-row"><span>Tổng tin xe</span><strong class="mono">{{ number_format($stats['vehicles']) }}</strong><button class="cms-btn" wire:click="setTab('vehicles')">Xem</button></div>
                     <div class="cms-kpi-row"><span>Danh mục BĐS</span><strong class="mono">{{ number_format($stats['categories']) }}</strong><span></span></div>
                     <div class="cms-kpi-row"><span>Tài khoản người dùng</span><strong class="mono">{{ number_format($stats['accounts']) }}</strong><span></span></div>
                     <div class="cms-kpi-row"><span>Bài viết/SEO</span><strong class="mono">{{ number_format($stats['blogs']) }}</strong><span></span></div>
@@ -324,6 +331,55 @@
                 </table>
             </div>
             <div class="cms-pagination">{{ $vehicles->links(data: ['scrollTo' => false]) }}</div>
+        </section>
+    @elseif ($activeTab === 'vehicle-brands')
+        <section class="cms-panel">
+            <div class="cms-panel-head">
+                <h2 class="cms-panel-title">Hãng xe</h2>
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <input class="cms-input" style="width: 240px;" wire:model.live.debounce.300ms="brandSearch" placeholder="Tìm tên hãng">
+                    <button class="cms-btn primary" wire:click="openCreateBrand"><i class="fa-solid fa-plus"></i> Thêm hãng</button>
+                </div>
+            </div>
+            <div class="cms-table-wrap cms-scrollbar">
+                <table class="cms-table">
+                    <thead>
+                        <tr>
+                            <th style="width:60px;">#</th>
+                            <th>Tên hãng</th>
+                            <th style="width:140px;">Loại xe</th>
+                            <th class="right" style="width:100px;">Thứ tự</th>
+                            <th style="width:110px;">Hiển thị</th>
+                            <th class="right" style="width:104px;">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @php $vtLabels = ['car' => 'Ô tô', 'motorbike' => 'Xe máy', 'both' => 'Dùng chung']; @endphp
+                        @forelse ($vehicleBrands as $b)
+                            <tr>
+                                <td class="mono">{{ $b->id }}</td>
+                                <td style="color: var(--text-primary)">{{ $b->name }}</td>
+                                <td>{{ $vtLabels[$b->vehicle_type] ?? $b->vehicle_type }}</td>
+                                <td class="right mono">{{ $b->sort_order }}</td>
+                                <td>
+                                    <button class="cms-badge {{ $b->is_active ? 'success' : 'muted' }}" wire:click="toggleBrandActive({{ $b->id }})" style="cursor:pointer; border:0;">
+                                        {{ $b->is_active ? 'Đang bật' : 'Đã ẩn' }}
+                                    </button>
+                                </td>
+                                <td class="right">
+                                    <div style="display:flex; gap:6px; justify-content:flex-end;">
+                                        <button class="cms-btn" wire:click="editBrand({{ $b->id }})" title="Sửa"><i class="fa-solid fa-pen"></i></button>
+                                        <button class="cms-btn danger" wire:click="deleteBrand({{ $b->id }})" wire:confirm="Xóa hãng xe này?" title="Xóa"><i class="fa-solid fa-trash"></i></button>
+                                    </div>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="6" style="text-align:center; height:72px;">Chưa có hãng xe nào. Bấm "Thêm hãng" để tạo.</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+            <div class="cms-pagination">{{ $vehicleBrands->links(data: ['scrollTo' => false]) }}</div>
         </section>
     @elseif ($activeTab === 'home')
         <section class="cms-panel">
@@ -1108,7 +1164,7 @@
                     <label class="cms-field"><span class="cms-label">Loại khối</span><select class="cms-select" wire:model="homeSectionType">@foreach($sectionTypeLabels as $value => $label)<option value="{{ $value }}">{{ $label }}</option>@endforeach</select></label>
                     <label class="cms-field"><span class="cms-label">Nguồn dữ liệu</span><select class="cms-select" wire:model="homeSectionSourceType">@foreach($sourceTypeLabels as $value => $label)<option value="{{ $value }}">{{ $label }}</option>@endforeach</select></label>
                     <label class="cms-field"><span class="cms-label">Giao dịch</span><select class="cms-select" wire:model="homeSectionTransactionType"><option value="">Tất cả</option><option value="sale">Bán</option><option value="rent">Cho thuê</option></select></label>
-                    <label class="cms-field"><span class="cms-label">Loại BĐS</span><select class="cms-select" wire:model="homeSectionPropertyKind"><option value="">Tất cả</option>@foreach($propertyKindLabels as $value => $label)<option value="{{ $value }}">{{ $label }}</option>@endforeach</select></label>
+                    <label class="cms-field"><span class="cms-label">Loại BĐS / xe</span><select class="cms-select" wire:model="homeSectionPropertyKind"><option value="">Tất cả</option>@foreach($propertyKindLabels as $value => $label)<option value="{{ $value }}">{{ $label }}</option>@endforeach<option value="car">Ô tô (khối xe)</option><option value="motorbike">Xe máy (khối xe)</option></select></label>
                     <label class="cms-field"><span class="cms-label">Danh mục</span>
                         <select class="cms-select" wire:model="homeSectionCategoryId">
                             <option value="">— Tất cả danh mục —</option>
@@ -1493,9 +1549,7 @@
             $vehicleFuelOpts = \App\Models\VehicleListing::FUEL_TYPES;
             $vehicleConditionOpts = \App\Models\VehicleListing::CONDITIONS;
             $vehicleOriginOpts = \App\Models\VehicleListing::ORIGINS;
-            $vehicleBrandOpts = $vehicleKind === 'motorbike'
-                ? \App\Models\VehicleListing::MOTORBIKE_BRANDS
-                : \App\Models\VehicleListing::CAR_BRANDS;
+            $vehicleBrandOpts = \App\Models\VehicleBrand::namesForKind($vehicleKind);
         @endphp
         <div class="cms-modal-backdrop">
             <section class="cms-modal" style="width: min(960px, calc(100vw - 48px));">
@@ -1692,6 +1746,43 @@
                         <span wire:loading.remove wire:target="saveVehicle">{{ $vehicleFormId ? 'Lưu thay đổi' : 'Thêm tin xe' }}</span>
                         <span wire:loading wire:target="saveVehicle"><i class="fa-solid fa-spinner fa-spin"></i> Đang lưu...</span>
                     </button>
+                </div>
+            </section>
+        </div>
+    @endif
+
+    @if ($showBrandModal)
+        <div class="cms-modal-backdrop">
+            <section class="cms-modal" style="width: min(520px, calc(100vw - 48px));">
+                <div class="cms-panel-head">
+                    <h2 class="cms-panel-title">{{ $brandFormId ? 'Sửa hãng xe' : 'Thêm hãng xe' }}</h2>
+                    <button class="cms-icon-btn" wire:click="closeBrandModal"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <div style="padding:4px 2px;">
+                    <div class="cms-form-grid">
+                        <label class="cms-field full"><span class="cms-label">Tên hãng *</span>
+                            <input class="cms-input" wire:model="brandName" placeholder="VD: Toyota, Honda...">
+                            @error('brandName') <span style="color:var(--danger); font-size:12px;">{{ $message }}</span> @enderror
+                        </label>
+                        <label class="cms-field"><span class="cms-label">Áp dụng cho</span>
+                            <select class="cms-select" wire:model="brandVehicleType">
+                                <option value="both">Dùng chung</option>
+                                <option value="car">Ô tô</option>
+                                <option value="motorbike">Xe máy</option>
+                            </select>
+                        </label>
+                        <label class="cms-field"><span class="cms-label">Thứ tự</span><input class="cms-input mono" type="number" wire:model="brandSortOrder"></label>
+                        <label class="cms-field"><span class="cms-label">Hiển thị</span>
+                            <select class="cms-select" wire:model="brandActive">
+                                <option value="1">Bật</option>
+                                <option value="0">Ẩn</option>
+                            </select>
+                        </label>
+                    </div>
+                </div>
+                <div class="cms-panel-head" style="justify-content:flex-end;">
+                    <button class="cms-btn" wire:click="closeBrandModal">Hủy</button>
+                    <button class="cms-btn primary" wire:click="saveBrand">{{ $brandFormId ? 'Lưu thay đổi' : 'Thêm hãng' }}</button>
                 </div>
             </section>
         </div>

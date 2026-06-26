@@ -8,6 +8,7 @@ use App\Models\ListingContactRequest;
 use App\Models\ListingReport;
 use App\Models\RealEstateListing;
 use App\Models\User;
+use App\Models\VehicleBrand;
 use App\Models\VehicleListing as VehicleModel;
 use App\Models\UserInvite;
 use App\Models\WebsiteHomeSection;
@@ -172,7 +173,7 @@ class WebsiteAdmin extends Component
 
     public function setTab($tab)
     {
-        $allowed = ['overview', 'home', 'listings', 'vehicles', 'categories', 'blogs', 'accounts', 'leads', 'reports', 'favorites', 'saved-searches', 'analytics', 'settings'];
+        $allowed = ['overview', 'home', 'listings', 'vehicles', 'vehicle-brands', 'categories', 'blogs', 'accounts', 'leads', 'reports', 'favorites', 'saved-searches', 'analytics', 'settings'];
         if (in_array($tab, $allowed, true)) {
             $this->activeTab = $tab;
             $this->resetPage();
@@ -1221,11 +1222,115 @@ class WebsiteAdmin extends Component
         }
     }
 
+    // ===================  HÃNG XE (tab vehicle-brands)  ========
+    public $showBrandModal = false;
+    public $brandFormId = null;
+    public $brandName = '';
+    public $brandVehicleType = 'both';
+    public $brandSortOrder = 0;
+    public $brandActive = true;
+    public $brandSearch = '';
+
+    public function openCreateBrand(): void
+    {
+        $this->resetBrandForm();
+        $this->showBrandModal = true;
+    }
+
+    public function editBrand($id): void
+    {
+        $b = VehicleBrand::find($id);
+        if (! $b) {
+            return;
+        }
+        $this->brandFormId = $b->id;
+        $this->brandName = $b->name;
+        $this->brandVehicleType = $b->vehicle_type ?: 'both';
+        $this->brandSortOrder = (int) $b->sort_order;
+        $this->brandActive = (bool) $b->is_active;
+        $this->showBrandModal = true;
+    }
+
+    public function saveBrand(): void
+    {
+        $data = $this->validate([
+            'brandName' => 'required|string|max:120',
+            'brandVehicleType' => 'required|in:car,motorbike,both',
+            'brandSortOrder' => 'nullable|integer|min:0|max:9999',
+        ], [], [
+            'brandName' => 'tên hãng',
+            'brandVehicleType' => 'loại xe',
+        ]);
+
+        VehicleBrand::updateOrCreate(
+            ['id' => $this->brandFormId],
+            [
+                'name' => $data['brandName'],
+                'vehicle_type' => $data['brandVehicleType'],
+                'sort_order' => (int) ($data['brandSortOrder'] ?? 0),
+                'is_active' => (bool) $this->brandActive,
+            ]
+        );
+
+        session()->flash('message', 'Đã lưu hãng xe.');
+        $this->closeBrandModal();
+    }
+
+    public function deleteBrand($id): void
+    {
+        VehicleBrand::where('id', $id)->delete();
+        session()->flash('message', 'Đã xóa hãng xe.');
+    }
+
+    public function toggleBrandActive($id): void
+    {
+        $b = VehicleBrand::find($id);
+        if ($b) {
+            $b->is_active = ! $b->is_active;
+            $b->save();
+        }
+    }
+
+    public function closeBrandModal(): void
+    {
+        $this->showBrandModal = false;
+        $this->resetBrandForm();
+    }
+
+    protected function resetBrandForm(): void
+    {
+        $this->brandFormId = null;
+        $this->brandName = '';
+        $this->brandVehicleType = 'both';
+        $this->brandSortOrder = 0;
+        $this->brandActive = true;
+        $this->resetValidation();
+    }
+
+    private function vehicleBrandsList()
+    {
+        if (! Schema::hasTable('vehicle_brands')) {
+            return $this->emptyPaginator('brandsPage');
+        }
+
+        try {
+            return VehicleBrand::query()
+                ->when($this->brandSearch, fn ($q) => $q->where('name', 'like', '%' . $this->brandSearch . '%'))
+                ->orderBy('vehicle_type')
+                ->orderBy('sort_order')
+                ->orderBy('name')
+                ->paginate(15, ['*'], 'brandsPage');
+        } catch (\Throwable $e) {
+            return $this->emptyPaginator('brandsPage');
+        }
+    }
+
     public function render()
     {
         return view('livewire.website-admin', [
             'stats' => $this->stats(),
             'vehicles' => $this->vehicles(),
+            'vehicleBrands' => $this->vehicleBrandsList(),
             'recentListings' => $this->recentListings(),
             'recentLeads' => $this->recentLeads(),
             'homeSections' => $this->homeSections(),
@@ -1830,6 +1935,8 @@ class WebsiteAdmin extends Component
         return [
             'public_listings' => $this->countListings(),
             'pending_listings' => $this->countListingStatus('pending'),
+            'vehicles' => $this->countTable('vehicle_listings'),
+            'pending_vehicles' => $this->countVehicleStatus('pending'),
             'categories' => $this->countTable('listing_categories'),
             'blogs' => $this->countTable('blog_posts'),
             'leads' => $this->countTable('listing_contact_requests'),
@@ -1864,6 +1971,19 @@ class WebsiteAdmin extends Component
 
         try {
             return RealEstateListing::where('status', $status)->count();
+        } catch (\Throwable $e) {
+            return 0;
+        }
+    }
+
+    private function countVehicleStatus($status)
+    {
+        if (! Schema::hasTable('vehicle_listings')) {
+            return 0;
+        }
+
+        try {
+            return VehicleModel::where('status', $status)->count();
         } catch (\Throwable $e) {
             return 0;
         }

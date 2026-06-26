@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Resources\ListingResource;
+use App\Http\Resources\VehicleResource;
 use App\Models\BlogPost;
 use App\Models\RealEstateListing;
+use App\Models\VehicleListing;
 use App\Models\WebsiteHomeSection;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
@@ -53,6 +55,15 @@ class HomepageApiController extends BaseApiController
 
             $payload['meta']['total'] = $total;
             $payload['items'] = ListingResource::collection($items)->resolve($request);
+        }
+
+        if ($section->section_type === 'vehicles' && Schema::hasTable('vehicle_listings')) {
+            $query = $this->vehicleQuery($section);
+            $total = (clone $query)->count();
+            $items = $query->limit(max(1, min((int) $section->limit, 24)))->get();
+
+            $payload['meta']['total'] = $total;
+            $payload['items'] = VehicleResource::collection($items)->resolve($request);
         }
 
         if ($section->section_type === 'blogs' && Schema::hasTable('blog_posts')) {
@@ -130,6 +141,32 @@ class HomepageApiController extends BaseApiController
         }
 
         $sortBy = in_array($section->sort_by, ['created_at', 'price', 'area', 'view_count'], true)
+            ? $section->sort_by
+            : 'created_at';
+        $sortOrder = strtolower((string) $section->sort_order) === 'asc' ? 'asc' : 'desc';
+
+        return $query->orderBy($sortBy, $sortOrder);
+    }
+
+    private function vehicleQuery(WebsiteHomeSection $section)
+    {
+        $query = VehicleListing::query()
+            ->with('user:id,name,phone')
+            ->where('is_sold', false)
+            ->where(function ($q) {
+                $q->whereNull('status')->orWhere('status', 'active');
+            });
+
+        // property_kind được tái dùng để lọc loại xe: car | motorbike (rỗng = tất cả).
+        if (in_array($section->property_kind, ['car', 'motorbike'], true)) {
+            $query->where('vehicle_type', $section->property_kind);
+        }
+
+        if ($section->source_type === 'vip') {
+            $query->where('vip_tier', '<>', 'normal');
+        }
+
+        $sortBy = in_array($section->sort_by, ['created_at', 'price', 'year', 'mileage', 'view_count'], true)
             ? $section->sort_by
             : 'created_at';
         $sortOrder = strtolower((string) $section->sort_order) === 'asc' ? 'asc' : 'desc';

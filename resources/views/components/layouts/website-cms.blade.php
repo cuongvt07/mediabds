@@ -435,6 +435,7 @@
     ];
     $catalogItems = [
         'categories' => ['Danh mục', 'fa-layer-group', null],
+        'vehicle-brands' => ['Hãng xe', 'fa-tags', null],
         'blogs' => ['Bài viết/SEO', 'fa-pen-nib', null],
     ];
     $userItems = [
