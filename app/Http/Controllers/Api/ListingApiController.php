@@ -108,11 +108,15 @@ class ListingApiController extends BaseApiController
 
         $sortBy = $req->input('sort_by', 'created_at');
         $sortOrder = strtolower((string) $req->input('sort_order', 'desc')) === 'asc' ? 'asc' : 'desc';
-        if (! in_array($sortBy, ['created_at', 'price', 'area', 'view_count'], true)) {
+        if (! in_array($sortBy, ['created_at', 'price', 'area', 'view_count', 'vip'], true)) {
             $sortBy = 'created_at';
         }
 
-        if ($sortBy === 'price') {
+        if ($sortBy === 'vip') {
+            // VIP 3 → VIP 2 → VIP 1 → thường, newest first within a tier.
+            $query->orderByRaw("CASE vip_tier WHEN 'vip3' THEN 3 WHEN 'vip2' THEN 2 WHEN 'vip1' THEN 1 ELSE 0 END DESC")
+                ->orderBy('created_at', 'desc');
+        } elseif ($sortBy === 'price') {
             $query->orderByRaw('(' . $this->priceVndExpression() . ') ' . $sortOrder);
         } else {
             $query->orderBy($sortBy, $sortOrder);
