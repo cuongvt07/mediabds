@@ -137,7 +137,9 @@ class VehicleApiController extends BaseApiController
         $data['user_id'] = auth()->id();
         $data['code'] = $this->makeCode($data['vehicle_type'] ?? 'car');
         $data['type'] = $data['type'] ?? 'Cần bán';
-        $data['status'] = $data['status'] ?? 'active';
+        // Field nhạy cảm: server tự quyết định, không tin client.
+        $data['status'] = 'active';
+        $data['vip_tier'] = 'normal';
         $data['published_at'] = now();
         $data['expires_at'] = now()->addDays(60);
 

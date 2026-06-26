@@ -50,9 +50,8 @@ class CreateVehicleRequest extends FormRequest
             'tags' => 'nullable|array|max:30',
             'tags.*' => 'string|max:80',
             'youtube_link' => 'nullable|string|max:2048',
-
-            'status' => 'nullable|in:active,pending,expired,sold',
-            'vip_tier' => 'nullable|in:normal,vip1,vip2,vip3',
+            // CHÚ Ý: KHÔNG nhận 'status' và 'vip_tier' từ client — đây là field nhạy cảm
+            // (tự duyệt tin / tự lên VIP). Chỉ admin được set qua CMS website-admin.
         ];
     }
 }
