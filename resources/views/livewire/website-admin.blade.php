@@ -235,7 +235,96 @@
             <div class="cms-pagination">{{ $listings->links(data: ['scrollTo' => false]) }}</div>
         </section>
     @elseif ($activeTab === 'vehicles')
-        <livewire:vehicle-listing />
+        <section class="cms-panel">
+            <div class="cms-panel-head">
+                <h2 class="cms-panel-title">Quản lý tin xe</h2>
+                <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                    <input class="cms-input" style="width: 260px;" wire:model.live.debounce.300ms="vehicleSearch" placeholder="Tìm mã tin, tiêu đề, hãng, SĐT">
+                    <select class="cms-select" wire:model.live="vehicleKindFilter">
+                        <option value="all">Tất cả loại xe</option>
+                        @foreach (\App\Models\VehicleListing::VEHICLE_TYPES as $k => $label)
+                            <option value="{{ $k }}">{{ $label }}</option>
+                        @endforeach
+                    </select>
+                    <select class="cms-select" wire:model.live="vehicleStatus">
+                        <option value="all">Tất cả trạng thái</option>
+                        <option value="pending">Chờ duyệt</option>
+                        <option value="active">Đã đăng</option>
+                        <option value="expired">Hết hạn</option>
+                        <option value="rejected">Từ chối</option>
+                        <option value="sold">Đã bán</option>
+                    </select>
+                    <select class="cms-select" wire:model.live="vehicleVip">
+                        <option value="all">Tất cả mức ưu tiên</option>
+                        <option value="normal">Thường</option>
+                        <option value="vip1">Ưu tiên 1</option>
+                        <option value="vip2">Ưu tiên 2</option>
+                        <option value="vip3">Ưu tiên 3</option>
+                    </select>
+                    <button class="cms-btn primary" wire:click="openCreateVehicle"><i class="fa-solid fa-plus"></i> Thêm tin xe</button>
+                </div>
+            </div>
+            <div class="cms-table-wrap cms-scrollbar">
+                <table class="cms-table">
+                    <thead>
+                        <tr>
+                            <th style="width:32px;"><input type="checkbox"></th>
+                            <th style="width:90px;">Mã tin</th>
+                            <th>Tiêu đề</th>
+                            <th style="width:130px;">Hãng / Dòng</th>
+                            <th class="right" style="width:110px;">Giá</th>
+                            <th style="width:150px;">Người đăng</th>
+                            <th style="width:125px;">Trạng thái</th>
+                            <th style="width:88px;">Ưu tiên</th>
+                            <th class="right" style="width:80px;">Lượt xem</th>
+                            <th style="width:112px;">Ngày đăng</th>
+                            <th class="right" style="width:104px;">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse ($vehicles as $v)
+                            @php $state = $v->is_sold ? 'sold' : ($v->status ?: 'active'); @endphp
+                            <tr>
+                                <td><input type="checkbox"></td>
+                                <td class="mono" style="color: var(--text-primary)">{{ $v->code ?: '#' . $v->id }}</td>
+                                <td><div class="cms-truncate" title="{{ $v->title }}">{{ $v->title }}</div></td>
+                                <td><div class="cms-truncate">{{ trim(($v->brand ?: '') . ' ' . ($v->model_name ?: '')) ?: '-' }}</div></td>
+                                <td class="right mono" style="color: var(--success)" title="{{ $v->price_unit }}">{{ $v->price !== null ? rtrim(rtrim(number_format((float) $v->price, 2, ',', '.'), '0'), ',') . ' ' . $v->price_unit : '—' }}</td>
+                                <td>
+                                    <div class="cms-truncate" style="color: var(--text-primary)">{{ optional($v->user)->name ?: 'Ẩn danh' }}</div>
+                                    <div class="mono cms-truncate" style="color: var(--text-muted); font-size:11px">{{ optional($v->user)->phone ?: '' }}</div>
+                                </td>
+                                <td>
+                                    <select class="cms-select" wire:change="updateVehicleStatus({{ $v->id }}, $event.target.value)">
+                                        @foreach (['pending' => 'Chờ duyệt', 'active' => 'Đã đăng', 'expired' => 'Hết hạn', 'rejected' => 'Từ chối', 'sold' => 'Đã bán'] as $value => $label)
+                                            <option value="{{ $value }}" @selected($state === $value)>{{ $label }}</option>
+                                        @endforeach
+                                    </select>
+                                </td>
+                                <td>
+                                    <select class="cms-select" wire:change="updateVehicleVip({{ $v->id }}, $event.target.value)">
+                                        @foreach (['normal' => 'Thường', 'vip1' => 'Ưu tiên 1', 'vip2' => 'Ưu tiên 2', 'vip3' => 'Ưu tiên 3'] as $value => $label)
+                                            <option value="{{ $value }}" @selected(($v->vip_tier ?: 'normal') === $value)>{{ $label }}</option>
+                                        @endforeach
+                                    </select>
+                                </td>
+                                <td class="right mono">{{ number_format((int) ($v->view_count ?? 0)) }}</td>
+                                <td class="mono">{{ optional($v->created_at)->format('d/m/Y') }}</td>
+                                <td class="right">
+                                    <div style="display:flex; gap:6px; justify-content:flex-end;">
+                                        <button class="cms-btn" wire:click="editVehicle({{ $v->id }})" title="Sửa tin xe"><i class="fa-solid fa-pen"></i></button>
+                                        <button class="cms-btn danger" wire:click="deleteVehicle({{ $v->id }})" wire:confirm="Xóa tin xe này?" title="Xóa tin xe"><i class="fa-solid fa-trash"></i></button>
+                                    </div>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="11" style="text-align:center; height:72px;">Không có tin xe nào khớp bộ lọc.</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+            <div class="cms-pagination">{{ $vehicles->links(data: ['scrollTo' => false]) }}</div>
+        </section>
     @elseif ($activeTab === 'home')
         <section class="cms-panel">
             <div class="cms-panel-head">
@@ -1396,11 +1485,223 @@
         </div>
     @endif
 
+    @if ($showVehicleModal)
+        @php
+            $vehicleProvinces = \App\Livewire\RealEstateListing::PROVINCES;
+            $vehicleTypeOpts = \App\Models\VehicleListing::VEHICLE_TYPES;
+            $vehicleTransmissionOpts = \App\Models\VehicleListing::TRANSMISSIONS;
+            $vehicleFuelOpts = \App\Models\VehicleListing::FUEL_TYPES;
+            $vehicleConditionOpts = \App\Models\VehicleListing::CONDITIONS;
+            $vehicleOriginOpts = \App\Models\VehicleListing::ORIGINS;
+            $vehicleBrandOpts = $vehicleKind === 'motorbike'
+                ? \App\Models\VehicleListing::MOTORBIKE_BRANDS
+                : \App\Models\VehicleListing::CAR_BRANDS;
+        @endphp
+        <div class="cms-modal-backdrop">
+            <section class="cms-modal" style="width: min(960px, calc(100vw - 48px));">
+                <div class="cms-panel-head">
+                    <h2 class="cms-panel-title">{{ $vehicleFormId ? 'Sửa tin xe' : 'Thêm tin xe' }}</h2>
+                    <button class="cms-icon-btn" wire:click="closeVehicleModal"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+
+                <div class="cms-scrollbar" style="max-height:72vh; overflow:auto; padding:2px 4px 2px 2px;">
+                    {{-- Thông tin cơ bản --}}
+                    <div class="cms-label" style="margin:4px 0 8px; color:var(--text-primary); font-weight:700;">Thông tin cơ bản</div>
+                    <div class="cms-form-grid">
+                        <label class="cms-field full"><span class="cms-label">Tiêu đề *</span>
+                            <input class="cms-input" wire:model="vehicleTitle" placeholder="VD: Toyota Vios 2020 số tự động...">
+                            @error('vehicleTitle') <span style="color:var(--danger); font-size:12px;">{{ $message }}</span> @enderror
+                        </label>
+                        <label class="cms-field"><span class="cms-label">Nhu cầu</span>
+                            <select class="cms-select" wire:model.live="vehicleDealType">
+                                <option value="Cần bán">Cần bán</option>
+                                <option value="Cho thuê">Cho thuê</option>
+                                <option value="Cần mua">Cần mua</option>
+                            </select>
+                        </label>
+                        <label class="cms-field"><span class="cms-label">Loại xe</span>
+                            <select class="cms-select" wire:model.live="vehicleKind">
+                                @foreach ($vehicleTypeOpts as $k => $label)
+                                    <option value="{{ $k }}">{{ $label }}</option>
+                                @endforeach
+                            </select>
+                        </label>
+                        <label class="cms-field"><span class="cms-label">Mã tin</span><input class="cms-input mono" wire:model="vehicleCode" placeholder="Tự sinh theo loại xe"></label>
+                        <label class="cms-field"><span class="cms-label">Liên hệ</span>
+                            <select class="cms-select" wire:model="vehicleContactType">
+                                <option value="">Chọn loại liên hệ</option>
+                                <option value="Chủ">Chủ</option>
+                                <option value="Môi giới">Môi giới</option>
+                                <option value="Công ty">Công ty</option>
+                            </select>
+                        </label>
+                        <label class="cms-field"><span class="cms-label">SĐT liên hệ</span><input class="cms-input mono" wire:model="vehicleContactPhone" placeholder="090..."></label>
+                        <label class="cms-field"><span class="cms-label">Trạng thái</span>
+                            <select class="cms-select" wire:model="vehicleState">
+                                <option value="pending">Chờ duyệt</option>
+                                <option value="active">Đã đăng</option>
+                                <option value="expired">Hết hạn</option>
+                                <option value="rejected">Từ chối</option>
+                                <option value="sold">Đã bán</option>
+                            </select>
+                        </label>
+                        <label class="cms-field"><span class="cms-label">Ưu tiên</span>
+                            <select class="cms-select" wire:model="vehicleTier">
+                                <option value="normal">Thường</option>
+                                <option value="vip1">Ưu tiên 1</option>
+                                <option value="vip2">Ưu tiên 2</option>
+                                <option value="vip3">Ưu tiên 3</option>
+                            </select>
+                        </label>
+                    </div>
+
+                    {{-- Thông số xe --}}
+                    <div class="cms-label" style="margin:16px 0 8px; color:var(--text-primary); font-weight:700;">Thông số xe</div>
+                    <div class="cms-form-grid">
+                        <label class="cms-field"><span class="cms-label">Hãng</span>
+                            <select class="cms-select" wire:model="vehicleBrand">
+                                <option value="">Chọn hãng</option>
+                                @foreach ($vehicleBrandOpts as $b)
+                                    <option value="{{ $b }}">{{ $b }}</option>
+                                @endforeach
+                            </select>
+                        </label>
+                        <label class="cms-field"><span class="cms-label">Dòng xe</span><input class="cms-input" wire:model="vehicleModelName" placeholder="VD: Vios, SH..."></label>
+                        <label class="cms-field"><span class="cms-label">Năm SX</span><input class="cms-input mono" type="number" wire:model="vehicleYear" placeholder="2020"></label>
+                        <label class="cms-field"><span class="cms-label">Số km đã đi</span><input class="cms-input mono" type="number" wire:model="vehicleMileage" placeholder="35000"></label>
+                        <label class="cms-field"><span class="cms-label">Hộp số</span>
+                            <select class="cms-select" wire:model="vehicleTransmission">
+                                <option value="">--</option>
+                                @foreach ($vehicleTransmissionOpts as $k => $label)
+                                    <option value="{{ $k }}">{{ $label }}</option>
+                                @endforeach
+                            </select>
+                        </label>
+                        <label class="cms-field"><span class="cms-label">Nhiên liệu</span>
+                            <select class="cms-select" wire:model="vehicleFuelType">
+                                <option value="">--</option>
+                                @foreach ($vehicleFuelOpts as $k => $label)
+                                    <option value="{{ $k }}">{{ $label }}</option>
+                                @endforeach
+                            </select>
+                        </label>
+                        <label class="cms-field"><span class="cms-label">Dung tích / Phân khối</span><input class="cms-input" wire:model="vehicleEngineCapacity" placeholder="1.5L / 150cc"></label>
+                        <label class="cms-field"><span class="cms-label">Màu sắc</span><input class="cms-input" wire:model="vehicleColor" placeholder="Trắng"></label>
+                        @if ($vehicleKind === 'car')
+                            <label class="cms-field"><span class="cms-label">Số chỗ</span><input class="cms-input mono" type="number" wire:model="vehicleSeats" placeholder="5"></label>
+                        @endif
+                        <label class="cms-field"><span class="cms-label">Tình trạng</span>
+                            <select class="cms-select" wire:model="vehicleCondition">
+                                @foreach ($vehicleConditionOpts as $k => $label)
+                                    <option value="{{ $k }}">{{ $label }}</option>
+                                @endforeach
+                            </select>
+                        </label>
+                        <label class="cms-field"><span class="cms-label">Xuất xứ</span>
+                            <select class="cms-select" wire:model="vehicleOrigin">
+                                <option value="">--</option>
+                                @foreach ($vehicleOriginOpts as $k => $label)
+                                    <option value="{{ $k }}">{{ $label }}</option>
+                                @endforeach
+                            </select>
+                        </label>
+                        <label class="cms-field"><span class="cms-label">Giá {{ $vehicleDealType !== 'Cần mua' ? '*' : '' }}</span>
+                            <input class="cms-input mono" wire:model="vehiclePrice" placeholder="VD: 450">
+                            @error('vehiclePrice') <span style="color:var(--danger); font-size:12px;">{{ $message }}</span> @enderror
+                        </label>
+                        <label class="cms-field"><span class="cms-label">Đơn vị giá</span>
+                            <select class="cms-select" wire:model="vehiclePriceUnit">
+                                <option value="Triệu">Triệu</option>
+                                <option value="Tỷ">Tỷ</option>
+                                <option value="Thỏa thuận">Thỏa thuận</option>
+                            </select>
+                        </label>
+                    </div>
+
+                    {{-- Vị trí --}}
+                    <div class="cms-label" style="margin:16px 0 8px; color:var(--text-primary); font-weight:700;">Vị trí</div>
+                    <div class="cms-form-grid">
+                        <label class="cms-field"><span class="cms-label">Tỉnh / Thành</span>
+                            <select class="cms-select" wire:model.live="vehicleProvinceId">
+                                <option value="">Chọn tỉnh/thành</option>
+                                @foreach ($vehicleProvinces as $pid => $pname)
+                                    <option value="{{ $pid }}">{{ $pname }}</option>
+                                @endforeach
+                            </select>
+                        </label>
+                        <label class="cms-field"><span class="cms-label">Quận / Huyện</span>
+                            <select class="cms-select" wire:model.live="vehicleDistrictId" @disabled(empty($vehicleDistricts))>
+                                <option value="">Chọn quận/huyện</option>
+                                @foreach ($vehicleDistricts as $did => $dname)
+                                    <option value="{{ $did }}">{{ $dname }}</option>
+                                @endforeach
+                            </select>
+                        </label>
+                        <label class="cms-field"><span class="cms-label">Phường / Xã</span>
+                            <select class="cms-select" wire:model="vehicleWardId" @disabled(empty($vehicleWards))>
+                                <option value="">Chọn phường/xã</option>
+                                @foreach ($vehicleWards as $wid => $wname)
+                                    <option value="{{ $wid }}">{{ $wname }}</option>
+                                @endforeach
+                            </select>
+                        </label>
+                        <label class="cms-field full"><span class="cms-label">Địa chỉ</span><input class="cms-input" wire:model="vehicleAddress" placeholder="Số nhà, tên đường..."></label>
+                    </div>
+
+                    {{-- Hình ảnh --}}
+                    <div class="cms-label" style="margin:16px 0 8px; color:var(--text-primary); font-weight:700;">Hình ảnh</div>
+                    <div class="cms-form-grid">
+                        <x-cms-media-field label="Ảnh đại diện" :value="$vehicleAvatar" target="vehicleAvatar" :full="false" />
+                        <div class="cms-field">
+                            <span class="cms-label">Thư viện ảnh ({{ count($vehicleImages) }})</span>
+                            <button type="button" class="cms-btn" wire:click="openMediaPicker('vehicleImages')"><i class="fa-solid fa-images"></i> Thêm / chọn ảnh</button>
+                        </div>
+                        <div class="cms-field full">
+                            @if (count($vehicleImages))
+                                <div style="display:flex; flex-wrap:wrap; gap:8px;">
+                                    @foreach ($vehicleImages as $i => $img)
+                                        <div wire:key="vimg-{{ $i }}-{{ md5($img) }}" style="position:relative; width:96px; height:96px; border:1px solid {{ $vehicleAvatar === $img ? 'var(--success)' : 'var(--border)' }}; background:var(--bg-raised); overflow:hidden;">
+                                            <img src="{{ $img }}" alt="" loading="lazy" style="width:100%; height:100%; object-fit:cover;">
+                                            @if ($vehicleAvatar === $img)
+                                                <span class="cms-badge success" style="position:absolute; top:2px; left:2px; font-size:9px;">Đại diện</span>
+                                            @endif
+                                            <div style="position:absolute; bottom:2px; right:2px; display:flex; gap:3px;">
+                                                <button type="button" class="cms-icon-btn" title="Đặt làm ảnh đại diện" wire:click="setVehicleAvatarFromImage({{ $i }})" style="width:22px; height:22px; background:rgba(0,0,0,.55); color:#fff;"><i class="fa-solid fa-star" style="font-size:10px;"></i></button>
+                                                <button type="button" class="cms-icon-btn" title="Xóa ảnh" wire:click="removeVehicleImage({{ $i }})" style="width:22px; height:22px; background:rgba(220,38,38,.85); color:#fff;"><i class="fa-solid fa-xmark" style="font-size:10px;"></i></button>
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @else
+                                <span style="color:var(--text-muted); font-size:12px;">Chưa có ảnh nào. Bấm "Thêm / chọn ảnh" để tải lên hoặc chọn từ thư viện.</span>
+                            @endif
+                        </div>
+                    </div>
+
+                    {{-- Liên kết & mô tả --}}
+                    <div class="cms-label" style="margin:16px 0 8px; color:var(--text-primary); font-weight:700;">Liên kết & mô tả</div>
+                    <div class="cms-form-grid">
+                        <label class="cms-field"><span class="cms-label">Youtube</span><input class="cms-input mono" wire:model="vehicleYoutubeLink"></label>
+                        <label class="cms-field full"><span class="cms-label">Mô tả</span><textarea class="cms-textarea" style="min-height:120px" wire:model="vehicleDescription"></textarea></label>
+                    </div>
+                </div>
+
+                <div class="cms-panel-head" style="justify-content:flex-end;">
+                    <button class="cms-btn" wire:click="closeVehicleModal">Hủy</button>
+                    <button class="cms-btn primary" wire:click="saveVehicle" wire:loading.attr="disabled" wire:target="saveVehicle">
+                        <span wire:loading.remove wire:target="saveVehicle">{{ $vehicleFormId ? 'Lưu thay đổi' : 'Thêm tin xe' }}</span>
+                        <span wire:loading wire:target="saveVehicle"><i class="fa-solid fa-spinner fa-spin"></i> Đang lưu...</span>
+                    </button>
+                </div>
+            </section>
+        </div>
+    @endif
+
     @if ($showMediaPicker)
         <div class="cms-modal-backdrop">
             <section class="cms-modal" style="width: min(780px, calc(100vw - 48px));">
                 <div class="cms-panel-head">
-                    <h2 class="cms-panel-title">{{ $mediaTarget === 'listingImages' ? 'Thêm ảnh cho tin đăng' : 'Chọn ảnh từ thư viện' }}</h2>
+                    <h2 class="cms-panel-title">{{ $mediaTarget === 'listingImages' ? 'Thêm ảnh cho tin đăng' : ($mediaTarget === 'vehicleImages' ? 'Thêm ảnh cho tin xe' : 'Chọn ảnh từ thư viện') }}</h2>
                     <button class="cms-icon-btn" wire:click="closeMediaPicker"><i class="fa-solid fa-xmark"></i></button>
                 </div>
                 <div style="padding:12px;">
@@ -1424,6 +1725,11 @@
                 @if ($mediaTarget === 'listingImages')
                     <div class="cms-panel-head" style="justify-content:space-between;">
                         <span style="color:var(--text-secondary); font-size:13px;">Đã chọn {{ count($listingImages) }} ảnh cho tin đăng. Bấm ảnh để thêm.</span>
+                        <button class="cms-btn primary" wire:click="closeMediaPicker">Xong</button>
+                    </div>
+                @elseif ($mediaTarget === 'vehicleImages')
+                    <div class="cms-panel-head" style="justify-content:space-between;">
+                        <span style="color:var(--text-secondary); font-size:13px;">Đã chọn {{ count($vehicleImages) }} ảnh cho tin xe. Bấm ảnh để thêm.</span>
                         <button class="cms-btn primary" wire:click="closeMediaPicker">Xong</button>
                     </div>
                 @endif

@@ -28,7 +28,9 @@ Route::get('/', function () {
 
 Route::get('/media', FileManager::class)->middleware(['auth', 'admin'])->name('media');
 Route::get('/listings', RealEstateListing::class)->middleware('auth')->name('listings');
-Route::get('/vehicles', VehicleListing::class)->middleware(['auth', 'admin'])->name('vehicles');
+// Quản lý tin xe nằm trong CMS website-admin (tab "vehicles") — giữ tên route cũ, điều hướng sang tab.
+Route::get('/vehicles', fn () => redirect()->route('website.admin', ['tab' => 'vehicles']))
+    ->middleware(['auth', 'admin'])->name('vehicles');
 Route::get('/accounts', \App\Livewire\AccountManagement::class)->middleware(['auth', 'admin'])->name('accounts');
 Route::get('/accounts/detail/{id}', \App\Livewire\AccountDetail::class)->middleware(['auth', 'admin'])->name('account.detail');
 Route::get('/ctv-ranks', \App\Livewire\CtvRankManagement::class)->middleware(['auth', 'admin'])->name('ctv.ranks');

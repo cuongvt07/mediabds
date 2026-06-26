@@ -8,6 +8,7 @@ use App\Models\ListingContactRequest;
 use App\Models\ListingReport;
 use App\Models\RealEstateListing;
 use App\Models\User;
+use App\Models\VehicleListing as VehicleModel;
 use App\Models\UserInvite;
 use App\Models\WebsiteHomeSection;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -674,8 +675,8 @@ class WebsiteAdmin extends Component
         if ($url) {
             $this->applyMediaValue($url);
             session()->flash('message', 'Đã tải ảnh lên thư viện.');
-            // Gallery tin đăng: giữ picker mở để chọn/tải nhiều ảnh.
-            if ($this->mediaTarget === 'listingImages') {
+            // Gallery tin đăng/tin xe: giữ picker mở để chọn/tải nhiều ảnh.
+            if (in_array($this->mediaTarget, ['listingImages', 'vehicleImages'], true)) {
                 $this->mediaUpload = null;
             } else {
                 $this->closeMediaPicker();
@@ -688,8 +689,8 @@ class WebsiteAdmin extends Component
         if ($url) {
             $this->applyMediaValue($url);
         }
-        // Gallery tin đăng: cho phép chọn nhiều ảnh liên tiếp, không đóng picker.
-        if ($this->mediaTarget !== 'listingImages') {
+        // Gallery tin đăng/tin xe: cho phép chọn nhiều ảnh liên tiếp, không đóng picker.
+        if (! in_array($this->mediaTarget, ['listingImages', 'vehicleImages'], true)) {
             $this->closeMediaPicker();
         }
     }
@@ -711,6 +712,14 @@ class WebsiteAdmin extends Component
         if ($this->mediaTarget === 'listingImages') {
             if ($url !== '' && ! in_array($url, $this->listingImages, true)) {
                 $this->listingImages[] = $url;
+            }
+            return;
+        }
+
+        // Gallery tin xe.
+        if ($this->mediaTarget === 'vehicleImages') {
+            if ($url !== '' && ! in_array($url, $this->vehicleImages, true)) {
+                $this->vehicleImages[] = $url;
             }
             return;
         }
@@ -839,10 +848,384 @@ class WebsiteAdmin extends Component
         session()->flash('message', 'Đã lưu cấu hình website.');
     }
 
+    // ============================================================
+    // ===================  QUẢN LÝ TIN XE (tab vehicles)  ========
+    //  Mô phỏng y hệt tab "listings", chỉ khác field phục vụ xe.
+    // ============================================================
+
+    // Bộ lọc
+    public $vehicleSearch = '';
+    public $vehicleStatus = 'all';
+    public $vehicleVip = 'all';
+    public $vehicleKindFilter = 'all';
+
+    // Form
+    public $showVehicleModal = false;
+    public $vehicleFormId = null;
+    public $vehicleTitle = '';
+    public $vehicleDealType = 'Cần bán';          // -> type
+    public $vehicleKind = 'car';                  // -> vehicle_type
+    public $vehicleBrand = '';
+    public $vehicleModelName = '';
+    public $vehicleYear = '';
+    public $vehicleMileage = '';
+    public $vehicleTransmission = '';
+    public $vehicleFuelType = '';
+    public $vehicleEngineCapacity = '';
+    public $vehicleColor = '';
+    public $vehicleSeats = '';
+    public $vehicleCondition = 'used';
+    public $vehicleOrigin = '';
+    public $vehicleCode = '';
+    public $vehicleContactType = '';
+    public $vehicleContactPhone = '';
+    public $vehicleState = 'active';
+    public $vehicleTier = 'normal';
+    public $vehicleProvinceId = '';
+    public $vehicleDistrictId = '';
+    public $vehicleWardId = '';
+    public $vehicleAddress = '';
+    public $vehiclePrice = '';
+    public $vehiclePriceUnit = 'Triệu';
+    public $vehicleDescription = '';
+    public $vehicleYoutubeLink = '';
+    public $vehicleImages = [];
+    public $vehicleAvatar = '';
+    public $vehicleDistricts = [];
+    public $vehicleWards = [];
+
+    public function updatedVehicleSearch() { $this->resetPage('vehiclesPage'); }
+    public function updatedVehicleStatus() { $this->resetPage('vehiclesPage'); }
+    public function updatedVehicleVip() { $this->resetPage('vehiclesPage'); }
+    public function updatedVehicleKindFilter() { $this->resetPage('vehiclesPage'); }
+
+    protected function fetchVehicleDistricts($provinceId): void
+    {
+        $data = $this->listingLocationData();
+        $this->vehicleDistricts = [];
+        if (! empty($data[$provinceId]['districts'])) {
+            foreach ($data[$provinceId]['districts'] as $id => $district) {
+                $this->vehicleDistricts[$id] = $district['name'];
+            }
+        }
+    }
+
+    protected function fetchVehicleWards($districtId): void
+    {
+        $data = $this->listingLocationData();
+        $this->vehicleWards = [];
+        $provinceId = $this->vehicleProvinceId;
+        if (! empty($data[$provinceId]['districts'][$districtId]['wards'])) {
+            $this->vehicleWards = $data[$provinceId]['districts'][$districtId]['wards'];
+        }
+    }
+
+    public function updatedVehicleProvinceId($value): void
+    {
+        $this->vehicleDistricts = [];
+        $this->vehicleWards = [];
+        $this->vehicleDistrictId = '';
+        $this->vehicleWardId = '';
+        if ($value) {
+            $this->fetchVehicleDistricts($value);
+        }
+    }
+
+    public function updatedVehicleDistrictId($value): void
+    {
+        $this->vehicleWards = [];
+        $this->vehicleWardId = '';
+        if ($value) {
+            $this->fetchVehicleWards($value);
+        }
+    }
+
+    public function updatedVehicleKind($value): void
+    {
+        if (! $this->vehicleFormId && empty($this->vehicleCode)) {
+            $this->vehicleCode = $this->generateVehicleCode($value);
+        }
+    }
+
+    protected function generateVehicleCode($kind): string
+    {
+        $prefix = $kind === 'motorbike' ? 'XM' : 'OT';
+        for ($i = 0; $i < 5; $i++) {
+            $code = $prefix . str_pad((string) mt_rand(0, 9999), 4, '0', STR_PAD_LEFT);
+            if (! VehicleModel::where('code', $code)->exists()) {
+                return $code;
+            }
+        }
+
+        return $prefix . str_pad((string) mt_rand(0, 999999), 6, '0', STR_PAD_LEFT);
+    }
+
+    public function openCreateVehicle(): void
+    {
+        $this->resetVehicleForm();
+        $this->showVehicleModal = true;
+    }
+
+    public function editVehicle($id): void
+    {
+        $v = VehicleModel::find($id);
+        if (! $v) {
+            return;
+        }
+
+        $this->vehicleFormId = $v->id;
+        $this->vehicleTitle = $v->title ?: '';
+        $this->vehicleDealType = $v->type ?: 'Cần bán';
+        $this->vehicleKind = $v->vehicle_type ?: 'car';
+        $this->vehicleBrand = $v->brand ?: '';
+        $this->vehicleModelName = $v->model_name ?: '';
+        $this->vehicleYear = $v->year ?? '';
+        $this->vehicleMileage = $v->mileage ?? '';
+        $this->vehicleTransmission = $v->transmission ?: '';
+        $this->vehicleFuelType = $v->fuel_type ?: '';
+        $this->vehicleEngineCapacity = $v->engine_capacity ?: '';
+        $this->vehicleColor = $v->color ?: '';
+        $this->vehicleSeats = $v->seats ?? '';
+        $this->vehicleCondition = $v->condition ?: 'used';
+        $this->vehicleOrigin = $v->origin ?: '';
+        $this->vehicleCode = $v->code ?: '';
+        $this->vehicleContactType = $v->contact_type ?: '';
+        $this->vehicleContactPhone = $v->contact_phone ?: '';
+        $this->vehicleState = $v->is_sold ? 'sold' : ($v->status ?: 'active');
+        $this->vehicleTier = $v->vip_tier ?: 'normal';
+        $this->vehicleProvinceId = $v->province_id ?: '';
+        if ($this->vehicleProvinceId) {
+            $this->fetchVehicleDistricts($this->vehicleProvinceId);
+        }
+        $this->vehicleDistrictId = $v->district_id ?: '';
+        if ($this->vehicleDistrictId) {
+            $this->fetchVehicleWards($this->vehicleDistrictId);
+        }
+        $this->vehicleWardId = $v->ward_id ?: '';
+        $this->vehicleAddress = $v->address ?: '';
+        $this->vehiclePrice = $v->price !== null ? $this->formatDecimalForInput($v->price) : '';
+        $this->vehiclePriceUnit = $v->price_unit ?: 'Triệu';
+        $this->vehicleDescription = $v->description ?: '';
+        $this->vehicleYoutubeLink = $v->youtube_link ?: '';
+        $this->vehicleImages = is_array($v->images) ? array_values($v->images) : [];
+        $this->vehicleAvatar = $v->avatar ?: '';
+
+        $this->resetValidation();
+        $this->showVehicleModal = true;
+    }
+
+    public function saveVehicle(): void
+    {
+        $this->vehiclePrice = $this->normalizeListingCurrency($this->vehiclePrice);
+        foreach (['vehicleYear', 'vehicleMileage', 'vehicleSeats'] as $field) {
+            $this->{$field} = ($this->{$field} === '' || $this->{$field} === null)
+                ? null
+                : (int) preg_replace('/[^0-9]/', '', (string) $this->{$field});
+        }
+
+        $rules = [
+            'vehicleTitle' => 'required|string|max:255',
+            'vehicleKind' => 'required|in:car,motorbike',
+            'vehicleState' => 'required|in:pending,active,expired,rejected,sold',
+            'vehicleTier' => 'required|in:normal,vip1,vip2,vip3',
+            'vehicleYoutubeLink' => 'nullable|url|max:2000',
+        ];
+        if ($this->vehicleDealType !== 'Cần mua') {
+            $rules['vehiclePrice'] = 'required|numeric';
+        }
+
+        $this->validate($rules, [], [
+            'vehicleTitle' => 'tiêu đề',
+            'vehiclePrice' => 'giá',
+        ]);
+
+        if (! $this->vehicleFormId && empty($this->vehicleCode)) {
+            $this->vehicleCode = $this->generateVehicleCode($this->vehicleKind);
+        }
+
+        $isSold = $this->vehicleState === 'sold';
+
+        $data = [
+            'title' => $this->vehicleTitle,
+            'type' => $this->vehicleDealType,
+            'vehicle_type' => $this->vehicleKind,
+            'brand' => $this->vehicleBrand ?: null,
+            'model_name' => $this->vehicleModelName ?: null,
+            'year' => $this->vehicleYear,
+            'mileage' => $this->vehicleMileage,
+            'transmission' => $this->vehicleTransmission ?: null,
+            'fuel_type' => $this->vehicleFuelType ?: null,
+            'engine_capacity' => $this->vehicleEngineCapacity ?: null,
+            'color' => $this->vehicleColor ?: null,
+            'seats' => $this->vehicleKind === 'car' ? $this->vehicleSeats : null,
+            'condition' => $this->vehicleCondition ?: null,
+            'origin' => $this->vehicleOrigin ?: null,
+            'contact_type' => $this->vehicleContactType ?: null,
+            'contact_phone' => $this->vehicleContactPhone ?: null,
+            'code' => $this->vehicleCode,
+            'status' => $this->vehicleState,
+            'is_sold' => $isSold,
+            'vip_tier' => $this->vehicleTier,
+            'province_id' => $this->vehicleProvinceId ?: null,
+            'district_id' => $this->vehicleDistrictId ?: null,
+            'ward_id' => $this->vehicleWardId ?: null,
+            'province_name' => \App\Livewire\RealEstateListing::PROVINCES[$this->vehicleProvinceId] ?? null,
+            'district_name' => $this->vehicleDistricts[$this->vehicleDistrictId] ?? null,
+            'ward_name' => $this->vehicleWards[$this->vehicleWardId] ?? null,
+            'address' => $this->vehicleAddress ?: null,
+            'price' => $this->vehiclePrice,
+            'price_unit' => $this->vehiclePriceUnit,
+            'description' => $this->vehicleDescription ?: null,
+            'youtube_link' => $this->vehicleYoutubeLink ?: null,
+            'images' => array_values($this->vehicleImages ?: []),
+            'avatar' => $this->vehicleAvatar ?: null,
+        ];
+
+        try {
+            if ($this->vehicleFormId) {
+                $v = VehicleModel::findOrFail($this->vehicleFormId);
+                $v->update($data);
+                $message = 'Đã cập nhật tin xe.';
+            } else {
+                $data['user_id'] = auth()->id();
+                $data['published_at'] = now();
+                $data['expires_at'] = now()->addDays(60);
+                $v = VehicleModel::create($data);
+                $message = 'Đã thêm tin xe mới.';
+            }
+
+            $v->slug = Str::slug($v->title) . '-' . $v->id;
+            $v->save();
+
+            session()->flash('message', $message);
+            $this->closeVehicleModal();
+        } catch (\Throwable $e) {
+            report($e);
+            $this->addError('vehicleTitle', 'Lưu tin xe thất bại: ' . $e->getMessage());
+        }
+    }
+
+    public function removeVehicleImage($index): void
+    {
+        if (isset($this->vehicleImages[$index])) {
+            array_splice($this->vehicleImages, $index, 1);
+        }
+    }
+
+    public function setVehicleAvatarFromImage($index): void
+    {
+        if (isset($this->vehicleImages[$index])) {
+            $this->vehicleAvatar = $this->vehicleImages[$index];
+        }
+    }
+
+    public function closeVehicleModal(): void
+    {
+        $this->showVehicleModal = false;
+        $this->resetVehicleForm();
+    }
+
+    protected function resetVehicleForm(): void
+    {
+        $this->vehicleFormId = null;
+        $this->vehicleTitle = '';
+        $this->vehicleDealType = 'Cần bán';
+        $this->vehicleKind = 'car';
+        $this->vehicleBrand = '';
+        $this->vehicleModelName = '';
+        $this->vehicleYear = '';
+        $this->vehicleMileage = '';
+        $this->vehicleTransmission = '';
+        $this->vehicleFuelType = '';
+        $this->vehicleEngineCapacity = '';
+        $this->vehicleColor = '';
+        $this->vehicleSeats = '';
+        $this->vehicleCondition = 'used';
+        $this->vehicleOrigin = '';
+        $this->vehicleCode = '';
+        $this->vehicleContactType = '';
+        $this->vehicleContactPhone = '';
+        $this->vehicleState = 'active';
+        $this->vehicleTier = 'normal';
+        $this->vehicleProvinceId = '';
+        $this->vehicleDistrictId = '';
+        $this->vehicleWardId = '';
+        $this->vehicleAddress = '';
+        $this->vehiclePrice = '';
+        $this->vehiclePriceUnit = 'Triệu';
+        $this->vehicleDescription = '';
+        $this->vehicleYoutubeLink = '';
+        $this->vehicleImages = [];
+        $this->vehicleAvatar = '';
+        $this->vehicleDistricts = [];
+        $this->vehicleWards = [];
+        $this->resetValidation();
+    }
+
+    public function updateVehicleStatus($id, $status)
+    {
+        if (! in_array($status, ['active', 'pending', 'expired', 'sold', 'rejected'], true)) {
+            return;
+        }
+        $v = VehicleModel::findOrFail($id);
+        $v->status = $status;
+        $v->is_sold = $status === 'sold';
+        $v->save();
+    }
+
+    public function updateVehicleVip($id, $vip)
+    {
+        if (! in_array($vip, ['normal', 'vip1', 'vip2', 'vip3'], true)) {
+            return;
+        }
+        VehicleModel::where('id', $id)->update(['vip_tier' => $vip]);
+    }
+
+    public function deleteVehicle($id)
+    {
+        VehicleModel::where('id', $id)->delete();
+        session()->flash('message', 'Đã xóa tin xe.');
+    }
+
+    private function vehicles()
+    {
+        try {
+            return VehicleModel::query()
+                ->with('user:id,name,phone')
+                ->when($this->vehicleSearch, function ($query) {
+                    $query->where(function ($q) {
+                        $q->where('title', 'like', '%' . $this->vehicleSearch . '%')
+                            ->orWhere('code', 'like', '%' . $this->vehicleSearch . '%')
+                            ->orWhere('brand', 'like', '%' . $this->vehicleSearch . '%')
+                            ->orWhere('model_name', 'like', '%' . $this->vehicleSearch . '%')
+                            ->orWhere('contact_phone', 'like', '%' . $this->vehicleSearch . '%');
+                    });
+                })
+                ->when($this->vehicleStatus !== 'all', function ($query) {
+                    if ($this->vehicleStatus === 'sold') {
+                        $query->where('is_sold', true);
+                    } else {
+                        $query->where('status', $this->vehicleStatus);
+                    }
+                })
+                ->when($this->vehicleVip !== 'all', function ($query) {
+                    $query->where('vip_tier', $this->vehicleVip);
+                })
+                ->when($this->vehicleKindFilter !== 'all', function ($query) {
+                    $query->where('vehicle_type', $this->vehicleKindFilter);
+                })
+                ->latest()
+                ->paginate(10, ['*'], 'vehiclesPage');
+        } catch (\Throwable $e) {
+            return $this->emptyPaginator('vehiclesPage');
+        }
+    }
+
     public function render()
     {
         return view('livewire.website-admin', [
             'stats' => $this->stats(),
+            'vehicles' => $this->vehicles(),
             'recentListings' => $this->recentListings(),
             'recentLeads' => $this->recentLeads(),
             'homeSections' => $this->homeSections(),
