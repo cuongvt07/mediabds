@@ -145,6 +145,21 @@ class ListingResource extends JsonResource
         if ($code === 115) {
             return 'room';
         }
+        if ($code === 116) {
+            return 'warehouse';
+        }
+        if ($code === 117) {
+            return 'forest';
+        }
+        if ($code === 118) {
+            return 'bar';
+        }
+        if ($code === 119) {
+            return 'karaoke';
+        }
+        if ($code === 120) {
+            return 'cafe';
+        }
 
         return $this->propertyKindFromLabel((string) $label);
     }

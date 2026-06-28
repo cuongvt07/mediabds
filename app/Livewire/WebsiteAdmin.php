@@ -2473,6 +2473,11 @@ class WebsiteAdmin extends Component
             113 => 'Nhà nghỉ',
             114 => 'Homestay',
             115 => 'Nhà trọ',
+            116 => 'Kho xưởng',
+            117 => 'Đất rừng',
+            118 => 'Quán nhậu',
+            119 => 'Karaoke',
+            120 => 'Quán cafe',
         ];
     }
 

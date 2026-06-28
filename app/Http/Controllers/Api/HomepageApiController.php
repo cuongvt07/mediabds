@@ -182,6 +182,11 @@ class HomepageApiController extends BaseApiController
             'land' => [104, 105, 109],
             'office' => [106, 107, 111, 112, 113],
             'house' => [102, 108, 114],
+            'warehouse' => [116],
+            'forest' => [117],
+            'bar' => [118],
+            'karaoke' => [119],
+            'cafe' => [120],
             default => [],
         };
     }
