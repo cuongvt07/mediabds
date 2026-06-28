@@ -34,17 +34,21 @@ class AppServiceProvider extends ServiceProvider
             $email = '';
             $facebook = '';
             $position = 'right';
+            $showListingTime = true;
 
             if (Schema::hasTable('site_settings')) {
                 $settings = SiteSetting::query()
-                    ->whereIn('key', ['contact_phone', 'contact_zalo', 'contact_email', 'contact_facebook', 'contact_position'])
+                    ->whereIn('key', ['contact_phone', 'contact_zalo', 'contact_email', 'contact_facebook', 'contact_position', 'show_listing_time'])
                     ->pluck('value', 'key');
                 $phone = (string) ($settings['contact_phone'] ?? '');
                 $zalo = (string) ($settings['contact_zalo'] ?? '');
                 $email = (string) ($settings['contact_email'] ?? '');
                 $facebook = (string) ($settings['contact_facebook'] ?? '');
                 $position = ($settings['contact_position'] ?? 'right') ?: 'right';
+                $showListingTime = ($settings['show_listing_time'] ?? '1') !== '0';
             }
+
+            $view->with('showListingTime', $showListingTime);
 
             $zaloHref = function (?string $fallbackPhone = null) use ($zalo) {
                 $value = trim($zalo) ?: (string) $fallbackPhone;

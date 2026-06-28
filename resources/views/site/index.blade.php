@@ -379,7 +379,7 @@
                                         </span>
                                     @endif
                                 </div>
-                                @if($listing->created_at)
+                                @if(($showListingTime ?? true) && $listing->created_at)
                                     <div class="site-card-time">🕐 {{ $listing->created_at->locale('vi')->diffForHumans() }}</div>
                                 @endif
                                 <div class="site-card-foot">

@@ -331,6 +331,14 @@
                             <option value="left">Góc dưới bên trái</option>
                         </select>
                     </label>
+                    <label class="cms-field">
+                        <span class="cms-label">Hiển thị thời gian đăng tin (phía người dùng)</span>
+                        <select class="cms-select" wire:model="showListingTime">
+                            <option value="1">Hiển thị</option>
+                            <option value="0">Ẩn</option>
+                        </select>
+                        <span class="cms-hint">Áp dụng cho thẻ tin BĐS &amp; xe ("x ngày trước").</span>
+                    </label>
                     <div class="cms-field full">
                         <span class="cms-label">Preview</span>
                         <div class="site-cms-logo-preview">

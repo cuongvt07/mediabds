@@ -186,6 +186,7 @@ class SiteAdmin extends Component
     public $watermarkImageUrl = '';
     public $watermarkImageFile;
     public $watermarkMode = 'image'; // 'image' = ảnh logo | 'text' = tên site
+    public $showListingTime = '1';  // '1' = hiện | '0' = ẩn thời gian đăng tin phía người dùng
 
     protected $queryString = [
         'activeTab' => ['except' => 'dashboard', 'as' => 'tab'],
@@ -205,6 +206,7 @@ class SiteAdmin extends Component
         $this->contactPosition = SiteSetting::query()->whereKey('contact_position')->value('value') ?: 'right';
         $this->watermarkImageUrl = SiteSetting::query()->whereKey('watermark_image_url')->value('value') ?: '';
         $this->watermarkMode = SiteSetting::query()->whereKey('watermark_mode')->value('value') === 'text' ? 'text' : 'image';
+        $this->showListingTime = SiteSetting::query()->whereKey('show_listing_time')->value('value') === '0' ? '0' : '1';
         $this->loadDistricts($this->listingProvinceId);
     }
 
@@ -695,6 +697,7 @@ class SiteAdmin extends Component
             'contactPosition' => 'nullable|in:left,right',
             'watermarkImageFile' => 'nullable|image|max:2048',
             'watermarkMode' => 'nullable|in:image,text',
+            'showListingTime' => 'in:0,1',
         ]);
 
         if ($this->logoFile) {
@@ -714,6 +717,7 @@ class SiteAdmin extends Component
         SiteSetting::updateOrCreate(['key' => 'contact_position'], ['value' => $this->contactPosition ?: 'right']);
         SiteSetting::updateOrCreate(['key' => 'watermark_image_url'], ['value' => $this->watermarkImageUrl ?: null]);
         SiteSetting::updateOrCreate(['key' => 'watermark_mode'], ['value' => $this->watermarkMode === 'text' ? 'text' : 'image']);
+        SiteSetting::updateOrCreate(['key' => 'show_listing_time'], ['value' => $this->showListingTime === '0' ? '0' : '1']);
 
         $this->logoFile = null;
         $this->watermarkImageFile = null;
