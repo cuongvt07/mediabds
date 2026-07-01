@@ -491,6 +491,7 @@
                     <thead>
                         <tr>
                             <th>Bài viết</th>
+                            <th style="width:90px;">Loại</th>
                             <th style="width:150px;">Tag</th>
                             <th style="width:110px;">Trạng thái</th>
                             <th style="width:120px;">Thời lượng</th>
@@ -505,6 +506,12 @@
                                     <div class="cms-truncate" style="color: var(--text-primary); font-weight:700">{{ $post->title }}</div>
                                     <div class="mono cms-truncate" style="color: var(--text-muted); font-size:11px">{{ $post->slug }}</div>
                                 </td>
+                                <td>
+                                    @php $t = $post->type ?? 'bds'; @endphp
+                                    <span class="cms-badge {{ $t === 'xe' ? 'warning' : ($t === 'general' ? 'muted' : 'success') }}">
+                                        {{ $t === 'xe' ? '🚗 Xe' : ($t === 'general' ? '📰 Chung' : '🏠 BĐS') }}
+                                    </span>
+                                </td>
                                 <td>{{ $post->category_tag ?: '-' }}</td>
                                 <td><button class="cms-badge {{ $statusLabels[$post->status ?? 'draft'][1] ?? 'muted' }}" wire:click="toggleBlogStatus({{ $post->id }})">{{ $statusLabels[$post->status ?? 'draft'][0] ?? $post->status }}</button></td>
                                 <td class="mono">{{ $post->reading_minutes }} phút</td>
@@ -515,7 +522,7 @@
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="6" style="text-align:center; height:72px;">Chưa có bài viết.</td></tr>
+                            <tr><td colspan="7" style="text-align:center; height:72px;">Chưa có bài viết.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
@@ -1260,9 +1267,22 @@
                     </div>
                     <x-cms-media-field label="Ảnh đại diện" :value="$blogCoverImage" target="blogCoverImage" />
                     <label class="cms-field"><span class="cms-label">Tác giả</span><input class="cms-input" wire:model="blogAuthorName"></label>
+                    <label class="cms-field"><span class="cms-label">Loại bài viết</span>
+                        <select class="cms-select" wire:model.live="blogType">
+                            <option value="bds">🏠 Bất động sản</option>
+                            <option value="xe">🚗 Xe</option>
+                            <option value="general">📰 Chung</option>
+                        </select>
+                    </label>
                     <label class="cms-field"><span class="cms-label">Tag chính</span>
                         <select class="cms-select" wire:model="blogCategoryTag">
-                            @foreach(['Tin tức', 'Hướng dẫn', 'Phân tích thị trường', 'Kinh nghiệm', 'Pháp lý', 'Phong thủy', 'Dự án'] as $tag)<option value="{{ $tag }}">{{ $tag }}</option>@endforeach
+                            @if($blogType === 'xe')
+                                @foreach(['Tin tức xe', 'Đánh giá xe', 'Kinh nghiệm lái xe', 'Mua bán xe', 'Bảo dưỡng xe', 'Xe mới ra mắt'] as $tag)<option value="{{ $tag }}">{{ $tag }}</option>@endforeach
+                            @elseif($blogType === 'general')
+                                @foreach(['Tin tức', 'Hướng dẫn', 'Kinh nghiệm'] as $tag)<option value="{{ $tag }}">{{ $tag }}</option>@endforeach
+                            @else
+                                @foreach(['Tin tức', 'Hướng dẫn', 'Phân tích thị trường', 'Kinh nghiệm', 'Pháp lý', 'Phong thủy', 'Dự án'] as $tag)<option value="{{ $tag }}">{{ $tag }}</option>@endforeach
+                            @endif
                         </select>
                     </label>
                     <label class="cms-field"><span class="cms-label">Tags</span><input class="cms-input" wire:model="blogTags"></label>

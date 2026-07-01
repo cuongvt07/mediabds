@@ -33,6 +33,7 @@ Route::prefix('v1')->group(function () {
     Route::get('/categories', [CategoryApiController::class, 'index']);
     Route::get('/locations', [LocationApiController::class, 'index']);
     Route::get('/blogs', [BlogApiController::class, 'index']);
+    Route::get('/blogs/split', [BlogApiController::class, 'split']);
     Route::get('/blogs/{slug}', [BlogApiController::class, 'show']);
     Route::get('/homepage', [HomepageApiController::class, 'index']);
     Route::get('/listings', [ListingApiController::class, 'index']);

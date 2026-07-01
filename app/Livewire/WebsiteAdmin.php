@@ -111,6 +111,7 @@ class WebsiteAdmin extends Component
     public $blogCoverImage = '';
     public $blogAuthorName = 'BDS Việt';
     public $blogCategoryTag = 'Tin tức';
+    public $blogType        = 'bds';
     public $blogTags = '';
     public $blogReadingMinutes = 5;
     public $blogStatusValue = 'published';
@@ -1451,6 +1452,7 @@ class WebsiteAdmin extends Component
         $this->blogCoverImage = $post->cover_image ?: '';
         $this->blogAuthorName = $post->author_name ?: 'BDS Việt';
         $this->blogCategoryTag = $post->category_tag ?: 'Tin tức';
+        $this->blogType        = $post->type ?: 'bds';
         $this->blogTags = implode(', ', $post->tags ?: []);
         $this->blogReadingMinutes = (int) $post->reading_minutes;
         $this->blogStatusValue = $post->status ?: 'published';
@@ -1468,6 +1470,7 @@ class WebsiteAdmin extends Component
             'blogCoverImage' => 'nullable|string|max:2048',
             'blogAuthorName' => 'nullable|string|max:120',
             'blogCategoryTag' => 'nullable|string|max:120',
+            'blogType'        => 'required|in:bds,xe,general',
             'blogTags' => 'nullable|string|max:500',
             'blogReadingMinutes' => 'required|integer|min:1|max:60',
             'blogStatusValue' => 'required|in:draft,published,archived',
@@ -1493,6 +1496,7 @@ class WebsiteAdmin extends Component
                 'cover_image' => $data['blogCoverImage'] ?: null,
                 'author_name' => $data['blogAuthorName'] ?: 'BDS Việt',
                 'category_tag' => $data['blogCategoryTag'] ?: 'Tin tức',
+                'type'         => $data['blogType'] ?: 'bds',
                 'tags' => $tags,
                 'reading_minutes' => (int) $data['blogReadingMinutes'],
                 'status' => $data['blogStatusValue'],
@@ -1910,6 +1914,7 @@ class WebsiteAdmin extends Component
         $this->blogCoverImage = '';
         $this->blogAuthorName = 'BDS Việt';
         $this->blogCategoryTag = 'Tin tức';
+        $this->blogType = 'bds';
         $this->blogTags = '';
         $this->blogReadingMinutes = 5;
         $this->blogStatusValue = 'published';
