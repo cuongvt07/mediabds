@@ -37,12 +37,30 @@ class WatermarkService
             return null;
         }
 
-        try {
-            $raw = @file_get_contents($sourcePath);
-            if ($raw === false) {
-                return null;
-            }
+        $raw = @file_get_contents($sourcePath);
+        if ($raw === false) {
+            return null;
+        }
 
+        return $this->stampBinary($raw, $mime, false);
+    }
+
+    /**
+     * Watermark raw image bytes. Used by the upload flow (via apply) and by the
+     * backfill command, which passes $respectToggle = false so existing images
+     * get stamped even when the live toggle is momentarily off. Returns null when
+     * the image cannot / should not be changed.
+     */
+    public function stampBinary(string $raw, ?string $mime, bool $respectToggle = true): ?string
+    {
+        if ($respectToggle && ! $this->isEnabled()) {
+            return null;
+        }
+        if (! $this->supports($mime) || ! function_exists('imagecreatefromstring')) {
+            return null;
+        }
+
+        try {
             $image = @imagecreatefromstring($raw);
             if ($image === false) {
                 return null;
@@ -84,6 +102,14 @@ class WatermarkService
         $shadow = imagecolorallocatealpha($image, 0, 0, 0, min(127, $alpha + 25));
 
         $font = $this->fontPath();
+        $style = (string) ($cfg['style'] ?? 'single');
+
+        if ($style === 'tiled') {
+            $this->drawTiled($image, $text, $fontSize, $font, $fill, $shadow, $width, $height, $cfg);
+
+            return;
+        }
+
         $position = (string) ($cfg['position'] ?? 'bottom-right');
 
         if ($font !== null) {
@@ -104,6 +130,63 @@ class WatermarkService
         [$x, $y] = $this->bitmapOrigin($position, $width, $height, $textW, $textH, $margin);
         imagestring($image, $glyph, $x + 1, $y + 1, $text, $shadow);
         imagestring($image, $glyph, $x, $y, $text, $fill);
+    }
+
+    /**
+     * Repeat the watermark diagonally across the whole image so it cannot be
+     * cropped out. Spacing is deliberately airy (density: sparse|normal|dense)
+     * to keep the picture readable.
+     */
+    private function drawTiled($image, string $text, int $fontSize, ?string $font, int $fill, int $shadow, int $width, int $height, array $cfg): void
+    {
+        $angle = (int) ($cfg['angle'] ?? 30);
+        $density = (string) ($cfg['density'] ?? 'sparse');
+
+        // Horizontal / vertical gap as a multiple of the text box size.
+        [$gapX, $gapY] = match ($density) {
+            'dense' => [1.3, 1.8],
+            'normal' => [1.9, 2.4],
+            default => [2.6, 3.2], // sparse
+        };
+
+        if ($font !== null) {
+            $box = imagettfbbox($fontSize, 0, $font, $text);
+            $textW = max(1, abs($box[2] - $box[0]));
+            $textH = max(1, abs($box[7] - $box[1]));
+            $stepX = max(1, (int) round($textW * $gapX));
+            $stepY = max(1, (int) round($textH * $gapY));
+
+            $row = 0;
+            for ($y = $stepY; $y < $height + $textH; $y += $stepY) {
+                $offset = ($row % 2) * (int) ($stepX / 2); // brick-lay alternate rows
+                for ($x = -$stepX; $x < $width + $stepX; $x += $stepX) {
+                    $px = (int) ($x + $offset);
+                    imagettftext($image, $fontSize, $angle, $px + 1, $y + 1, $shadow, $font, $text);
+                    imagettftext($image, $fontSize, $angle, $px, $y, $fill, $font, $text);
+                }
+                $row++;
+            }
+
+            return;
+        }
+
+        // Fallback: bitmap font cannot rotate, so tile it straight instead.
+        $glyph = 5;
+        $textW = max(1, imagefontwidth($glyph) * strlen($text));
+        $textH = max(1, imagefontheight($glyph));
+        $stepX = max(1, (int) round($textW * $gapX));
+        $stepY = max(1, (int) round($textH * $gapY * 2));
+
+        $row = 0;
+        for ($y = 0; $y < $height; $y += $stepY) {
+            $offset = ($row % 2) * (int) ($stepX / 2);
+            for ($x = -$stepX; $x < $width; $x += $stepX) {
+                $px = (int) ($x + $offset);
+                imagestring($image, $glyph, $px + 1, $y + 1, $text, $shadow);
+                imagestring($image, $glyph, $px, $y, $text, $fill);
+            }
+            $row++;
+        }
     }
 
     /** TTF baseline origin (imagettftext y is the text baseline). */

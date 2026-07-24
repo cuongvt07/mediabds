@@ -954,7 +954,28 @@
                             <option value="0">Tắt</option>
                         </select>
                     </label>
-                    <label class="cms-field"><span class="cms-label">Vị trí</span>
+                    <label class="cms-field"><span class="cms-label">Kiểu chèn</span>
+                        <select class="cms-select" wire:model="settings.watermark.style">
+                            <option value="tiled">Lặp chéo khắp ảnh (chống crop)</option>
+                            <option value="single">Một vị trí</option>
+                        </select>
+                    </label>
+                    <label class="cms-field"><span class="cms-label">Mật độ (kiểu lặp chéo)</span>
+                        <select class="cms-select" wire:model="settings.watermark.density">
+                            <option value="sparse">Thưa</option>
+                            <option value="normal">Vừa</option>
+                            <option value="dense">Dày</option>
+                        </select>
+                    </label>
+                    <label class="cms-field"><span class="cms-label">Góc nghiêng (kiểu lặp chéo)</span>
+                        <select class="cms-select" wire:model="settings.watermark.angle">
+                            <option value="0">Ngang (0°)</option>
+                            <option value="30">Chéo 30°</option>
+                            <option value="45">Chéo 45°</option>
+                            <option value="-30">Chéo -30°</option>
+                        </select>
+                    </label>
+                    <label class="cms-field"><span class="cms-label">Vị trí (kiểu một vị trí)</span>
                         <select class="cms-select" wire:model="settings.watermark.position">
                             <option value="bottom-right">Dưới phải</option>
                             <option value="bottom-left">Dưới trái</option>

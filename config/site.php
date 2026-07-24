@@ -32,10 +32,14 @@ return [
 
         'watermark' => [
             'enabled' => true,
-            'text' => 'BDS Việt',
-            // position: top-left, top-right, bottom-left, bottom-right, center
+            'text' => 'VM24H',
+            // style: 'single' (one spot) or 'tiled' (repeated diagonally, unccroppable)
+            'style' => 'tiled',
+            'angle' => 30,            // tiled diagonal angle in degrees
+            'density' => 'sparse',    // tiled spacing: sparse | normal | dense
+            // position: top-left, top-right, bottom-left, bottom-right, center (style=single)
             'position' => 'bottom-right',
-            'opacity' => 55,          // 0-100
+            'opacity' => 40,          // 0-100 (kept low so the tiled pattern stays subtle)
             'font_size' => 22,        // px, scaled to image width
             'color' => '#FFFFFF',
             'margin' => 16,           // px from edge

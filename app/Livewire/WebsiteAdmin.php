@@ -812,6 +812,9 @@ class WebsiteAdmin extends Component
 
             'settings.watermark.enabled' => 'boolean',
             'settings.watermark.text' => 'nullable|string|max:60',
+            'settings.watermark.style' => 'required|in:single,tiled',
+            'settings.watermark.density' => 'required|in:sparse,normal,dense',
+            'settings.watermark.angle' => 'required|integer|min:-90|max:90',
             'settings.watermark.position' => 'required|in:top-left,top-right,bottom-left,bottom-right,center',
             'settings.watermark.opacity' => 'required|integer|min:0|max:100',
             'settings.watermark.font_size' => 'required|integer|min:8|max:200',
