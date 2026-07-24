@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
         $this->call(PublicWebsiteSeeder::class);
         $this->call(VehicleBrandSeeder::class);
         $this->call(VehicleSeeder::class);
+        $this->call(BlogPostSeeder::class);
 
         // 1. Create Admin
         $admin = User::updateOrCreate(
