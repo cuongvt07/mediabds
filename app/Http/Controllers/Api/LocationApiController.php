@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Livewire\RealEstateListing;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -10,9 +11,20 @@ class LocationApiController extends BaseApiController
 {
     public function index()
     {
+        // Đọc file JSON toàn VN + map lồng tỉnh→huyện→xã rất nặng; cache kết quả
+        // đã dựng trong 24h thay vì đọc file & transform lại trên mỗi request.
+        $locations = Cache::remember('api_locations_all', 86400, function () {
+            return $this->buildLocations();
+        });
+
+        return $this->ok($locations);
+    }
+
+    private function buildLocations(): array
+    {
         $locationData = $this->locationData();
 
-        $locations = collect(RealEstateListing::PROVINCES)
+        return collect(RealEstateListing::PROVINCES)
             ->map(function (string $name, string $code) use ($locationData) {
                 $districts = collect($locationData[$code]['districts'] ?? $this->fallbackDistricts($code))
                     ->map(function ($district, string $districtCode) use ($code) {
@@ -53,8 +65,6 @@ class LocationApiController extends BaseApiController
             })
             ->values()
             ->all();
-
-        return $this->ok($locations);
     }
 
     private function locationData(): array
