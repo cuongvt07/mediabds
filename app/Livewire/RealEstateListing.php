@@ -268,9 +268,8 @@ class RealEstateListing extends Component
                 }
             }
 
-            // Forced delay to ensure S3/CDN consistency
-            sleep(60); 
-
+            // S3 read-after-write đã strongly consistent (URL trỏ thẳng endpoint S3,
+            // không qua CDN) → ảnh dùng được ngay, không cần delay.
             $this->tempImages = [];
         }
     }
@@ -308,9 +307,7 @@ class RealEstateListing extends Component
                     'user_id' => auth()->id(),
                 ]);
 
-                // Forced delay to ensure S3/CDN consistency
-                sleep(60);
-
+                // Không cần delay: S3 read-after-write consistent, ảnh dùng ngay.
                 $this->avatar = $publicUrl;
                 $this->tempAvatar = null;
             } catch (\Exception $e) {
