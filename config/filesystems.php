@@ -60,6 +60,22 @@ return [
             'report' => false,
         ],
 
+        // S3 riêng cho ẢNH UPLOAD MỚI (AZ Cloud - bucket vm24h). Tách key riêng
+        // (UPLOAD_S3_*) để không đè disk 's3' (Long Vân) đang dùng cho file cũ,
+        // FileManager, sync... Nếu chưa cấu hình, controller tự fallback về 's3'.
+        's3_uploads' => [
+            'driver' => 's3',
+            'key' => env('UPLOAD_S3_KEY'),
+            'secret' => env('UPLOAD_S3_SECRET'),
+            'region' => env('UPLOAD_S3_REGION', 'us-east-1'),
+            'bucket' => env('UPLOAD_S3_BUCKET'),
+            'url' => env('UPLOAD_S3_URL'),
+            'endpoint' => env('UPLOAD_S3_ENDPOINT'),
+            'use_path_style_endpoint' => env('UPLOAD_S3_PATH_STYLE', true),
+            'throw' => false,
+            'report' => false,
+        ],
+
     ],
 
     /*
