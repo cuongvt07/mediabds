@@ -1273,6 +1273,23 @@
                                     if (typeof ClassicEditor === 'undefined') { return; }
                                     ClassicEditor.create(this.$refs.ed).then((editor) => {
                                         this.editor = editor;
+                                        // Chèn ảnh: upload lên server rồi trả URL cho editor.
+                                        editor.plugins.get('FileRepository').createUploadAdapter = (loader) => ({
+                                            upload: () => loader.file.then((file) => new Promise((resolve, reject) => {
+                                                const data = new FormData();
+                                                data.append('upload', file);
+                                                fetch('{{ route('ckeditor.upload') }}', {
+                                                    method: 'POST',
+                                                    headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
+                                                    credentials: 'same-origin',
+                                                    body: data,
+                                                }).then((r) => r.json()).then((res) => {
+                                                    if (res && res.url) { resolve({ default: res.url }); }
+                                                    else { reject((res && res.error && res.error.message) || 'Tải ảnh thất bại'); }
+                                                }).catch(() => reject('Lỗi mạng khi tải ảnh'));
+                                            })),
+                                            abort: () => {},
+                                        });
                                         editor.setData(@js($blogContent ?? ''));
                                         let t;
                                         editor.model.document.on('change:data', () => {

@@ -26,6 +26,9 @@ Route::get('/', function () {
 });
 
 Route::get('/media', FileManager::class)->middleware(['auth', 'admin'])->name('media');
+// Upload ảnh cho editor CKEditor khi viết bài blog (trả JSON {url}).
+Route::post('/admin/ckeditor/upload', [\App\Http\Controllers\CKEditorUploadController::class, 'store'])
+    ->middleware(['auth', 'admin'])->name('ckeditor.upload');
 Route::get('/listings', RealEstateListing::class)->middleware('auth')->name('listings');
 // Quản lý tin xe nằm trong CMS website-admin (tab "vehicles") — giữ tên route cũ, điều hướng sang tab.
 Route::get('/vehicles', fn () => redirect()->route('website.admin', ['tab' => 'vehicles']))
