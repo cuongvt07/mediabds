@@ -1083,8 +1083,8 @@
                 <div
                     class="flex justify-between items-center px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50 shrink-0">
                     <h2 class="text-xl font-black text-gray-800 flex items-center gap-2">
-                        <span class="bg-blue-600 text-white p-2 rounded-lg"><i
-                                class="fa-solid fa-house-circle-check"></i></span>
+                        <img src="https://s3-hcm5-r1.longvan.net/postmedia/2026/03/logo11_1774458655_729a.png"
+                            alt="Logo" class="h-9 w-auto object-contain">
                         Chi Tiết Tin Đăng
                     </h2>
                     <button wire:click="closeDetailPopup"

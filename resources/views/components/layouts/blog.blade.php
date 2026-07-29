@@ -159,8 +159,10 @@
             </div>
         </template>
     </div>
+    {{-- TẠM ẨN widget Chat AI — đổi @if(false) thành @if(true) để bật lại --}}
+    @if (false)
     <!-- Global Floating AI Assistant -->
-    <div x-data="{ chatOpen: false }" 
+    <div x-data="{ chatOpen: false }"
          x-init="
             $watch('chatOpen', value => {
                 if(value) {
@@ -215,6 +217,7 @@
             <span class="absolute top-0 right-0 w-3 h-3 bg-red-500 border-2 border-white rounded-full animate-pulse"></span>
         </button>
     </div>
+    @endif
 </body>
 
 </html>

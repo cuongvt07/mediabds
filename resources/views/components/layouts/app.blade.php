@@ -105,6 +105,8 @@
                     <span class="text-[10px] font-bold text-center leading-none">Khách Hàng</span>
                 </a>
 
+                {{-- TẠM ẨN nav Chat AI — đổi @if(false) thành @if(true) để bật lại --}}
+                @if (false)
                 <a href="{{ route('chatbot') }}" wire:navigate
                     class="flex flex-col items-center justify-center p-3 rounded-2xl transition-all group {{ request()->routeIs('chatbot') ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-white hover:bg-slate-800' }}"
                     title="AI Chatbot">
@@ -114,6 +116,7 @@
                     </div>
                     <span class="text-[10px] font-bold text-center leading-none">Chat AI</span>
                 </a>
+                @endif
 
                 @if (auth()->user() && auth()->user()->isAdmin())
                     <div class="my-1 h-px w-12 self-center bg-slate-700/70"></div>
