@@ -422,6 +422,56 @@
             .cms-nav-title, .cms-nav-text, .cms-sidebar-head span { display: none; }
             .cms-nav-link { grid-template-columns: 26px; justify-content: center; padding: 0; }
         }
+
+        /* ── MOBILE: bỏ ép rộng 1280px, xếp dọc, sidebar thành thanh nav cuộn ngang ── */
+        @media (max-width: 768px) {
+            .cms-shell {
+                min-width: 0;
+                grid-template-columns: 1fr;
+                grid-template-rows: auto auto minmax(0, 1fr);
+                height: 100dvh;
+            }
+            .cms-topbar { grid-column: 1; padding: 0 10px; }
+            .cms-breadcrumb { display: none; }
+
+            /* Sidebar dọc -> thanh ngang cuộn được */
+            .cms-sidebar {
+                grid-row: auto;
+                grid-column: 1;
+                border-right: none;
+                border-bottom: 1px solid var(--border);
+                overflow-x: auto;
+                overflow-y: hidden;
+                -webkit-overflow-scrolling: touch;
+            }
+            .cms-sidebar-head { display: none; }
+            .cms-nav { display: flex; flex-direction: row; gap: 4px; padding: 6px 8px; }
+            .cms-nav-group { display: flex; flex-direction: row; gap: 4px; margin: 0; }
+            .cms-nav-title { display: none; }
+            .cms-nav-text { display: inline !important; }
+            .cms-nav-link {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                min-height: 34px;
+                white-space: nowrap;
+                border-left: 0;
+                border-bottom: 2px solid transparent;
+                padding: 0 12px;
+                border-radius: 6px;
+            }
+            .cms-nav-link.is-active { border-left: 0; border-bottom-color: var(--accent); }
+
+            .cms-main { grid-row: auto; grid-column: 1; }
+            .cms-statusbar { display: none; }
+            .cms-content { padding: 10px; }
+
+            /* Grid nhiều cột -> xếp gọn cho vừa màn hình nhỏ */
+            .cms-grid-2 { grid-template-columns: 1fr; }
+            .cms-form-grid { grid-template-columns: 1fr; }
+            .cms-kpi-row { grid-template-columns: minmax(0, 1fr) auto auto; gap: 8px; }
+            .cms-data-row { grid-template-columns: minmax(0, 1fr) auto auto; gap: 8px; }
+        }
     </style>
 </head>
 
