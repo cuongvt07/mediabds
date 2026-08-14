@@ -60,7 +60,7 @@ return [
             'keywords' => 'bất động sản, nhà đất, cho thuê, mua bán, căn hộ, đất nền',
             'og_image' => '',                 // absolute URL of the default share image
             'robots_index' => true,           // false → noindex the whole site
-            'canonical_base' => 'https://vmphuthinhland.com',
+            'canonical_base' => 'https://vm24h.vn',
             'google_site_verification' => '',
             'facebook_app_id' => '',
             'twitter_handle' => '',           // e.g. @bdsviet
