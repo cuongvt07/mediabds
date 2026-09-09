@@ -5,6 +5,7 @@ use App\Http\Controllers\Vault\VaultBankAccountController;
 use App\Http\Controllers\Vault\VaultCronController;
 use App\Http\Controllers\Vault\VaultDashboardController;
 use App\Http\Controllers\Vault\VaultDepositController;
+use App\Http\Controllers\Vault\VaultEkycController;
 use App\Http\Controllers\Vault\VaultWithdrawalController;
 use Illuminate\Support\Facades\Route;
 
@@ -52,5 +53,9 @@ Route::prefix('api/vault/v1')->group(function () {
 
         Route::post('/deposits', [VaultDepositController::class, 'store'])->middleware('throttle:20,1');
         Route::get('/deposits/{depositRequest}', [VaultDepositController::class, 'show']);
+
+        Route::get('/ekyc', [VaultEkycController::class, 'show']);
+        // throttle chặt — nộp hồ sơ kèm 2 ảnh, tránh spam ổ đĩa S3.
+        Route::post('/ekyc', [VaultEkycController::class, 'store'])->middleware('throttle:3,60');
     });
 });

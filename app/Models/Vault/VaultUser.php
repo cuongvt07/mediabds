@@ -72,10 +72,21 @@ class VaultUser extends Authenticatable
 
     public function dailyWithdrawalLimit(): int
     {
-        return match ($this->vip_tier) {
+        $tierLimit = match ($this->vip_tier) {
             'vip_gold' => 500_000_000,
             'vip_silver' => 150_000_000,
             default => 50_000_000,
         };
+
+        // Chưa xác thực eKYC cấp 2 (CCCD đã được admin duyệt) — giới hạn hạn
+        // mức thấp bất kể phân hạng VIP gì. Đây là yêu cầu tuân thủ: "mọi
+        // thông tin đều có chuẩn thì mới được đặt yêu cầu [hạn mức cao]".
+        // So sánh ép kiểu int tường minh (KHÔNG so sánh string trực tiếp) —
+        // tránh phụ thuộc hành vi ngầm định của PHP với chuỗi số.
+        if ((int) $this->ekyc_level < 2) {
+            return min($tierLimit, 2_000_000);
+        }
+
+        return $tierLimit;
     }
 }

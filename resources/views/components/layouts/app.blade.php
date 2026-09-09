@@ -146,6 +146,21 @@
                         <div class="w-8 h-8 flex items-center justify-center rounded-lg mb-1 {{ request()->routeIs('extension.licenses') ? 'bg-white/20' : 'bg-fuchsia-900/50' }}"><i class="fa-solid fa-key text-sm"></i></div>
                         <span class="text-[10px] font-bold text-center leading-none">License</span>
                     </a>
+
+                    <a href="{{ route('vault.ekyc.review') }}" wire:navigate
+                        class="relative flex flex-col items-center justify-center p-3 rounded-2xl transition-all group {{ request()->routeIs('vault.ekyc.review') ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/20' : 'text-emerald-300/80 hover:text-white hover:bg-emerald-900/40' }}"
+                        title="Ví sinh lời — Duyệt eKYC">
+                        <div class="w-8 h-8 flex items-center justify-center rounded-lg mb-1 {{ request()->routeIs('vault.ekyc.review') ? 'bg-white/20' : 'bg-emerald-900/50 group-hover:bg-emerald-800/70' }}">
+                            <i class="fa-solid fa-id-card text-sm"></i>
+                        </div>
+                        <span class="text-[10px] font-bold text-center leading-none">Ví sinh lời</span>
+                        @php($vaultEkycPendingCount = \App\Models\Vault\VaultEkycSubmission::where('status', 'pending')->count())
+                        @if ($vaultEkycPendingCount > 0)
+                            <span class="absolute top-1 right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white">
+                                {{ $vaultEkycPendingCount }}
+                            </span>
+                        @endif
+                    </a>
                 @endif
 
             </div>

@@ -44,6 +44,14 @@ Route::get('/business/detail/{id}', \App\Livewire\BusinessDetail::class)->middle
 Route::get('/business/statistics', \App\Livewire\CtvStatistics::class)->middleware(['auth', 'admin'])->name('business.statistics');
 Route::get('/chatbot', \App\Livewire\Chatbot::class)->middleware('auth')->name('chatbot');
 Route::get('/website-admin', \App\Livewire\WebsiteAdmin::class)->middleware(['auth', 'admin'])->name('website.admin');
+
+// Duyệt hồ sơ eKYC module Vault — guard 'web' (admin site chính), HOÀN TOÀN
+// TÁCH BIỆT guard 'vault' của routes/vault.php.
+Route::middleware(['auth', 'admin'])->prefix('vault-ekyc')->name('vault.ekyc.')->group(function () {
+    Route::get('/', \App\Livewire\VaultEkycReview::class)->name('review');
+    Route::get('/{submission}/image/{side}', [\App\Http\Controllers\Vault\VaultEkycReviewController::class, 'image'])
+        ->name('image')->whereIn('side', ['front', 'back']);
+});
 Route::get('/extension-settings', \App\Livewire\ExtensionSettings::class)->middleware(['auth', 'admin'])->name('extension.settings');
 Route::get('/extension-licenses', \App\Livewire\ExtensionLicenseManager::class)->middleware(['auth', 'admin'])->name('extension.licenses');
 
