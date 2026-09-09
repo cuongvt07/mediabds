@@ -10,7 +10,6 @@ use App\Models\Vault\VaultWithdrawalRequest;
 use App\Services\Vault\VaultLedgerService;
 use DomainException;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Redis;
 
 class CreateVaultWithdrawal
 {
@@ -28,8 +27,16 @@ class CreateVaultWithdrawal
         int $amount,
         string $idempotencyKey,
     ): VaultWithdrawalRequest {
-        // Chặn double-submit sớm: nếu key đã tồn tại, trả về bản ghi cũ thay vì tạo mới.
-        if ($existing = VaultWithdrawalRequest::where('idempotency_key', $idempotencyKey)->first()) {
+        if ($vault->vault_user_id !== $user->id || $bankAccount->vault_user_id !== $user->id) {
+            throw new DomainException('Két hoặc tài khoản ngân hàng không hợp lệ');
+        }
+
+        // Chặn double-submit sớm: nếu key đã tồn tại CỦA CHÍNH USER NÀY, trả về
+        // bản ghi cũ thay vì tạo mới. Lọc thêm vault_user_id để tránh lộ dữ
+        // liệu của user khác nếu key (dù khó đoán) bị trùng/rò rỉ.
+        if ($existing = VaultWithdrawalRequest::where('idempotency_key', $idempotencyKey)
+            ->where('vault_user_id', $user->id)
+            ->first()) {
             return $existing;
         }
 
@@ -37,14 +44,28 @@ class CreateVaultWithdrawal
             throw new DomainException('Số tiền rút tối thiểu là 50.000đ');
         }
 
-        if ($vault->vault_user_id !== $user->id || $bankAccount->vault_user_id !== $user->id) {
-            throw new DomainException('Két hoặc tài khoản ngân hàng không hợp lệ');
+        if ($vault->status !== 'active') {
+            throw new DomainException('Két này hiện không thể rút tiền (đã đáo hạn hoặc đã đóng)');
         }
 
-        $this->assertWithinDailyLimit($user, $amount);
+        // Chỉ két linh hoạt (flexible) được rút tự do; két kỳ hạn phải đáo hạn.
+        // Đây là điều kiện BẮT BUỘC ở BE — FE chỉ hiển thị cảnh báo, không đủ
+        // để chặn client tự ý gọi thẳng API.
+        if ($vault->type !== 'flexible' && (! $vault->matures_at || $vault->matures_at->isFuture())) {
+            throw new DomainException('Két có kỳ hạn chưa đến ngày đáo hạn, không thể rút tại đây');
+        }
 
         return DB::transaction(function () use ($user, $vault, $bankAccount, $amount, $idempotencyKey) {
-            // Trừ tiền ngay (lock row bên trong VaultLedgerService::post), throw nếu không đủ số dư.
+            // Lock row user trong SUỐT transaction này để serialize toàn bộ yêu
+            // cầu rút tiền của CÙNG 1 user — đây là cách chặn triệt để race
+            // condition ở hạn mức/ngày (2 request đồng thời không thể cùng đọc
+            // "current" cũ rồi cùng pass check nữa, vì request thứ 2 phải đợi
+            // request thứ 1 commit/rollback xong mới lock được row).
+            VaultUser::where('id', $user->id)->lockForUpdate()->firstOrFail();
+
+            $this->assertWithinDailyLimit($user, $amount);
+
+            // Trừ tiền ngay (lock row két bên trong VaultLedgerService::post), throw nếu không đủ số dư.
             $this->ledger->post(
                 vaultAccountId: $vault->id,
                 type: 'withdrawal',
@@ -68,31 +89,25 @@ class CreateVaultWithdrawal
         });
     }
 
+    /**
+     * Đọc tổng đã rút trong ngày TRỰC TIẾP TỪ DB trong transaction đang lock
+     * row user (xem run()) — đây là nguồn sự thật duy nhất, không dùng Redis
+     * làm bộ đếm chính vì Redis INCR không nằm trong cùng transaction nên
+     * không thể rollback nếu bước sau throw. Redis ở đây CHỈ dùng làm cache
+     * đọc nhanh cho mục đích hiển thị khác (không có trong action này).
+     */
     private function assertWithinDailyLimit(VaultUser $user, int $amount): void
     {
-        $key = "vault:withdrawal:daily:{$user->id}:" . now()->format('Y-m-d');
         $limit = $user->dailyWithdrawalLimit();
 
-        try {
-            $current = (int) Redis::get($key);
-        } catch (\Throwable $e) {
-            // Redis không khả dụng trên môi trường local/dev — fallback tính từ DB
-            // thay vì chặn cứng toàn bộ luồng rút tiền.
-            $current = (int) VaultWithdrawalRequest::where('vault_user_id', $user->id)
-                ->whereIn('status', ['pending', 'processing', 'success'])
-                ->whereDate('requested_at', now()->toDateString())
-                ->sum('amount');
-        }
+        $current = (int) VaultWithdrawalRequest::where('vault_user_id', $user->id)
+            ->whereIn('status', ['pending', 'processing', 'success'])
+            ->whereDate('requested_at', now()->toDateString())
+            ->lockForUpdate()
+            ->sum('amount');
 
         if ($current + $amount > $limit) {
             throw new DomainException('Vượt hạn mức rút tiền trong ngày');
-        }
-
-        try {
-            Redis::incrby($key, $amount);
-            Redis::expireat($key, now()->endOfDay()->timestamp);
-        } catch (\Throwable $e) {
-            // bỏ qua — DB fallback ở lần kiểm tra sau vẫn đảm bảo đúng.
         }
     }
 }

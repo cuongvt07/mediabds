@@ -38,7 +38,10 @@ class VaultBankAccountController extends VaultBaseController
         $accountNumber = $data['account_number'];
 
         $bankAccount = DB::transaction(function () use ($user, $data, $accountNumber) {
-            $isFirst = $user->bankAccounts()->count() === 0;
+            // Lock toàn bộ bank account hiện có của user trong transaction để
+            // 2 request "thêm tài khoản đầu tiên" đồng thời không thể cùng
+            // thấy count()===0 rồi cùng tự đặt is_default=true.
+            $isFirst = VaultBankAccount::where('vault_user_id', $user->id)->lockForUpdate()->count() === 0;
 
             return VaultBankAccount::create([
                 'vault_user_id' => $user->id,
@@ -58,9 +61,15 @@ class VaultBankAccountController extends VaultBaseController
     public function setDefault(Request $request, VaultBankAccount $bankAccount)
     {
         $this->authorizeOwnership($request, $bankAccount);
+        $userId = $request->user('vault')->id;
 
-        DB::transaction(function () use ($request, $bankAccount) {
-            $request->user('vault')->bankAccounts()->update(['is_default' => false]);
+        DB::transaction(function () use ($userId, $bankAccount) {
+            // Lock toàn bộ hàng của user trước khi update để 2 request setDefault
+            // đồng thời (cho 2 bank account khác nhau) không thể xen kẽ ghi đè
+            // nhau — request thứ 2 phải đợi request thứ 1 commit xong.
+            VaultBankAccount::where('vault_user_id', $userId)->lockForUpdate()->get();
+
+            VaultBankAccount::where('vault_user_id', $userId)->update(['is_default' => false]);
             $bankAccount->update(['is_default' => true]);
         });
 

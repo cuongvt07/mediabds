@@ -29,10 +29,15 @@ class VaultDepositController extends VaultBaseController
         if (! $vault) {
             return $this->fail('Không tìm thấy két', 404);
         }
+        if ($vault->status !== 'active') {
+            return $this->fail('Két này hiện không thể nạp tiền (đã đáo hạn hoặc đã đóng)', 422);
+        }
 
         $idempotencyKey = $data['idempotency_key'] ?? (string) Str::uuid();
 
-        if ($existing = VaultDepositRequest::where('idempotency_key', $idempotencyKey)->first()) {
+        if ($existing = VaultDepositRequest::where('idempotency_key', $idempotencyKey)
+            ->where('vault_user_id', $user->id)
+            ->first()) {
             return $this->ok($this->transform($existing));
         }
 

@@ -3,6 +3,7 @@
 namespace App\Jobs\Vault;
 
 use App\Models\Vault\VaultDepositRequest;
+use App\Models\Vault\VaultLedgerEntry;
 use App\Services\Vault\VaultLedgerService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -53,6 +54,18 @@ class ProcessVaultDeposit implements ShouldQueue
     {
         $this->deposit->refresh();
         if ($this->deposit->status === 'success') {
+            return;
+        }
+
+        // Quan trọng: nếu ledger->post() trong handle() đã chạy thành công ở
+        // một lần thử trước đó (tiền đã cộng vào két) nhưng dòng update status
+        // ngay sau đó bị lỗi (crash/mất kết nối DB...), KHÔNG được đánh dấu
+        // 'failed' — sẽ khiến user thấy "nạp thất bại" trong khi tiền đã vào
+        // két thật. Kiểm tra ledger trước khi kết luận.
+        $alreadyPosted = VaultLedgerEntry::where('idempotency_key', $this->deposit->idempotency_key)->exists();
+
+        if ($alreadyPosted) {
+            $this->deposit->update(['status' => 'success', 'completed_at' => now()]);
             return;
         }
 
