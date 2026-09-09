@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Vault\VaultAuthController;
 use App\Http\Controllers\Vault\VaultBankAccountController;
+use App\Http\Controllers\Vault\VaultCronController;
 use App\Http\Controllers\Vault\VaultDashboardController;
 use App\Http\Controllers\Vault\VaultDepositController;
 use App\Http\Controllers\Vault\VaultWithdrawalController;
@@ -31,6 +32,9 @@ Route::prefix('api/vault/v1')->group(function () {
         Route::get('/auth/me', [VaultAuthController::class, 'me']);
         Route::post('/auth/pin', [VaultAuthController::class, 'setPin']);
         Route::post('/auth/pin/verify', [VaultAuthController::class, 'verifyPin']);
+
+        // "Cron giả lập qua FE" — gọi khi mở Dashboard (xem VaultCronController).
+        Route::post('/cron/accrue-check', [VaultCronController::class, 'accrueCheck']);
 
         Route::get('/dashboard/summary', [VaultDashboardController::class, 'summary']);
         Route::get('/dashboard/vaults', [VaultDashboardController::class, 'vaults']);
