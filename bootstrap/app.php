@@ -11,6 +11,13 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__ . '/../routes/console.php',
         health: '/up',
         apiPrefix: 'api',
+        then: function () {
+            // Module Vault — route riêng, KHÔNG nằm trong routes/api.php để giữ
+            // module hoàn toàn tách biệt (auth guard riêng, không thừa hưởng
+            // middleware/group của site chính).
+            Illuminate\Support\Facades\Route::middleware('api')
+                ->group(__DIR__ . '/../routes/vault.php');
+        },
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->redirectTo(guests: '/landing/ctv');

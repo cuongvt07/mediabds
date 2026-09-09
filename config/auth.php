@@ -45,6 +45,13 @@ return [
             'driver' => 'sanctum',
             'provider' => 'users',
         ],
+
+        // Module Vault (tích lũy/rút tiền) — hoàn toàn độc lập, KHÔNG dùng
+        // chung provider 'users' của site chính.
+        'vault' => [
+            'driver' => 'sanctum',
+            'provider' => 'vault_users',
+        ],
     ],
 
     /*
@@ -74,6 +81,11 @@ return [
         //     'driver' => 'database',
         //     'table' => 'users',
         // ],
+
+        'vault_users' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\Vault\VaultUser::class,
+        ],
     ],
 
     /*
