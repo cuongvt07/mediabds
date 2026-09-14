@@ -2,10 +2,12 @@
 
 use App\Http\Controllers\Vault\VaultAuthController;
 use App\Http\Controllers\Vault\VaultBankAccountController;
+use App\Http\Controllers\Vault\VaultChangePhoneController;
 use App\Http\Controllers\Vault\VaultCronController;
 use App\Http\Controllers\Vault\VaultDashboardController;
 use App\Http\Controllers\Vault\VaultDepositController;
 use App\Http\Controllers\Vault\VaultEkycController;
+use App\Http\Controllers\Vault\VaultOtpController;
 use App\Http\Controllers\Vault\VaultWithdrawalController;
 use Illuminate\Support\Facades\Route;
 
@@ -31,8 +33,18 @@ Route::prefix('api/vault/v1')->group(function () {
     Route::middleware('auth:vault')->group(function () {
         Route::post('/auth/logout', [VaultAuthController::class, 'logout']);
         Route::get('/auth/me', [VaultAuthController::class, 'me']);
+        Route::post('/auth/verify-phone', [VaultAuthController::class, 'verifyPhone']);
         Route::post('/auth/pin', [VaultAuthController::class, 'setPin']);
         Route::post('/auth/pin/verify', [VaultAuthController::class, 'verifyPin']);
+
+        // OTP dùng chung: verify_phone (gửi lại), set_pin, withdrawal (gửi lại).
+        Route::post('/otp/request', [VaultOtpController::class, 'request'])->middleware('throttle:10,1');
+        Route::post('/otp/verify', [VaultOtpController::class, 'verify'])->middleware('throttle:10,1');
+
+        // Đổi số điện thoại — 3 bước tuần tự, OTP cả số cũ lẫn số mới.
+        Route::post('/change-phone/start', [VaultChangePhoneController::class, 'start'])->middleware('throttle:5,1');
+        Route::post('/change-phone/verify-old', [VaultChangePhoneController::class, 'verifyOld'])->middleware('throttle:10,1');
+        Route::post('/change-phone/verify-new', [VaultChangePhoneController::class, 'verifyNew'])->middleware('throttle:10,1');
 
         // "Cron giả lập qua FE" — gọi khi mở Dashboard (xem VaultCronController).
         Route::post('/cron/accrue-check', [VaultCronController::class, 'accrueCheck']);
@@ -50,6 +62,7 @@ Route::prefix('api/vault/v1')->group(function () {
         Route::get('/withdrawals', [VaultWithdrawalController::class, 'index']);
         Route::post('/withdrawals', [VaultWithdrawalController::class, 'store'])->middleware('throttle:20,1');
         Route::get('/withdrawals/{withdrawalRequest}', [VaultWithdrawalController::class, 'show']);
+        Route::post('/withdrawals/{withdrawalRequest}/confirm', [VaultWithdrawalController::class, 'confirm'])->middleware('throttle:10,1');
 
         Route::post('/deposits', [VaultDepositController::class, 'store'])->middleware('throttle:20,1');
         Route::get('/deposits/{depositRequest}', [VaultDepositController::class, 'show']);

@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Vault;
 
 use App\Models\Vault\VaultAccount;
 use App\Models\Vault\VaultUser;
+use App\Services\Vault\VaultOtpService;
+use DomainException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -54,10 +56,47 @@ class VaultAuthController extends VaultBaseController
 
         $token = $user->createToken('vault-app')->plainTextToken;
 
+        // Tự động gửi OTP xác thực SĐT ngay sau khi đăng ký. Lỗi gửi (vd
+        // Twilio chưa cấu hình) KHÔNG chặn đăng ký thành công — user vẫn có
+        // tài khoản, chỉ chưa xác thực được SĐT (ekyc cấp 0), có thể yêu cầu
+        // gửi lại sau qua POST /otp/request purpose=verify_phone.
+        try {
+            app(VaultOtpService::class)->issue($user, 'verify_phone', $user->phone);
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
         return $this->ok([
             'user' => $this->transformUser($user),
             'token' => $token,
         ], 'Đăng ký thành công', 201);
+    }
+
+    /**
+     * Xác thực SĐT bằng OTP — nâng eKYC lên cấp 1 (trước đây field
+     * phone_verified_at tồn tại sẵn nhưng KHÔNG có luồng nào thực sự set nó,
+     * ekyc cấp 1 chỉ là mặc định chưa qua xác minh thật).
+     */
+    public function verifyPhone(Request $request)
+    {
+        $data = $request->validate([
+            'otp_code' => ['required', 'string', 'regex:/^\d{6}$/'],
+        ]);
+
+        $user = $request->user('vault');
+
+        try {
+            app(VaultOtpService::class)->verify($user, 'verify_phone', $data['otp_code']);
+        } catch (DomainException $e) {
+            return $this->fail($e->getMessage(), 422);
+        }
+
+        $user->update([
+            'phone_verified_at' => now(),
+            'ekyc_level' => (int) $user->ekyc_level < 1 ? '1' : $user->ekyc_level,
+        ]);
+
+        return $this->ok($this->transformUser($user->fresh()), 'Đã xác thực số điện thoại');
     }
 
     public function login(Request $request)
@@ -94,13 +133,26 @@ class VaultAuthController extends VaultBaseController
         return $this->ok($this->transformUser($request->user('vault')));
     }
 
+    /**
+     * Đặt/đổi PIN — BẮT BUỘC OTP đúng trước đó (purpose=set_pin, xem
+     * VaultOtpController). Chặn kẻ xấu chiếm được token đăng nhập rồi tự ý
+     * đặt PIN mới để rút tiền (PIN là lớp xác nhận rút tiền quan trọng nhất).
+     */
     public function setPin(Request $request)
     {
         $data = $request->validate([
             'pin' => ['required', 'string', 'regex:/^\d{6}$/'],
+            'otp_code' => ['required', 'string', 'regex:/^\d{6}$/'],
         ]);
 
         $user = $request->user('vault');
+
+        try {
+            app(VaultOtpService::class)->verify($user, 'set_pin', $data['otp_code']);
+        } catch (DomainException $e) {
+            return $this->fail($e->getMessage(), 422);
+        }
+
         $user->update([
             'pin_code_hash' => Hash::make($data['pin']),
             'pin_set_at' => now(),
@@ -136,6 +188,7 @@ class VaultAuthController extends VaultBaseController
             'vaultCode' => $user->vault_code,
             'referralCode' => $user->referral_code,
             'ekycLevel' => $user->ekyc_level,
+            'phoneVerified' => $user->phone_verified_at !== null,
             'faceIdEnabled' => $user->face_id_enabled,
             'hasPinSet' => $user->pin_code_hash !== null,
             'dailyWithdrawalLimit' => $user->dailyWithdrawalLimit(),

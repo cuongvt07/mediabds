@@ -52,4 +52,13 @@ return [
         ],
     ],
 
+    // Twilio — gửi OTP SMS cho module Vault (đăng ký/PIN/rút tiền/đổi SĐT).
+    // Để trống account_sid/auth_token thì VaultSmsService tự chặn gửi (throw
+    // rõ ràng), KHÔNG âm thầm giả vờ thành công — xem VaultSmsService.
+    'twilio' => [
+        'account_sid' => env('TWILIO_ACCOUNT_SID'),
+        'auth_token' => env('TWILIO_AUTH_TOKEN'),
+        'from_number' => env('TWILIO_FROM_NUMBER'), // định dạng E.164, vd +15017122661
+    ],
+
 ];
