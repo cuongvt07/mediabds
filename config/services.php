@@ -59,6 +59,13 @@ return [
         'account_sid' => env('TWILIO_ACCOUNT_SID'),
         'auth_token' => env('TWILIO_AUTH_TOKEN'),
         'from_number' => env('TWILIO_FROM_NUMBER'), // định dạng E.164, vd +15017122661
+
+        // Cờ TẠM THỜI tắt toàn bộ luồng OTP trong module Vault khi Twilio
+        // chưa cấu hình xong (trial/chưa verify số) — VaultOtpService::issue()
+        // không gửi SMS (chỉ log), verify() luôn coi là đúng. FE đọc field
+        // otpEnabled qua /auth/me để tự ẩn màn hình nhập OTP tương ứng, KHÔNG
+        // hardcode ở FE — chỉ cần đổi biến này + phục hồi khi có Twilio thật.
+        'otp_enabled' => env('VAULT_OTP_ENABLED', false),
     ],
 
 ];

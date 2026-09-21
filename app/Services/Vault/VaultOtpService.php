@@ -7,6 +7,7 @@ use App\Models\Vault\VaultUser;
 use DomainException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Sinh/gửi/xác minh mã OTP dùng chung cho mọi luồng (verify_phone, set_pin,
@@ -23,6 +24,13 @@ use Illuminate\Support\Facades\Hash;
  * - verify() dùng row lock (lockForUpdate) trong transaction để 2 request
  *   xác minh đồng thời (double-submit OTP) không thể cùng lúc pass qua giới
  *   hạn attempts hay cùng "tiêu" 1 mã 2 lần.
+ *
+ * CỜ TẠM THỜI services.twilio.otp_enabled (env VAULT_OTP_ENABLED, default
+ * false): khi tắt — issue() KHÔNG gửi SMS thật (chỉ ghi log, không throw dù
+ * Twilio chưa cấu hình), verify() LUÔN coi là đúng mà không cần tra DB. Toàn
+ * bộ logic OTP thật vẫn giữ nguyên phía dưới — chỉ cần đổi biến env để phục
+ * hồi khi có Twilio thật, không cần sửa code nơi gọi (controller không biết
+ * và không cần biết cờ này).
  */
 class VaultOtpService
 {
@@ -36,6 +44,11 @@ class VaultOtpService
     {
     }
 
+    public function isEnabled(): bool
+    {
+        return (bool) config('services.twilio.otp_enabled');
+    }
+
     /**
      * Sinh mã mới, gửi SMS, lưu hash vào DB. $phone là số NHẬN otp (khác
      * $user->phone khi đang đổi sang số mới — xem luồng change_phone).
@@ -44,6 +57,15 @@ class VaultOtpService
      */
     public function issue(VaultUser $user, string $purpose, string $phone, ?int $referenceId = null): void
     {
+        if (! $this->isEnabled()) {
+            Log::info('VaultOtpService: OTP đang tắt tạm thời (VAULT_OTP_ENABLED=false), bỏ qua gửi SMS', [
+                'vault_user_id' => $user->id,
+                'purpose' => $purpose,
+            ]);
+
+            return;
+        }
+
         $this->assertNotThrottled($user, $purpose);
 
         $code = (string) random_int(100000, 999999);
@@ -70,6 +92,10 @@ class VaultOtpService
      */
     public function verify(VaultUser $user, string $purpose, string $code, ?int $referenceId = null): bool
     {
+        if (! $this->isEnabled()) {
+            return true;
+        }
+
         return DB::transaction(function () use ($user, $purpose, $code, $referenceId) {
             $query = VaultOtpCode::where('vault_user_id', $user->id)
                 ->where('purpose', $purpose)

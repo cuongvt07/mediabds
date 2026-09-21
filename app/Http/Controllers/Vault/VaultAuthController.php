@@ -56,14 +56,23 @@ class VaultAuthController extends VaultBaseController
 
         $token = $user->createToken('vault-app')->plainTextToken;
 
-        // Tự động gửi OTP xác thực SĐT ngay sau khi đăng ký. Lỗi gửi (vd
-        // Twilio chưa cấu hình) KHÔNG chặn đăng ký thành công — user vẫn có
-        // tài khoản, chỉ chưa xác thực được SĐT (ekyc cấp 0), có thể yêu cầu
-        // gửi lại sau qua POST /otp/request purpose=verify_phone.
-        try {
-            app(VaultOtpService::class)->issue($user, 'verify_phone', $user->phone);
-        } catch (\Throwable $e) {
-            report($e);
+        $otp = app(VaultOtpService::class);
+
+        if ($otp->isEnabled()) {
+            // Tự động gửi OTP xác thực SĐT ngay sau khi đăng ký. Lỗi gửi (vd
+            // Twilio chưa cấu hình) KHÔNG chặn đăng ký thành công — user vẫn
+            // có tài khoản, chỉ chưa xác thực được SĐT (ekyc cấp 0), có thể
+            // yêu cầu gửi lại sau qua POST /otp/request purpose=verify_phone.
+            try {
+                $otp->issue($user, 'verify_phone', $user->phone);
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        } else {
+            // OTP đang TẠM TẮT (VAULT_OTP_ENABLED=false, chưa cấu hình xong
+            // Twilio) — tự xác thực SĐT ngay để không kẹt user ở màn hình chờ
+            // OTP không bao giờ gửi được. Khôi phục lại khi Twilio sẵn sàng.
+            $user->update(['phone_verified_at' => now(), 'ekyc_level' => '1']);
         }
 
         return $this->ok([
@@ -140,15 +149,20 @@ class VaultAuthController extends VaultBaseController
      */
     public function setPin(Request $request)
     {
+        $otp = app(VaultOtpService::class);
+
         $data = $request->validate([
             'pin' => ['required', 'string', 'regex:/^\d{6}$/'],
-            'otp_code' => ['required', 'string', 'regex:/^\d{6}$/'],
+            // Bắt buộc CHỈ khi OTP đang bật thật — khi tắt tạm thời (xem
+            // VaultOtpService::isEnabled()), verify() luôn pass nên không
+            // cần bắt FE gửi giá trị giả.
+            'otp_code' => [$otp->isEnabled() ? 'required' : 'nullable', 'string', 'regex:/^\d{6}$/'],
         ]);
 
         $user = $request->user('vault');
 
         try {
-            app(VaultOtpService::class)->verify($user, 'set_pin', $data['otp_code']);
+            $otp->verify($user, 'set_pin', $data['otp_code'] ?? '000000');
         } catch (DomainException $e) {
             return $this->fail($e->getMessage(), 422);
         }
@@ -192,6 +206,10 @@ class VaultAuthController extends VaultBaseController
             'faceIdEnabled' => $user->face_id_enabled,
             'hasPinSet' => $user->pin_code_hash !== null,
             'dailyWithdrawalLimit' => $user->dailyWithdrawalLimit(),
+            // FE đọc field này để tự ẩn màn hình nhập OTP (xác thực SĐT, đặt
+            // PIN, rút tiền, đổi SĐT) khi Twilio chưa cấu hình xong — xem
+            // services.twilio.otp_enabled / VaultOtpService::isEnabled().
+            'otpEnabled' => app(\App\Services\Vault\VaultOtpService::class)->isEnabled(),
         ];
     }
 }

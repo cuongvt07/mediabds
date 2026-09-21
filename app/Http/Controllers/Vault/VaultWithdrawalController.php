@@ -41,6 +41,8 @@ class VaultWithdrawalController extends VaultBaseController
             return $this->fail('Không tìm thấy tài khoản ngân hàng', 404);
         }
 
+        $otp = app(VaultOtpService::class);
+
         try {
             $withdrawal = $action->initiate(
                 user: $user,
@@ -54,11 +56,24 @@ class VaultWithdrawalController extends VaultBaseController
             return $this->fail($e->getMessage(), 422);
         }
 
+        if (! $otp->isEnabled()) {
+            // OTP đang TẠM TẮT — bỏ qua bước chờ confirm() hoàn toàn, PIN đã
+            // xác nhận ở initiate() là lớp bảo vệ duy nhất lúc này. Khôi phục
+            // lại luồng 2 bước khi Twilio sẵn sàng (VAULT_OTP_ENABLED=true).
+            try {
+                $withdrawal = $action->confirm($withdrawal);
+            } catch (DomainException $e) {
+                return $this->fail($e->getMessage(), 422);
+            }
+
+            return $this->ok($this->transform($withdrawal), 'Yêu cầu rút tiền đã được tạo', 201);
+        }
+
         // Tự động gửi OTP luôn — FE không cần gọi /otp/request riêng cho
         // purpose=withdrawal (giảm 1 round-trip, và tránh client "quên" gọi
         // rồi đứng chờ vô thời hạn ở bước confirm).
         try {
-            app(VaultOtpService::class)->issue($user, 'withdrawal', $user->phone, $withdrawal->id);
+            $otp->issue($user, 'withdrawal', $user->phone, $withdrawal->id);
         } catch (DomainException $e) {
             return $this->fail($e->getMessage(), 429);
         } catch (\RuntimeException $e) {
