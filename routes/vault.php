@@ -77,8 +77,9 @@ Route::prefix('api/vault/v1')->group(function () {
 // Webhook SePay — PUBLIC (không qua guard 'vault', SePay không có Bearer
 // token user), tự xác thực bằng chữ ký HMAC-SHA256 riêng (xem
 // SePayWebhookController). Path khớp đúng URL đã khai báo trên SePay Console:
-// https://vm24h.vn/vault/hooks/sepay-payment — KHÔNG có prefix /api/vault/v1.
-// throttle rộng (không giới hạn theo user vì không có auth) nhưng vẫn chặn
-// flood cơ bản.
+// https://vmphuthinhland.com/vault/hooks/sepay-payment (domain THẬT của
+// server Laravel này — KHÔNG phải vm24h.vn, đó là domain FE Next.js
+// riêng, không cùng server) — KHÔNG có prefix /api/vault/v1. throttle rộng
+// (không giới hạn theo user vì không có auth) nhưng vẫn chặn flood cơ bản.
 Route::post('/vault/hooks/sepay-payment', [SePayWebhookController::class, 'handle'])
     ->middleware('throttle:60,1');
