@@ -530,6 +530,24 @@
                 <x-website-cms-nav-group title="Nội dung" :items="$catalogItems" :active-tab="$activeTab" />
                 <x-website-cms-nav-group title="Người dùng" :items="$userItems" :active-tab="$activeTab" />
                 <x-website-cms-nav-group title="Hệ thống" :items="$systemItems" :active-tab="$activeTab" />
+
+                {{-- Module Vault là route RIÊNG (không phải tab của website.admin) nên
+                     không dùng x-website-cms-nav-group (hardcode route('website.admin', ...)). --}}
+                <div class="cms-nav-group">
+                    <div class="cms-nav-title">Ví sinh lời</div>
+                    <a href="{{ route('vault.dashboard') }}"
+                        class="cms-nav-link {{ request()->routeIs('vault.dashboard') ? 'is-active' : '' }}"
+                        title="Quản trị Vault">
+                        <i class="fa-solid fa-vault"></i>
+                        <span class="cms-nav-text cms-truncate">Quản trị Vault</span>
+                    </a>
+                    <a href="{{ route('vault.ekyc.review') }}"
+                        class="cms-nav-link {{ request()->routeIs('vault.ekyc.*') ? 'is-active' : '' }}"
+                        title="Duyệt eKYC">
+                        <i class="fa-solid fa-id-card"></i>
+                        <span class="cms-nav-text cms-truncate">Duyệt eKYC</span>
+                    </a>
+                </div>
             </nav>
         </aside>
 
