@@ -30,4 +30,9 @@ class VaultDepositRequest extends Model
     {
         return $this->belongsTo(VaultAccount::class, 'vault_id');
     }
+
+    public function webhookLogs()
+    {
+        return $this->hasMany(\App\Models\SepayWebhookLog::class, 'vault_deposit_request_id');
+    }
 }

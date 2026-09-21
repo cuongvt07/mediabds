@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Vault;
 
 use App\Models\SepaySetting;
+use App\Models\SepayWebhookLog;
 use App\Models\Vault\VaultDepositRequest;
 use App\Services\Vault\VaultLedgerService;
 use Illuminate\Http\Request;
@@ -28,6 +29,10 @@ use Illuminate\Support\Facades\Log;
  *   trường hợp payload bị giả mạo/sai lệch cộng nhầm số tiền khác).
  * - post() của VaultLedgerService tự idempotent theo idempotency_key — SePay
  *   gửi lại (retry) không cộng tiền 2 lần.
+ *
+ * AUDIT: mọi request (thành công hay bị từ chối ở bước nào) đều ghi vào
+ * sepay_webhook_logs qua logAttempt() — xem qua CMS (VaultDeposits). Ghi log
+ * KHÔNG bao giờ được để lỗi làm fail request webhook thật (bọc try/catch).
  */
 class SePayWebhookController extends VaultBaseController
 {
@@ -36,24 +41,24 @@ class SePayWebhookController extends VaultBaseController
     public function handle(Request $request, VaultLedgerService $ledger)
     {
         $settings = SepaySetting::current();
-
-        if (! $settings->enabled || ! $settings->webhook_secret_encrypted) {
-            Log::warning('SePayWebhookController: webhook chưa được cấu hình/kích hoạt');
-            return response()->json(['message' => 'Webhook chưa được cấu hình'], 503);
-        }
-
         $rawBody = $request->getContent();
         $signature = $request->header('X-SePay-Signature', '');
         $timestamp = $request->header('X-SePay-Timestamp', '');
+        $payload = $request->json()->all();
+
+        if (! $settings->enabled || ! $settings->webhook_secret_encrypted) {
+            Log::warning('SePayWebhookController: webhook chưa được cấu hình/kích hoạt');
+            $this->logAttempt(null, null, 'rejected_disabled', 'Webhook chưa được cấu hình/kích hoạt', $payload, $signature, $request->ip());
+            return response()->json(['message' => 'Webhook chưa được cấu hình'], 503);
+        }
 
         if (! $this->verifySignature($rawBody, $timestamp, $signature, $settings->webhook_secret_encrypted)) {
             Log::warning('SePayWebhookController: chữ ký không hợp lệ hoặc timestamp hết hạn');
+            $this->logAttempt(null, null, 'rejected_signature', 'Chữ ký không hợp lệ hoặc timestamp hết hạn', $payload, $signature, $request->ip());
             return response()->json(['message' => 'Invalid signature'], 401);
         }
 
         $settings->update(['last_webhook_at' => now()]);
-
-        $payload = $request->json()->all();
 
         // SePay tự trích mã thanh toán theo template cấu hình trên Console
         // (my.sepay.vn -> Cấu hình Công ty -> Cấu trúc mã thanh toán, prefix
@@ -71,17 +76,20 @@ class SePayWebhookController extends VaultBaseController
 
         if ($paymentCode === '' || ! preg_match('/^VM(\d+)$/', $paymentCode, $matches)) {
             Log::info('SePayWebhookController: không tìm thấy payment_code hợp lệ', ['payload' => $payload]);
+            $this->logAttempt(null, $paymentCode ?: null, 'rejected_no_code', 'Không tìm thấy payment_code hợp lệ trong payload', $payload, $signature, $request->ip());
             return response()->json(['message' => 'Không tìm thấy mã giao dịch, bỏ qua']);
         }
         $deposit = VaultDepositRequest::where('payment_code', $paymentCode)->first();
 
         if (! $deposit) {
             Log::warning('SePayWebhookController: payment_code không khớp lệnh nạp nào', ['payment_code' => $paymentCode]);
+            $this->logAttempt(null, $paymentCode, 'rejected_no_deposit', 'payment_code không khớp lệnh nạp nào', $payload, $signature, $request->ip());
             return response()->json(['message' => 'Không tìm thấy lệnh nạp tiền tương ứng']);
         }
 
         if ($deposit->status === 'success') {
             // Đã xử lý trước đó (SePay retry hoặc 2 webhook cùng giao dịch) — trả 200 để SePay không retry nữa.
+            $this->logAttempt($deposit->id, $paymentCode, 'duplicate', 'Lệnh đã xử lý thành công trước đó (retry)', $payload, $signature, $request->ip());
             return response()->json(['message' => 'Đã xử lý trước đó']);
         }
 
@@ -90,7 +98,19 @@ class SePayWebhookController extends VaultBaseController
                 'deposit_id' => $deposit->id,
                 'status' => $deposit->status,
             ]);
+            $this->logAttempt($deposit->id, $paymentCode, 'rejected_status', "Lệnh đang ở trạng thái '{$deposit->status}', không phải pending_payment", $payload, $signature, $request->ip());
             return response()->json(['message' => 'Lệnh nạp tiền không ở trạng thái hợp lệ']);
+        }
+
+        // Webhook đến TRỄ (quá hạn 15 phút) trước khi FE polling kịp tự
+        // chuyển 'expired' — chặn theo thời gian thực, không phụ thuộc FE
+        // đã kiểm tra hay chưa. Chuyển hẳn sang 'expired' luôn để lần sau
+        // (webhook retry) rơi vào nhánh status check ở trên, không lặp log.
+        if ($deposit->created_at->addMinutes(VaultDepositController::EXPIRES_MINUTES)->isPast()) {
+            $deposit->update(['status' => 'expired']);
+            Log::warning('SePayWebhookController: webhook đến trễ, lệnh nạp đã hết hạn', ['deposit_id' => $deposit->id]);
+            $this->logAttempt($deposit->id, $paymentCode, 'rejected_expired', 'Webhook đến trễ, lệnh nạp đã quá hạn 15 phút', $payload, $signature, $request->ip());
+            return response()->json(['message' => 'Lệnh nạp tiền đã hết hạn, vui lòng tạo lệnh mới']);
         }
 
         // Số tiền chuyển thực tế PHẢI khớp đúng số tiền đã đăng ký khi tạo
@@ -103,10 +123,13 @@ class SePayWebhookController extends VaultBaseController
                 'expected' => $deposit->amount,
                 'received' => $transferAmount,
             ]);
+            $this->logAttempt($deposit->id, $paymentCode, 'rejected_amount_mismatch', "Số tiền nhận {$transferAmount}đ không khớp {$deposit->amount}đ đã đăng ký", $payload, $signature, $request->ip());
             return response()->json(['message' => 'Số tiền chuyển khoản không khớp, cần admin kiểm tra thủ công'], 422);
         }
 
-        DB::transaction(function () use ($deposit, $ledger, $payload) {
+        $sepayTransactionId = (string) ($payload['id'] ?? $payload['referenceCode'] ?? '');
+
+        DB::transaction(function () use ($deposit, $ledger, $sepayTransactionId) {
             $ledger->post(
                 vaultAccountId: $deposit->vault_id,
                 type: 'deposit',
@@ -119,9 +142,11 @@ class SePayWebhookController extends VaultBaseController
             $deposit->update([
                 'status' => 'success',
                 'completed_at' => now(),
-                'sepay_transaction_id' => (string) ($payload['id'] ?? $payload['referenceCode'] ?? ''),
+                'sepay_transaction_id' => $sepayTransactionId,
             ]);
         });
+
+        $this->logAttempt($deposit->id, $paymentCode, 'accepted', 'Đã xác nhận và cộng tiền vào két', $payload, $signature, $request->ip(), $sepayTransactionId);
 
         return response()->json(['message' => 'OK']);
     }
@@ -139,5 +164,36 @@ class SePayWebhookController extends VaultBaseController
         $expected = 'sha256=' . hash_hmac('sha256', $timestamp . '.' . $rawBody, $secret);
 
         return hash_equals($expected, $signature);
+    }
+
+    /**
+     * Ghi log audit — KHÔNG BAO GIỜ được throw ra ngoài, dù lỗi DB/serialize
+     * gì cũng chỉ report() rồi bỏ qua, tuyệt đối không làm fail webhook thật
+     * (đây chỉ là dữ liệu phụ để xem lại, không phải logic nghiệp vụ).
+     */
+    private function logAttempt(
+        ?int $depositId,
+        ?string $paymentCode,
+        string $outcome,
+        string $reason,
+        array $payload,
+        ?string $signatureHeader,
+        ?string $ip,
+        ?string $sepayTransactionId = null,
+    ): void {
+        try {
+            SepayWebhookLog::create([
+                'vault_deposit_request_id' => $depositId,
+                'payment_code' => $paymentCode,
+                'outcome' => $outcome,
+                'reason' => $reason,
+                'payload' => $payload,
+                'signature_header' => $signatureHeader,
+                'sepay_transaction_id' => $sepayTransactionId,
+                'ip_address' => $ip,
+            ]);
+        } catch (\Throwable $e) {
+            report($e);
+        }
     }
 }

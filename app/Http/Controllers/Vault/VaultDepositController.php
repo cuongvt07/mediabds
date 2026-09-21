@@ -20,6 +20,9 @@ use Illuminate\Support\Str;
  */
 class VaultDepositController extends VaultBaseController
 {
+    /** Lệnh nạp quá hạn này (chưa nhận được webhook) coi như hết hiệu lực — FE hiện đồng hồ đếm ngược theo mốc này. */
+    public const EXPIRES_MINUTES = 15;
+
     public function store(Request $request)
     {
         $data = $request->validate([
@@ -69,7 +72,21 @@ class VaultDepositController extends VaultBaseController
     {
         abort_if($depositRequest->vault_user_id !== $request->user('vault')->id, 403);
 
+        // Tự chuyển 'expired' khi FE polling phát hiện quá hạn 15 phút mà
+        // vẫn chưa nhận webhook — KHÔNG trừ/hoàn tiền gì (chưa từng cộng
+        // tiền ở bước này), chỉ đổi status để FE dừng đếm ngược/polling và
+        // báo hết hạn. SePayWebhookController cũng tự chặn riêng nếu webhook
+        // đến trễ sau khi đã hết hạn (xem isExpired()).
+        if ($depositRequest->status === 'pending_payment' && $this->isExpired($depositRequest)) {
+            $depositRequest->update(['status' => 'expired']);
+        }
+
         return $this->ok($this->transform($depositRequest));
+    }
+
+    private function isExpired(VaultDepositRequest $d): bool
+    {
+        return $d->created_at->addMinutes(self::EXPIRES_MINUTES)->isPast();
     }
 
     private function transform(VaultDepositRequest $d): array
@@ -81,6 +98,7 @@ class VaultDepositController extends VaultBaseController
             'status' => $d->status,
             'paymentCode' => $d->payment_code,
             'qrImageUrl' => $d->payment_code ? $this->buildQrUrl($d) : null,
+            'expiresAt' => $d->created_at->addMinutes(self::EXPIRES_MINUTES)->toIso8601String(),
             'completedAt' => $d->completed_at?->toIso8601String(),
         ];
     }
