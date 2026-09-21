@@ -46,8 +46,14 @@ Route::get('/chatbot', \App\Livewire\Chatbot::class)->middleware('auth')->name('
 Route::get('/website-admin', \App\Livewire\WebsiteAdmin::class)->middleware(['auth', 'admin'])->name('website.admin');
 
 // Quản trị module Vault — guard 'web' (admin site chính), HOÀN TOÀN TÁCH
-// BIỆT guard 'vault' của routes/vault.php.
-Route::get('/vault-dashboard', \App\Livewire\VaultDashboard::class)->middleware(['auth', 'admin'])->name('vault.dashboard');
+// BIỆT guard 'vault' của routes/vault.php. Mỗi mục là 1 trang RIÊNG trong
+// sidebar CMS Vault (components.layouts.vault-cms), không lồng sub-tab.
+Route::middleware(['auth', 'admin'])->group(function () {
+    Route::get('/vault-dashboard', \App\Livewire\VaultDashboard::class)->name('vault.dashboard');
+    Route::get('/vault-deposits', \App\Livewire\VaultDeposits::class)->name('vault.deposits');
+    Route::get('/vault-withdrawals', \App\Livewire\VaultWithdrawals::class)->name('vault.withdrawals');
+    Route::get('/vault-sepay-settings', \App\Livewire\VaultSepaySettings::class)->name('vault.sepay-settings');
+});
 Route::middleware(['auth', 'admin'])->prefix('vault-ekyc')->name('vault.ekyc.')->group(function () {
     Route::get('/', \App\Livewire\VaultEkycReview::class)->name('review');
     Route::get('/{submission}/image/{side}', [\App\Http\Controllers\Vault\VaultEkycReviewController::class, 'image'])

@@ -170,6 +170,15 @@
                 <a href="{{ route('vault.dashboard') }}" class="vcms-nav-link {{ request()->routeIs('vault.dashboard') ? 'is-active' : '' }}">
                     <i class="fa-solid fa-gauge-high"></i> Tổng quan
                 </a>
+                <a href="{{ route('vault.deposits') }}" class="vcms-nav-link {{ request()->routeIs('vault.deposits') ? 'is-active' : '' }}">
+                    <i class="fa-solid fa-arrow-down-to-bracket"></i> Nạp tiền
+                </a>
+                <a href="{{ route('vault.withdrawals') }}" class="vcms-nav-link {{ request()->routeIs('vault.withdrawals') ? 'is-active' : '' }}">
+                    <i class="fa-solid fa-arrow-up-from-bracket"></i> Rút tiền
+                </a>
+                <a href="{{ route('vault.sepay-settings') }}" class="vcms-nav-link {{ request()->routeIs('vault.sepay-settings') ? 'is-active' : '' }}">
+                    <i class="fa-solid fa-gear"></i> Cấu hình SePay
+                </a>
                 <a href="{{ route('vault.ekyc.review') }}" class="vcms-nav-link {{ request()->routeIs('vault.ekyc.*') ? 'is-active' : '' }}">
                     <i class="fa-solid fa-id-card"></i> Duyệt eKYC
                 </a>
