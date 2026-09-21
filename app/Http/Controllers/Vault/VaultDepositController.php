@@ -61,9 +61,15 @@ class VaultDepositController extends VaultBaseController
         // Mã tham chiếu NGẮN, duy nhất — sinh SAU khi có id thật (đảm bảo
         // không đụng dù 2 request cùng lúc tạo deposit), nhúng vào nội dung
         // chuyển khoản để SePay đối soát đúng giao dịch khi bắn webhook.
-        // Prefix "VM" PHẢI khớp đúng template đã cấu hình trên SePay Console
-        // (my.sepay.vn -> Cấu hình Công ty -> Cấu trúc mã thanh toán).
-        $deposit->update(['payment_code' => 'VM' . $deposit->id]);
+        // Prefix "VM" + hậu tố PHẢI khớp đúng template đã cấu hình trên SePay
+        // Console (my.sepay.vn -> Cấu hình Công ty -> Cấu trúc mã thanh toán:
+        // "VM" + số nguyên TỪ 3 ĐẾN 10 KÝ TỰ) — đệm số 0 phía trước LUÔN CỐ
+        // ĐỊNH 5 chữ số (dư nhiều so với mức tối thiểu 3, support tới 99999
+        // giao dịch mà độ dài mã không đổi) để id nhỏ vẫn đủ ký tự, nếu không
+        // SePay sẽ KHÔNG nhận diện được mã trong nội dung CK — đã xảy ra thật
+        // với các deposit id 1-99: "VM6", "VM14" chỉ có 1-2 ký tự hậu tố, dưới
+        // mức tối thiểu 3 nên webhook không bao giờ được gọi.
+        $deposit->update(['payment_code' => 'VM' . str_pad((string) $deposit->id, 5, '0', STR_PAD_LEFT)]);
 
         return $this->ok($this->transform($deposit), 'Vui lòng chuyển khoản theo mã QR để hoàn tất nạp tiền', 201);
     }
