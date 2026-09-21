@@ -112,6 +112,8 @@ class VaultEkycReview extends Component
         return view('livewire.vault-ekyc-review', [
             'submissions' => $submissions,
             'pendingCount' => VaultEkycSubmission::where('status', 'pending')->count(),
+        ])->layout('components.layouts.vault-cms', [
+            'title' => 'Duyệt eKYC',
         ]);
     }
 }

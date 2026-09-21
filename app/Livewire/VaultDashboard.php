@@ -88,12 +88,8 @@ class VaultDashboard extends Component
             ],
             'sepaySettings' => SepaySetting::current(),
             'otpEnabled' => app(VaultOtpService::class)->isEnabled(),
-        ])->layout('components.layouts.website-cms', [
-            'title' => 'Quản trị Ví sinh lời (Vault)',
-            // Layout dùng $stats['pending_listings'] v.v. (đọc với ?? null) để
-            // hiện badge số trên menu site BĐS chính — Vault không có các số
-            // liệu đó, truyền rỗng để biến luôn tồn tại, tránh lỗi undefined.
-            'stats' => [],
+        ])->layout('components.layouts.vault-cms', [
+            'title' => 'Tổng quan',
         ]);
     }
 }
