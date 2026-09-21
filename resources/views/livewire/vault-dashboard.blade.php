@@ -55,9 +55,9 @@
             </thead>
             <tbody class="divide-y divide-slate-100">
                 @forelse ($users as $u)
-                    <tr>
+                    <tr class="hover:bg-slate-50 cursor-pointer" onclick="window.location='{{ route('vault.users.show', $u->id) }}'">
                         <td class="px-4 py-3">
-                            <p class="font-semibold text-slate-900">{{ $u->name }}</p>
+                            <p class="font-semibold text-blue-600 hover:underline">{{ $u->name }}</p>
                             <p class="text-xs text-slate-400">{{ $u->vault_code }}</p>
                         </td>
                         <td class="px-4 py-3 mono">{{ $u->phone }}</td>

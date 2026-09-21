@@ -50,6 +50,7 @@ Route::get('/website-admin', \App\Livewire\WebsiteAdmin::class)->middleware(['au
 // sidebar CMS Vault (components.layouts.vault-cms), không lồng sub-tab.
 Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/vault-dashboard', \App\Livewire\VaultDashboard::class)->name('vault.dashboard');
+    Route::get('/vault-users/{userId}', \App\Livewire\VaultUserDetail::class)->name('vault.users.show');
     Route::get('/vault-deposits', \App\Livewire\VaultDeposits::class)->name('vault.deposits');
     Route::get('/vault-withdrawals', \App\Livewire\VaultWithdrawals::class)->name('vault.withdrawals');
     Route::get('/vault-sepay-settings', \App\Livewire\VaultSepaySettings::class)->name('vault.sepay-settings');
