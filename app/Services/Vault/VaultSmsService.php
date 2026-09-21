@@ -31,7 +31,9 @@ class VaultSmsService
     }
 
     /**
-     * Gửi 1 tin SMS. $to phải ở định dạng E.164 (vd +84912345678).
+     * Gửi 1 tin SMS. $to có thể ở dạng nội địa VN (0912345678) hoặc E.164
+     * (+84912345678) — tự chuẩn hoá về E.164 trước khi gọi Twilio, vì API
+     * bắt buộc định dạng này (thiếu sẽ trả lỗi 21211 Invalid 'To' Phone Number).
      *
      * @throws RuntimeException nếu chưa cấu hình Twilio hoặc Twilio trả lỗi.
      */
@@ -51,7 +53,7 @@ class VaultSmsService
         $response = Http::asForm()
             ->withBasicAuth($accountSid, $authToken)
             ->post(self::TWILIO_API_BASE . "/Accounts/{$accountSid}/Messages.json", [
-                'To' => $to,
+                'To' => $this->toE164($to),
                 'From' => $from,
                 'Body' => $body,
             ]);
@@ -67,5 +69,24 @@ class VaultSmsService
 
             throw new RuntimeException('Gửi SMS thất bại, vui lòng thử lại sau.');
         }
+    }
+
+    /**
+     * Chuẩn hoá số điện thoại VN về E.164: "0912345678" -> "+84912345678".
+     * Số đã ở dạng +84... hoặc 84... (không có 0 đầu) giữ nguyên/chỉ thêm dấu +.
+     */
+    private function toE164(string $phone): string
+    {
+        $digits = preg_replace('/\D/', '', $phone);
+
+        if (str_starts_with($digits, '84')) {
+            return '+' . $digits;
+        }
+
+        if (str_starts_with($digits, '0')) {
+            return '+84' . substr($digits, 1);
+        }
+
+        return '+' . $digits;
     }
 }

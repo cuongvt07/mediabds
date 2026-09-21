@@ -9,6 +9,7 @@ use App\Http\Controllers\Vault\VaultDepositController;
 use App\Http\Controllers\Vault\VaultEkycController;
 use App\Http\Controllers\Vault\VaultOtpController;
 use App\Http\Controllers\Vault\VaultWithdrawalController;
+use App\Http\Controllers\Vault\SePayWebhookController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -72,3 +73,12 @@ Route::prefix('api/vault/v1')->group(function () {
         Route::post('/ekyc', [VaultEkycController::class, 'store'])->middleware('throttle:3,60');
     });
 });
+
+// Webhook SePay — PUBLIC (không qua guard 'vault', SePay không có Bearer
+// token user), tự xác thực bằng chữ ký HMAC-SHA256 riêng (xem
+// SePayWebhookController). Path khớp đúng URL đã khai báo trên SePay Console:
+// https://vm24h.vn/vault/hooks/sepay-payment — KHÔNG có prefix /api/vault/v1.
+// throttle rộng (không giới hạn theo user vì không có auth) nhưng vẫn chặn
+// flood cơ bản.
+Route::post('/vault/hooks/sepay-payment', [SePayWebhookController::class, 'handle'])
+    ->middleware('throttle:60,1');

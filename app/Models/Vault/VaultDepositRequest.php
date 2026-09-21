@@ -11,6 +11,7 @@ class VaultDepositRequest extends Model
     protected $fillable = [
         'vault_user_id', 'vault_id', 'amount', 'status',
         'idempotency_key', 'method', 'note', 'completed_at',
+        'payment_code', 'sepay_transaction_id',
     ];
 
     protected function casts(): array
