@@ -252,18 +252,18 @@ class ListingApiController extends BaseApiController
 
     private function makeCode($propertyType = null): string
     {
-        $prefixes = [
-            103 => 'CH',
-            104 => 'D',
-            107 => 'MP',
-            108 => 'NR',
-            115 => 'NT',
-        ];
+        // Cùng cấu trúc mã tin với admin (#CH1234, #NR0042...).
+        $prefix = \App\Livewire\RealEstateListing::PREFIX_MAP[(int) $propertyType] ?? '#RE';
 
-        $prefix = $prefixes[(int) $propertyType] ?? 'BDS';
+        for ($i = 0; $i < 5; $i++) {
+            $code = $prefix . str_pad((string) mt_rand(0, 9999), 4, '0', STR_PAD_LEFT);
+            if (! RealEstateListing::where('code', $code)->exists()) {
+                return $code;
+            }
+        }
 
         do {
-            $code = $prefix . '-' . strtoupper(Str::random(7));
+            $code = $prefix . str_pad((string) mt_rand(0, 999999), 6, '0', STR_PAD_LEFT);
         } while (RealEstateListing::where('code', $code)->exists());
 
         return $code;
