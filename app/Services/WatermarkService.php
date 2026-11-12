@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\SiteSetting;
+use Illuminate\Support\Str;
 use Throwable;
 
 /**
@@ -124,6 +125,8 @@ class WatermarkService
         }
 
         // Fallback: GD built-in bitmap font (no TTF available in the runtime).
+        // It only knows Latin-1, so strip Vietnamese diacritics instead of garbling them.
+        $text = Str::ascii($text);
         $glyph = 5;
         $textW = imagefontwidth($glyph) * strlen($text);
         $textH = imagefontheight($glyph);
@@ -171,6 +174,7 @@ class WatermarkService
         }
 
         // Fallback: bitmap font cannot rotate, so tile it straight instead.
+        $text = Str::ascii($text);
         $glyph = 5;
         $textW = max(1, imagefontwidth($glyph) * strlen($text));
         $textH = max(1, imagefontheight($glyph));
@@ -258,6 +262,7 @@ class WatermarkService
         $candidates = array_filter([
             config('site.defaults.watermark.font_path'),
             storage_path('fonts/watermark.ttf'),
+            // Bundled Be Vietnam Pro Bold (OFL) — full Vietnamese glyph coverage.
             resource_path('fonts/watermark.ttf'),
             '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf',
             '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
