@@ -30,13 +30,14 @@ class FileUpload extends Component
         $filesToUpload = is_array($this->files) ? $this->files : [$this->files];
 
         foreach ($filesToUpload as $uploadedFile) {
-            $path = $uploadedFile->store('uploads', 's3');
-            
+            $disk = \App\Support\UploadDisk::name();
+            $path = $uploadedFile->store('uploads', $disk);
+
             \App\Models\File::create([
                 'folder_id' => $this->folderId,
                 'name' => $uploadedFile->getClientOriginalName(),
                 'path' => $path,
-                'disk' => 's3',
+                'disk' => $disk,
                 'mime_type' => $uploadedFile->getMimeType(),
                 'size' => $uploadedFile->getSize(),
             ]);

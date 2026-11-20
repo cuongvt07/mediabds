@@ -5,7 +5,9 @@ namespace App\Livewire;
 
 use App\Models\File;
 use App\Models\Folder;
+use App\Support\UploadDisk;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 
@@ -351,12 +353,14 @@ class FileManager extends Component
         $file = File::find($fileId);
         if ($file && $file->path) {
             try {
-                if (!Storage::disk('s3')->exists($file->path)) {
+                // File cũ nằm ở Long Vân ('s3'), file mới ở AZ Cloud ('s3_uploads') — đọc theo disk đã lưu.
+                $disk = $file->disk ?: 's3';
+                if (!Storage::disk($disk)->exists($file->path)) {
                     $this->dispatch('toast', ['message' => 'Lỗi: File không tồn tại trên hệ thống lưu trữ.', 'type' => 'error']);
                     return;
                 }
 
-                $url = Storage::disk('s3')->temporaryUrl(
+                $url = Storage::disk($disk)->temporaryUrl(
                     $file->path,
                     now()->addMinutes(5),
                     ['ResponseContentDisposition' => 'attachment; filename="' . $file->name . '"']
@@ -444,20 +448,21 @@ class FileManager extends Component
 
             // Note: putFileAs automatically prepends bucket if not careful, but here we provide 'path'
             // storagePath already includes filename
-            $s3Path = Storage::disk('s3')->putFileAs(
+            $disk = UploadDisk::name();
+            $s3Path = Storage::disk($disk)->putFileAs(
                 dirname($storagePath), // Path (without filename)
                 new \Illuminate\Http\File($tempPath), // File
                 basename($storagePath), // Filename
                 'public'
             );
 
-            $publicUrl = config('filesystems.disks.s3.endpoint') . '/' . config('filesystems.disks.s3.bucket') . '/' . $s3Path;
+            $publicUrl = UploadDisk::url($s3Path, $disk);
 
             File::create([
                 'folder_id' => $folderId,
                 'name' => $originalName,
                 'path' => $s3Path,
-                'disk' => 's3',
+                'disk' => $disk,
                 'mime_type' => $mimeType,
                 'size' => $size,
                 'metadata' => ['public_url' => $publicUrl],
@@ -508,8 +513,9 @@ class FileManager extends Component
         $this->dispatch('toast', ['message' => 'Đang bắt đầu đồng bộ S3...', 'type' => 'info']);
 
         try {
-            $client = Storage::disk('s3')->getClient();
-            $bucket = config('filesystems.disks.s3.bucket');
+            $disk = UploadDisk::name();
+            $client = Storage::disk($disk)->getClient();
+            $bucket = config("filesystems.disks.$disk.bucket");
 
             $results = $client->getPaginator('ListObjectsV2', [
                 'Bucket' => $bucket,
@@ -527,6 +533,8 @@ class FileManager extends Component
                     $key = $object['Key'];
                     if (substr($key, -1) === '/')
                         continue; // Skip folders
+                    if (Str::startsWith($key, UploadDisk::PRIVATE_PREFIXES))
+                        continue; // Ảnh CCCD eKYC (private) — không đưa vào FileManager
 
                     // Check if exists (INCLUDING TRASHED)
                     // If it's in trash, we skip it (user deleted it intentionally)
@@ -534,7 +542,7 @@ class FileManager extends Component
                         continue;
                     }
 
-                    $this->syncIndividualFile($object);
+                    $this->syncIndividualFile($object, $disk);
                     $newFiles++;
                     $count++;
                 }
@@ -552,7 +560,7 @@ class FileManager extends Component
         $this->isSyncing = false;
     }
 
-    private function syncIndividualFile($object)
+    private function syncIndividualFile($object, string $disk)
     {
         $filePath = $object['Key'];
         $size = $object['Size'] ?? 0;
@@ -579,13 +587,13 @@ class FileManager extends Component
             $folderId = $this->getOrCreateDirectory($directory);
         }
 
-        $publicUrl = config('filesystems.disks.s3.endpoint') . '/' . config('filesystems.disks.s3.bucket') . '/' . $filePath;
+        $publicUrl = UploadDisk::url($filePath, $disk);
 
         File::create([
             'folder_id' => $folderId,
             'name' => $name,
             'path' => $filePath,
-            'disk' => 's3',
+            'disk' => $disk,
             'mime_type' => $mimeType,
             'size' => $size,
             'metadata' => ['public_url' => $publicUrl],

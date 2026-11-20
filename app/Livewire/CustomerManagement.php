@@ -267,15 +267,17 @@ class CustomerManagement extends Component
             $directory = dirname($filename);
             $name = basename($filename);
 
-            $s3Path = Storage::disk('s3')->putFileAs(
+            $disk = \App\Support\UploadDisk::name();
+            $s3Path = Storage::disk($disk)->putFileAs(
                 $directory,
                 new \Illuminate\Http\File($fullTempPath),
                 $name,
                 'public'
             );
 
-            // 4. Update data array
-            $data['avatar'] = $s3Path;
+            // 4. Lưu URL đầy đủ (Customer::avatar_url trả thẳng URL) — avatar cũ chỉ lưu
+            // path vẫn được hiểu là file trên Long Vân ('s3').
+            $data['avatar'] = \App\Support\UploadDisk::url($s3Path, $disk);
 
             // 5. Cleanup temp file
             @unlink($fullTempPath);

@@ -736,7 +736,7 @@ class WebsiteAdmin extends Component
     private function storeMediaUpload($file): ?string
     {
         try {
-            $disk = config('filesystems.disks.s3.bucket') ? 's3' : 'public';
+            $disk = \App\Support\UploadDisk::name();
             $ext = strtolower($file->getClientOriginalExtension() ?: 'png');
             $name = preg_replace('/[^a-zA-Z0-9._-]/', '_', pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME)) ?: 'media';
             $filename = $name . '_' . now()->format('YmdHis') . '_' . Str::lower(Str::random(5)) . '.' . $ext;
@@ -744,9 +744,7 @@ class WebsiteAdmin extends Component
 
             $path = $file->storeAs($dir, $filename, ['disk' => $disk, 'visibility' => 'public']);
 
-            $publicUrl = $disk === 's3'
-                ? rtrim((string) config('filesystems.disks.s3.endpoint'), '/') . '/' . config('filesystems.disks.s3.bucket') . '/' . $path
-                : \Illuminate\Support\Facades\Storage::disk($disk)->url($path);
+            $publicUrl = \App\Support\UploadDisk::url($path, $disk);
 
             if (Schema::hasTable('files')) {
                 \App\Models\File::create([

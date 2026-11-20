@@ -13,6 +13,7 @@ use Livewire\WithFileUploads;
 use Livewire\WithPagination;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\ListingsExport;
+use App\Support\UploadDisk;
 
 use Illuminate\Support\Facades\Storage;
 
@@ -243,16 +244,17 @@ class RealEstateListing extends Component
                     $filename = $safeFilename . '_' . $uniqueSuffix . '.' . $extension;
 
                     // Match Media Manager structure: YYYY/MM/UniqueFilename
-                    $path = $temp->storeAs(date('Y/m'), $filename, ['disk' => 's3', 'visibility' => 'public']);
+                    $disk = UploadDisk::name();
+                    $path = $temp->storeAs(date('Y/m'), $filename, ['disk' => $disk, 'visibility' => 'public']);
 
-                    $publicUrl = config('filesystems.disks.s3.endpoint') . '/' . config('filesystems.disks.s3.bucket') . '/' . $path;
+                    $publicUrl = UploadDisk::url($path, $disk);
 
                     // Create File Record for Media Manager
                     \App\Models\File::create([
                         'folder_id' => null,
                         'name' => $filename,
                         'path' => $path,
-                        'disk' => 's3',
+                        'disk' => $disk,
                         'mime_type' => $temp->getMimeType(),
                         'size' => $temp->getSize(),
                         'metadata' => [
@@ -290,14 +292,15 @@ class RealEstateListing extends Component
                 $uniqueSuffix = time() . '_' . substr(uniqid(), -4);
                 $filename = 'avatar_' . $safeFilename . '_' . $uniqueSuffix . '.' . $extension;
 
-                $path = $temp->storeAs(date('Y/m'), $filename, ['disk' => 's3', 'visibility' => 'public']);
-                $publicUrl = config('filesystems.disks.s3.endpoint') . '/' . config('filesystems.disks.s3.bucket') . '/' . $path;
+                $disk = UploadDisk::name();
+                $path = $temp->storeAs(date('Y/m'), $filename, ['disk' => $disk, 'visibility' => 'public']);
+                $publicUrl = UploadDisk::url($path, $disk);
 
                 \App\Models\File::create([
                     'folder_id' => null,
                     'name' => $filename,
                     'path' => $path,
-                    'disk' => 's3',
+                    'disk' => $disk,
                     'mime_type' => $temp->getMimeType(),
                     'size' => $temp->getSize(),
                     'metadata' => [
@@ -1157,16 +1160,17 @@ class RealEstateListing extends Component
         $filename = $safeFilename . '_' . $uniqueSuffix . '.' . $extension;
 
         // Match Media Manager structure: YYYY/MM/UniqueFilename
-        $path = $file->storeAs(date('Y/m'), $filename, ['disk' => 's3', 'visibility' => 'public']);
+        $disk = UploadDisk::name();
+        $path = $file->storeAs(date('Y/m'), $filename, ['disk' => $disk, 'visibility' => 'public']);
 
-        $publicUrl = config('filesystems.disks.s3.endpoint') . '/' . config('filesystems.disks.s3.bucket') . '/' . $path;
+        $publicUrl = UploadDisk::url($path, $disk);
 
         // Create File Record for Media Manager
         \App\Models\File::create([
             'folder_id' => null,
             'name' => $filename,
             'path' => $path,
-            'disk' => 's3',
+            'disk' => $disk,
             'mime_type' => $file->getMimeType(),
             'size' => $file->getSize(),
             'metadata' => [

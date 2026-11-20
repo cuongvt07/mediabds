@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Models\SiteSetting;
 use App\Services\WatermarkService;
+use App\Support\UploadDisk;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -20,13 +21,8 @@ class ListingImageUploadController extends BaseApiController
             'images.*' => "required|file|image|mimes:jpg,jpeg,png,webp,heic,heif|max:$maxKb",
         ]);
 
-        // Ưu tiên disk upload MỚI (s3_uploads = AZ Cloud, bucket vm24h). Nếu chưa
-        // cấu hình thì fallback về s3 (Long Vân) rồi public — không gián đoạn khi
-        // thiếu env. Ảnh mới luôn vào s3_uploads, kể cả khi sửa tin.
-        $disk = config('filesystems.disks.s3_uploads.bucket')
-            ? 's3_uploads'
-            : (config('filesystems.disks.s3.bucket') ? 's3' : 'public');
-        $diskCfg = config("filesystems.disks.$disk");
+        // Ảnh mới luôn vào disk upload chung (AZ Cloud), kể cả khi sửa tin.
+        $disk = UploadDisk::name();
         $prefix = 'listing-uploads/' . now()->format('Y/m');
         $items = [];
 
@@ -45,9 +41,7 @@ class ListingImageUploadController extends BaseApiController
                 $path = $file->storeAs($prefix, $filename, ['disk' => $disk, 'visibility' => 'public']);
             }
 
-            $url = ! empty($diskCfg['endpoint'])
-                ? rtrim((string) $diskCfg['endpoint'], '/') . '/' . $diskCfg['bucket'] . '/' . $path
-                : Storage::disk($disk)->url($path);
+            $url = UploadDisk::url($path, $disk);
 
             $items[] = [
                 'url' => $url,

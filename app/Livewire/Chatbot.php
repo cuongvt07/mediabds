@@ -231,9 +231,9 @@ class Chatbot extends Component
         if (!empty($this->chatFiles)) {
             $uploadedUrls = [];
             foreach ($this->chatFiles as $file) {
-                $disk = !empty(config('filesystems.disks.s3.bucket')) ? 's3' : 'public';
+                $disk = \App\Support\UploadDisk::name();
                 $path = $file->store('chatbot_uploads', $disk);
-                $url = \Storage::disk($disk)->url($path);
+                $url = \App\Support\UploadDisk::url($path, $disk);
                 $uploadedUrls[] = ['name' => $file->getClientOriginalName(), 'url' => $url];
             }
             $fileNames = implode(', ', array_column($uploadedUrls, 'name'));

@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\UploadDisk;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Throwable;
 
@@ -29,7 +29,7 @@ class CKEditorUploadController extends Controller
 
         try {
             $file = $request->file('upload');
-            $disk = config('filesystems.disks.s3.bucket') ? 's3' : 'public';
+            $disk = UploadDisk::name();
             $ext = strtolower($file->getClientOriginalExtension() ?: 'png');
             $name = preg_replace('/[^a-zA-Z0-9._-]/', '_', pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME)) ?: 'blog';
             $filename = $name . '_' . now()->format('YmdHis') . '_' . Str::lower(Str::random(5)) . '.' . $ext;
@@ -37,9 +37,7 @@ class CKEditorUploadController extends Controller
 
             $path = $file->storeAs($dir, $filename, ['disk' => $disk, 'visibility' => 'public']);
 
-            $url = $disk === 's3'
-                ? rtrim((string) config('filesystems.disks.s3.endpoint'), '/') . '/' . config('filesystems.disks.s3.bucket') . '/' . $path
-                : Storage::disk($disk)->url($path);
+            $url = UploadDisk::url($path, $disk);
 
             if (Schema::hasTable('files')) {
                 \App\Models\File::create([
